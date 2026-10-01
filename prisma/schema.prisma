@@ -1,0 +1,99 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String        @id @default(cuid())
+  email        String        @unique
+  name         String
+  passwordHash String
+  currency     String        @default("USD")
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  routines     Routine[]
+  routineLogs  RoutineLog[]
+  tasks        Task[]
+  transactions Transaction[]
+}
+
+model Routine {
+  id                 String       @id @default(cuid())
+  userId             String
+  title              String
+  description        String?
+  timeSlot           String       @default("morning") // morning, afternoon, evening, night, anytime
+  targetTime         String?      // e.g. "07:30"
+  daysOfWeek         String       @default("0,1,2,3,4,5,6") // comma-separated 0-6 (Sun-Sat)
+  streakCount        Int          @default(0)
+  lastCompletedDate  String?      // YYYY-MM-DD
+  reminderMinutes    Int          @default(0) // 0 = no reminder, 5 = 5 min before targetTime
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  user               User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  logs               RoutineLog[]
+
+  @@index([userId])
+}
+
+model RoutineLog {
+  id          String   @id @default(cuid())
+  routineId   String
+  userId      String
+  date        String   // YYYY-MM-DD
+  completed   Boolean  @default(true)
+  completedAt DateTime @default(now())
+
+  routine     Routine  @relation(fields: [routineId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([routineId, date])
+  @@index([userId, date])
+}
+
+model Task {
+  id                  String    @id @default(cuid())
+  userId              String
+  title               String
+  description         String?
+  type                String    @default("TASK") // TASK, EVENT
+  category            String    @default("General") // Work, Health, Study, Personal, Errand, Finance, Social, General
+  priority            String    @default("MEDIUM") // LOW, MEDIUM, HIGH, URGENT
+  status              String    @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED, CANCELLED
+  startDate           DateTime?
+  dueDate             DateTime?
+  remindBeforeMinutes Int       @default(15) // 0 = at due time, 5, 10, 15, 30, 60
+  reminderSent        Boolean   @default(false)
+  completedAt         DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([userId, dueDate])
+}
+
+model Transaction {
+  id            String   @id @default(cuid())
+  userId        String
+  type          String   // EXPENSE, INCOME
+  amount        Float
+  category      String   // Food, Transport, Bills, Shopping, Salary, Freelance, etc.
+  description   String?
+  paymentMethod String   @default("Cash") // Cash, Card, Bank Transfer, Mobile, Other
+  date          DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
+  @@index([userId, type])
+}

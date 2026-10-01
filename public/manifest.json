@@ -1,0 +1,16 @@
+{
+  "name": "DayPulse — Daily Task & Wealth Tracker",
+  "short_name": "DayPulse",
+  "description": "Daily habit routines, task scheduler, advance alert notifications, and cumulative financial ledger.",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#090d16",
+  "theme_color": "#090d16",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
