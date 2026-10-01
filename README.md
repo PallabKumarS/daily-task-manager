@@ -119,8 +119,26 @@ npm run start
 
 ---
 
-## Export & Google Drive Sync Workflow
-1. Navigate to **Sync & Settings** in DayPulse.
-2. Click **Download Backup (JSON)** to save your complete account snapshot (`DayPulse_Backup_YYYY-MM-DD.json`).
-3. You can store this file in your Google Drive or sync folder.
-4. On any new device or instance, click **Choose Backup File...** to instantly restore all routines, events, and transactions.
+## Google Drive Cloud Sync & Backup
+
+DayPulse supports native **Google Drive v3 API** synchronization to back up and restore your daily routines, scheduled events, and financial ledgers across devices.
+
+### 1. Connecting Your Google Cloud Account
+1. Open [Google Cloud Console](https://console.cloud.google.com/) and create a project.
+2. Under **APIs & Services > Library**, search and enable **Google Drive API**.
+3. Under **APIs & Services > Credentials**, create an **OAuth 2.0 Client ID** (Web application):
+   - **Authorized redirect URI**: `http://localhost:3000/api/sync/google/callback`
+4. Add the generated credentials to your `.env` file:
+   ```env
+   GOOGLE_CLIENT_ID="your-client-id.apps.googleusercontent.com"
+   GOOGLE_CLIENT_SECRET="your-client-secret"
+   GOOGLE_REDIRECT_URI="http://localhost:3000/api/sync/google/callback"
+   ```
+5. Navigate to **Sync & Settings** in DayPulse, click **Connect Google Drive**, and grant authorization.
+
+### 2. Synchronization Capabilities
+- **One-Click Cloud Backup**: Uploads/updates `DayPulse_Backup.json` into your Google Drive, isolated to app files (`drive.file` scope) for maximum privacy.
+- **One-Click Cloud Restore**: Pulls your backup from Google Drive and restores routines, tasks, and transactions in a database transaction.
+- **Automatic Token Refresh**: Seamlessly rotates expired Google access tokens in the background using your refresh token.
+- **Sandbox Simulation Mode**: Built-in test sandbox allows verifying cloud synchronization workflows locally without needing immediate Google Cloud credentials.
+- **Direct Portable JSON**: Download and restore raw JSON snapshots for local backups or manual Google Drive folder drag-and-drop.

@@ -11,10 +11,16 @@ model User {
   id           String        @id @default(cuid())
   email        String        @unique
   name         String
-  passwordHash String
-  currency     String        @default("USD")
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  passwordHash       String
+  currency           String        @default("USD")
+  googleId           String?
+  googleEmail        String?
+  googleAccessToken  String?
+  googleRefreshToken String?
+  googleTokenExpiry  DateTime?
+  lastGoogleSyncAt   DateTime?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
 
   routines     Routine[]
   routineLogs  RoutineLog[]
