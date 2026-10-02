@@ -8,6 +8,8 @@ import {
   CheckSquare,
   TrendingUp,
   Plus,
+  Minus,
+  Ban,
   Flame,
   Clock,
   ArrowUpRight,
@@ -16,6 +18,7 @@ import {
   ChevronRight,
   Bell,
   Sparkles,
+  Calculator,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/currency-symbols";
@@ -23,30 +26,36 @@ import { useAuth } from "@/components/providers/auth-provider";
 import { RoutineItem } from "@/components/routines/routine-list";
 import { TaskItem } from "@/components/tasks/task-list";
 import { TransactionItem } from "@/components/finances/transaction-list";
+import { DailyTrackerItem } from "@/components/trackers/tracker-types";
+import { api } from "@/lib/api-client";
 
 interface DashboardViewProps {
   onOpenRoutineModal: () => void;
   onOpenTaskModal: () => void;
   onOpenTransactionModal: () => void;
+  onOpenTrackerModal?: () => void;
 }
 
 export function DashboardView({
   onOpenRoutineModal,
   onOpenTaskModal,
   onOpenTransactionModal,
+  onOpenTrackerModal,
 }: DashboardViewProps) {
   const { user } = useAuth();
   const [routines, setRoutines] = React.useState<RoutineItem[]>([]);
   const [tasks, setTasks] = React.useState<TaskItem[]>([]);
   const [transactions, setTransactions] = React.useState<TransactionItem[]>([]);
+  const [trackers, setTrackers] = React.useState<DailyTrackerItem[]>([]);
   const [loading, setLoading] = React.useState(true);
 
   const fetchData = React.useCallback(async () => {
     try {
-      const [rRes, tRes, trRes] = await Promise.all([
+      const [rRes, tRes, trRes, trkRes] = await Promise.all([
         fetch("/api/routines"),
         fetch("/api/tasks?upcoming=true"),
         fetch("/api/finances?limit=10"),
+        fetch("/api/trackers"),
       ]);
 
       if (rRes.ok) {
@@ -61,12 +70,78 @@ export function DashboardView({
         const trJson = await trRes.json();
         if (trJson.success) setTransactions(trJson.data);
       }
+      if (trkRes.ok) {
+        const trkJson = await trkRes.json();
+        if (trkJson.success) setTrackers(trkJson.data);
+      }
     } catch {
       // Network load error
     } finally {
       setLoading(false);
     }
   }, []);
+
+  const handleAdjustTracker = async (trackerId: string, delta: number) => {
+    const tracker = trackers.find((t) => t.id === trackerId);
+    if (!tracker) return;
+    const currentVal = tracker.todayLog ? tracker.todayLog.value : 0;
+    const newVal = Math.max(0, currentVal + delta);
+    const todayStr = new Date().toISOString().slice(0, 10);
+
+    setTrackers((prev) =>
+      prev.map((t) =>
+        t.id === trackerId
+          ? {
+              ...t,
+              todayValue: newVal,
+              todayLog: t.todayLog
+                ? { ...t.todayLog, value: newVal, status: "LOGGED" }
+                : {
+                    id: "temp",
+                    date: todayStr,
+                    value: newVal,
+                    status: "LOGGED",
+                    isSettled: false,
+                  },
+            }
+          : t
+      )
+    );
+
+    try {
+      await api.post(`/trackers/${trackerId}/log`, {
+        date: todayStr,
+        value: newVal,
+        status: "LOGGED",
+      });
+      fetchData();
+    } catch {
+      fetchData();
+    }
+  };
+
+  const handleCancelTrackerToday = async (trackerId: string) => {
+    const tracker = trackers.find((t) => t.id === trackerId);
+    if (!tracker) return;
+    const isCurrentlyCancelled =
+      tracker.todayLog?.status === "CANCELLED" && tracker.todayLog?.value === 0;
+    const newVal = isCurrentlyCancelled ? tracker.defaultTarget : 0;
+    const newStatus = isCurrentlyCancelled ? "LOGGED" : "CANCELLED";
+    const note = isCurrentlyCancelled ? "" : "Cancelled with provider";
+    const todayStr = new Date().toISOString().slice(0, 10);
+
+    try {
+      await api.post(`/trackers/${trackerId}/log`, {
+        date: todayStr,
+        value: newVal,
+        status: newStatus,
+        notes: note,
+      });
+      fetchData();
+    } catch {
+      fetchData();
+    }
+  };
 
   React.useEffect(() => {
     fetchData();
@@ -181,6 +256,12 @@ export function DashboardView({
               <Plus className="w-4 h-4" />
               <span>New Routine</span>
             </Button>
+            {onOpenTrackerModal && (
+              <Button variant="secondary" size="sm" onClick={onOpenTrackerModal} className="gap-1.5">
+                <Plus className="w-4 h-4" />
+                <span>New Tracker</span>
+              </Button>
+            )}
             <Button variant="secondary" size="sm" onClick={onOpenTransactionModal} className="gap-1.5">
               <Plus className="w-4 h-4" />
               <span>Record Spending / Earning</span>
@@ -189,8 +270,8 @@ export function DashboardView({
         </div>
       </div>
 
-      {/* 3 Overview Stat Widgets */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* 4 Overview Stat Widgets */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Routines Card */}
         <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5 backdrop-blur-xl flex flex-col justify-between">
           <div>
@@ -216,6 +297,32 @@ export function DashboardView({
             className="mt-4 flex items-center justify-between text-xs text-slate-400 hover:text-emerald-400 transition"
           >
             <span>View All Routines</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+
+        {/* Daily Trackers Card */}
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5 backdrop-blur-xl flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between text-slate-400">
+              <span className="text-xs font-bold uppercase tracking-wider">Daily Trackers</span>
+              <div className="rounded-xl bg-purple-500/10 p-2 text-purple-400 border border-purple-500/20">
+                <Calculator className="w-4 h-4" />
+              </div>
+            </div>
+            <div className="mt-3 flex items-baseline gap-2">
+              <span className="text-2xl font-black text-white">{trackers.length}</span>
+              <span className="text-xs text-slate-400">active monitors</span>
+            </div>
+            <p className="text-[11px] text-slate-400 mt-2">
+              {trackers.reduce((s, t) => s + (t.todayValue || 0), 0)} units logged today.
+            </p>
+          </div>
+          <Link
+            href="/trackers"
+            className="mt-4 flex items-center justify-between text-xs text-slate-400 hover:text-purple-400 transition"
+          >
+            <span>Trackers & Deliveries</span>
             <ChevronRight className="w-3.5 h-3.5" />
           </Link>
         </div>
@@ -280,8 +387,8 @@ export function DashboardView({
         </div>
       </div>
 
-      {/* Two Column Grid: Today's Habits & Upcoming Tasks */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Three Column Grid: Today's Habits, Daily Trackers & Upcoming Tasks */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Today's Routines */}
         <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 backdrop-blur-xl">
           <div className="flex items-center justify-between pb-3 border-b border-slate-800">
@@ -348,6 +455,120 @@ export function DashboardView({
                   )}
                 </div>
               ))
+            )}
+          </div>
+        </div>
+
+        {/* Daily Trackers & Deliveries (Interactive Quick Stepper) */}
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 backdrop-blur-xl">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+            <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
+              <Calculator className="w-4 h-4 text-purple-400" />
+              <span>Daily Trackers & Meals</span>
+            </h3>
+            {onOpenTrackerModal ? (
+              <button
+                type="button"
+                onClick={onOpenTrackerModal}
+                className="text-xs text-purple-400 hover:underline"
+              >
+                + Add
+              </button>
+            ) : (
+              <Link href="/trackers" className="text-xs text-purple-400 hover:underline">
+                View
+              </Link>
+            )}
+          </div>
+
+          <div className="mt-3 space-y-2 max-h-72 overflow-y-auto pr-1">
+            {trackers.length === 0 ? (
+              <div className="py-8 text-center text-xs text-slate-500">
+                <p>No trackers configured.</p>
+                <Link
+                  href="/trackers"
+                  className="mt-2 inline-block text-xs font-semibold text-purple-400 hover:underline"
+                >
+                  Set up Meals or Deliveries →
+                </Link>
+              </div>
+            ) : (
+              trackers.map((t) => {
+                const currentVal = t.todayLog ? t.todayLog.value : 0;
+                const isCancelled = t.todayLog?.status === "CANCELLED" && currentVal === 0;
+                const hasUnitPrice = typeof t.unitPrice === "number" && t.unitPrice > 0;
+                const costToday = hasUnitPrice ? currentVal * (t.unitPrice || 0) : 0;
+
+                return (
+                  <div
+                    key={t.id}
+                    className="flex items-center justify-between p-3 rounded-xl border border-slate-800/80 bg-slate-900/80 hover:border-slate-700 transition"
+                  >
+                    <div className="min-w-0 pr-2">
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-xs font-semibold text-slate-100 truncate">{t.name}</p>
+                        {isCancelled && (
+                          <span className="text-[9px] font-bold text-rose-400 bg-rose-500/10 px-1.5 py-0.2 rounded border border-rose-500/20">
+                            Cancelled
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-0.5 truncate">
+                        {hasUnitPrice ? (
+                          isCancelled ? (
+                            <span className="line-through text-rose-400">
+                              {formatCurrency(costToday, t.currency)}
+                            </span>
+                          ) : (
+                            `${formatCurrency(costToday, t.currency)} today`
+                          )
+                        ) : (
+                          `${t.category}`
+                        )}
+                        {t.todayLog?.notes ? ` • "${t.todayLog.notes}"` : ""}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleAdjustTracker(t.id, -1)}
+                        disabled={currentVal <= 0}
+                        className="h-6 w-6 rounded-lg bg-slate-950 border border-slate-700 text-slate-400 hover:text-white hover:bg-slate-800 flex items-center justify-center disabled:opacity-30 cursor-pointer"
+                        title="Minus 1"
+                      >
+                        <Minus className="w-3 h-3" />
+                      </button>
+
+                      <span className="w-7 text-center font-bold text-xs text-white">
+                        {currentVal}
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={() => handleAdjustTracker(t.id, 1)}
+                        className="h-6 w-6 rounded-lg bg-emerald-600 border border-emerald-500 text-white hover:bg-emerald-500 flex items-center justify-center cursor-pointer shadow-sm"
+                        title="Plus 1"
+                      >
+                        <Plus className="w-3 h-3" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleCancelTrackerToday(t.id)}
+                        title={isCancelled ? "Restore normal meal count" : "Cancel for today"}
+                        className={`ml-1 h-6 w-6 rounded-lg flex items-center justify-center transition cursor-pointer ${
+                          isCancelled
+                            ? "bg-rose-500/20 text-rose-300 border border-rose-500/40"
+                            : "bg-slate-950 border border-slate-800 text-slate-500 hover:text-rose-400 hover:bg-slate-800"
+                        }`}
+                      >
+                        <Ban className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
             )}
           </div>
         </div>

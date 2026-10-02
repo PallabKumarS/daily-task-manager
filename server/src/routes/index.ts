@@ -5,6 +5,7 @@ import { taskRoutes } from "../modules/task/task.route.js";
 import { financeRoutes } from "../modules/finance/finance.route.js";
 import { syncRoutes } from "../modules/sync/sync.route.js";
 import { categoryRoutes } from "../modules/category/category.route.js";
+import { trackerRoutes } from "../modules/tracker/tracker.route.js";
 
 const router = Router();
 
@@ -15,6 +16,7 @@ const moduleRoutes = [
   { path: "/finances", route: financeRoutes },
   { path: "/sync", route: syncRoutes },
   { path: "/categories", route: categoryRoutes },
+  { path: "/trackers", route: trackerRoutes },
 ];
 
 moduleRoutes.forEach((route) => router.use(route.path, route.route));

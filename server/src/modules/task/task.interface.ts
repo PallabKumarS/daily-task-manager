@@ -1,23 +1,27 @@
 export interface ICreateTask {
-  title: string;
-  description?: string;
-  type?: "TASK" | "EVENT";
-  category?: string;
-  priority?: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
-  status?: "PENDING" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
-  startDate?: string | null;
-  dueDate?: string | null;
-  remindBeforeMinutes?: number;
+	title: string;
+	description?: string | null;
+	type?: "TASK" | "EVENT";
+	category?: string;
+	priority?: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
+	status?: "PENDING" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+	startDate?: string | null;
+	dueDate?: string | null;
+	remindBeforeMinutes?: number;
+
+	isRecurring?: boolean;
+	repeatFrequency?: "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY" | null;
+	repeatInterval?: number;
+	repeatDaysOfWeek?: string | null;
+	repeatTime?: string | null;
+	repeatDayOfMonth?: number | null;
+	repeatMonthOfYear?: number | null;
+	repeatEndType?: "NEVER" | "COUNT" | "UNTIL_DATE" | null;
+	repeatCount?: number | null;
+	repeatUntil?: string | null;
 }
 
-export interface IUpdateTask {
-  title?: string;
-  description?: string | null;
-  type?: "TASK" | "EVENT";
-  category?: string;
-  priority?: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
-  status?: "PENDING" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
-  startDate?: string | null;
-  dueDate?: string | null;
-  remindBeforeMinutes?: number;
+export interface IUpdateTask extends Partial<ICreateTask> {
+	completedOccurrences?: number;
+	lastTriggeredDate?: string | null;
 }

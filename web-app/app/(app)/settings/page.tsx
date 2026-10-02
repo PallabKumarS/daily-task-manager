@@ -1,590 +1,781 @@
 "use client";
 
+import {
+	Bell,
+	Cloud,
+	Download,
+	ExternalLink,
+	FileText,
+	KeyRound,
+	RefreshCw,
+	Shield,
+	Tag,
+	Unlink,
+	Upload,
+	User,
+	Volume2,
+	VolumeX,
+} from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import * as React from "react";
 import { toast } from "sonner";
-import { useSearchParams } from "next/navigation";
-import {
-  Download,
-  Upload,
-  Bell,
-  Volume2,
-  VolumeX,
-  Smartphone,
-  Shield,
-  Laptop,
-  CheckCircle2,
-  AlertTriangle,
-  User,
-  DollarSign,
-  Cloud,
-  RefreshCw,
-  ExternalLink,
-  Unlink,
-  FileText,
-  KeyRound,
-} from "lucide-react";
+import { CategoryManagerModal } from "@/components/categories/category-manager-modal";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useNotifications } from "@/components/providers/notification-provider";
 import { Button } from "@/components/ui/button";
+import { CustomSelect, type SelectOption } from "@/components/ui/custom-select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CURRENCIES } from "@/lib/currency-symbols";
 import { api } from "@/lib/api-client";
+import { CURRENCIES } from "@/lib/currency-symbols";
+
+const CURRENCY_SELECT_OPTIONS: SelectOption[] = CURRENCIES.map((c) => ({
+	label: `${c.name} (${c.code})`,
+	value: c.code,
+	badge: c.symbol,
+}));
 
 interface GoogleSyncStatus {
-  configured: boolean;
-  connected: boolean;
-  googleEmail: string | null;
-  lastGoogleSyncAt: string | null;
+	configured: boolean;
+	connected: boolean;
+	googleEmail: string | null;
+	lastGoogleSyncAt: string | null;
 }
 
 function SettingsContent() {
-  const { user, updateProfile } = useAuth();
-  const searchParams = useSearchParams();
-  const {
-    permission,
-    soundEnabled,
-    requestPermission,
-    toggleSound,
-    triggerNotification,
-  } = useNotifications();
+	const { user, updateProfile } = useAuth();
+	const searchParams = useSearchParams();
+	const {
+		permission,
+		soundEnabled,
+		requestPermission,
+		toggleSound,
+		triggerNotification,
+	} = useNotifications();
 
-  const [name, setName] = React.useState(user?.name || "");
-  const [currency, setCurrency] = React.useState(user?.currency || "USD");
-  const [savingProfile, setSavingProfile] = React.useState(false);
-  const [importing, setImporting] = React.useState(false);
+	const [name, setName] = React.useState(user?.name || "");
+	const [currency, setCurrency] = React.useState(user?.currency || "USD");
+	const [savingProfile, setSavingProfile] = React.useState(false);
+	const [importing, setImporting] = React.useState(false);
+	const [categoryModalOpen, setCategoryModalOpen] = React.useState(false);
 
-  // Google Sync state
-  const [googleStatus, setGoogleStatus] = React.useState<GoogleSyncStatus>({
-    configured: false,
-    connected: false,
-    googleEmail: null,
-    lastGoogleSyncAt: null,
-  });
-  const [syncingGoogle, setSyncingGoogle] = React.useState(false);
-  const [restoringGoogle, setRestoringGoogle] = React.useState(false);
-  const [simulating, setSimulating] = React.useState(false);
-  const [showSetupGuide, setShowSetupGuide] = React.useState(false);
+	// Google Sync state
+	const [googleStatus, setGoogleStatus] = React.useState<GoogleSyncStatus>({
+		configured: false,
+		connected: false,
+		googleEmail: null,
+		lastGoogleSyncAt: null,
+	});
+	const [syncingGoogle, setSyncingGoogle] = React.useState(false);
+	const [restoringGoogle, setRestoringGoogle] = React.useState(false);
+	const [simulating, setSimulating] = React.useState(false);
+	const [showSetupGuide, setShowSetupGuide] = React.useState(false);
 
-  const fetchGoogleStatus = React.useCallback(async () => {
-    try {
-      const res = await api.get<GoogleSyncStatus>("/sync/status");
-      if (res.success && res.data) {
-        setGoogleStatus(res.data);
-      }
-    } catch {
-      // ignore
-    }
-  }, []);
+	const fetchGoogleStatus = React.useCallback(async () => {
+		try {
+			const res = await api.get<{
+				isConfigured?: boolean;
+				isConnected?: boolean;
+				configured?: boolean;
+				connected?: boolean;
+				email?: string | null;
+				googleEmail?: string | null;
+				lastSyncAt?: string | null;
+				lastGoogleSyncAt?: string | null;
+			}>("/sync/status");
+			if (res.success && res.data) {
+				setGoogleStatus({
+					configured: Boolean(res.data.isConfigured ?? res.data.configured),
+					connected: Boolean(res.data.isConnected ?? res.data.connected),
+					googleEmail: res.data.email ?? res.data.googleEmail ?? null,
+					lastGoogleSyncAt:
+						res.data.lastSyncAt ?? res.data.lastGoogleSyncAt ?? null,
+				});
+			}
+		} catch {
+			// ignore
+		}
+	}, []);
 
-  React.useEffect(() => {
-    if (user) {
-      setName(user.name);
-      setCurrency(user.currency);
-    }
-  }, [user]);
+	React.useEffect(() => {
+		if (user) {
+			setName(user.name);
+			setCurrency(user.currency);
+		}
+	}, [user]);
 
-  React.useEffect(() => {
-    fetchGoogleStatus();
+	React.useEffect(() => {
+		fetchGoogleStatus();
 
-    // Check for callback query params
-    const syncStatus = searchParams.get("sync_status");
-    const syncError = searchParams.get("sync_error");
-    const emailParam = searchParams.get("email");
+		// Check for callback query params
+		const syncStatus = searchParams.get("sync_status");
+		const syncError = searchParams.get("sync_error");
+		const emailParam = searchParams.get("email");
 
-    if (syncStatus === "connected") {
-      toast.success(`Google Account connected: ${emailParam || ""}`);
-    } else if (syncError) {
-      toast.error(`Google connection error: ${decodeURIComponent(syncError)}`);
-    }
-  }, [fetchGoogleStatus, searchParams]);
+		if (syncStatus === "connected") {
+			const storageKey = `daypulse_google_connected_${emailParam || "user"}`;
+			const alreadyNotified =
+				typeof window !== "undefined" ? localStorage.getItem(storageKey) : null;
 
-  const handleSaveProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSavingProfile(true);
-    await updateProfile({ name, currency });
-    setSavingProfile(false);
-  };
+			if (!alreadyNotified) {
+				toast.success(`Google Account connected: ${emailParam || ""}`);
+				if (typeof window !== "undefined") {
+					localStorage.setItem(storageKey, "true");
+				}
+			}
+			fetchGoogleStatus();
 
-  const handleExportBackup = async () => {
-    try {
-      const res = await api.post<{ backup: unknown }>("/sync/simulate", { action: "export" });
-      if (!res.success || !res.data?.backup) {
-        toast.error("Failed to generate backup");
-        return;
-      }
+			// Clean query params from the browser address bar so refresh does not re-trigger
+			if (typeof window !== "undefined") {
+				window.history.replaceState({}, "", window.location.pathname);
+			}
+		} else if (syncError) {
+			toast.error(`Google connection error: ${decodeURIComponent(syncError)}`);
+			if (typeof window !== "undefined") {
+				window.history.replaceState({}, "", window.location.pathname);
+			}
+		}
 
-      const dataStr =
-        "data:text/json;charset=utf-8," +
-        encodeURIComponent(JSON.stringify(res.data.backup, null, 2));
-      const downloadAnchor = document.createElement("a");
-      const timestamp = new Date().toISOString().slice(0, 10);
-      downloadAnchor.setAttribute("href", dataStr);
-      downloadAnchor.setAttribute("download", `DayPulse_Backup_${timestamp}.json`);
-      document.body.appendChild(downloadAnchor);
-      downloadAnchor.click();
-      downloadAnchor.remove();
+		const onSyncRefresh = () => fetchGoogleStatus();
+		window.addEventListener("daypulse:refresh", onSyncRefresh);
+		window.addEventListener("daypulse:sync-updated", onSyncRefresh);
+		return () => {
+			window.removeEventListener("daypulse:refresh", onSyncRefresh);
+			window.removeEventListener("daypulse:sync-updated", onSyncRefresh);
+		};
+	}, [fetchGoogleStatus, searchParams]);
 
-      toast.success("Backup downloaded successfully. Keep it safe or sync to Google Drive.");
-    } catch {
-      toast.error("Error creating backup download");
-    }
-  };
+	const handleSaveProfile = async (e: React.FormEvent) => {
+		e.preventDefault();
+		setSavingProfile(true);
+		await updateProfile({ name, currency });
+		setSavingProfile(false);
+	};
 
-  const handleImportBackup = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+	const handleExportBackup = async () => {
+		try {
+			const res = await api.post<{ backup: unknown }>("/sync/simulate", {
+				action: "export",
+			});
+			if (!res.success || !res.data?.backup) {
+				toast.error("Failed to generate backup");
+				return;
+			}
 
-    setImporting(true);
-    try {
-      const text = await file.text();
-      const parsed = JSON.parse(text);
+			const dataStr =
+				"data:text/json;charset=utf-8," +
+				encodeURIComponent(JSON.stringify(res.data.backup, null, 2));
+			const downloadAnchor = document.createElement("a");
+			const timestamp = new Date().toISOString().slice(0, 10);
+			downloadAnchor.setAttribute("href", dataStr);
+			downloadAnchor.setAttribute(
+				"download",
+				`DayPulse_Backup_${timestamp}.json`,
+			);
+			document.body.appendChild(downloadAnchor);
+			downloadAnchor.click();
+			downloadAnchor.remove();
 
-      const res = await api.post("/sync/simulate", {
-        action: "import",
-        data: parsed,
-      });
+			toast.success(
+				"Backup downloaded successfully. Keep it safe or sync to Google Drive.",
+			);
+		} catch {
+			toast.error("Error creating backup download");
+		}
+	};
 
-      if (res.success) {
-        toast.success(res.message || "Data restored successfully");
-        window.dispatchEvent(new CustomEvent("daypulse:refresh"));
-      } else {
-        toast.error(res.message || "Failed to restore backup");
-      }
-    } catch {
-      toast.error("Invalid JSON backup file");
-    } finally {
-      setImporting(false);
-      e.target.value = "";
-    }
-  };
+	const handleImportBackup = async (e: React.ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files?.[0];
+		if (!file) return;
 
-  // Google Sync Actions
-  const handleConnectGoogle = async () => {
-    try {
-      const res = await api.get<{ url: string }>("/sync/auth-url");
-      if (res.success && res.data.url) {
-        window.location.href = res.data.url;
-      }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to initiate Google OAuth";
-      toast.error(message);
-      setShowSetupGuide(true);
-    }
-  };
+		setImporting(true);
+		try {
+			const text = await file.text();
+			const parsed = JSON.parse(text);
 
-  const handleUploadGoogle = async () => {
-    setSyncingGoogle(true);
-    try {
-      const res = await api.post("/sync/upload");
-      if (res.success) {
-        toast.success(res.message || "Google Drive sync completed!");
-        fetchGoogleStatus();
-      } else {
-        toast.error(res.message || "Failed to backup to Google Drive");
-      }
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Network error during Google Drive sync");
-    } finally {
-      setSyncingGoogle(false);
-    }
-  };
+			const res = await api.post("/sync/simulate", {
+				action: "import",
+				data: parsed,
+			});
 
-  const handleRestoreGoogle = async () => {
-    if (!confirm("Are you sure you want to restore data from your Google Drive backup?")) return;
-    setRestoringGoogle(true);
-    try {
-      const res = await api.post("/sync/restore", {});
-      if (res.success) {
-        toast.success(res.message || "Data restored from Google Drive!");
-        window.dispatchEvent(new CustomEvent("daypulse:refresh"));
-      } else {
-        toast.error(res.message || "Failed to restore from Google Drive");
-      }
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Network error during Google Drive restore");
-    } finally {
-      setRestoringGoogle(false);
-    }
-  };
+			if (res.success) {
+				toast.success(res.message || "Data restored successfully");
+				window.dispatchEvent(new CustomEvent("daypulse:refresh"));
+			} else {
+				toast.error(res.message || "Failed to restore backup");
+			}
+		} catch {
+			toast.error("Invalid JSON backup file");
+		} finally {
+			setImporting(false);
+			e.target.value = "";
+		}
+	};
 
-  const handleDisconnectGoogle = async () => {
-    if (!confirm("Are you sure you want to disconnect your Google Account?")) return;
-    try {
-      const res = await api.post("/sync/disconnect");
-      if (res.success) {
-        toast.success("Google Account disconnected");
-        fetchGoogleStatus();
-      } else {
-        toast.error(res.message || "Failed to disconnect");
-      }
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Network error");
-    }
-  };
+	// Google Sync Actions
+	const handleConnectGoogle = async () => {
+		try {
+			const res = await api.get<{ url: string }>("/sync/auth-url");
+			if (res.success && res.data.url) {
+				window.location.href = res.data.url;
+			}
+		} catch (error) {
+			const message =
+				error instanceof Error
+					? error.message
+					: "Failed to initiate Google OAuth";
+			toast.error(message);
+			setShowSetupGuide(true);
+		}
+	};
 
-  const handleSimulateSync = async (action: "upload" | "restore") => {
-    setSimulating(true);
-    try {
-      const res = await api.post("/sync/simulate", { action: action === "upload" ? "export" : "import" });
-      if (res.success) {
-        toast.success(res.message);
-        fetchGoogleStatus();
-        if (action === "restore") {
-          window.dispatchEvent(new CustomEvent("daypulse:refresh"));
-        }
-      } else {
-        toast.error(res.message || "Simulation failed");
-      }
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Simulation request error");
-    } finally {
-      setSimulating(false);
-    }
-  };
+	const handleUploadGoogle = async () => {
+		setSyncingGoogle(true);
+		try {
+			const res = await api.post("/sync/upload");
+			if (res.success) {
+				toast.success(res.message || "Google Drive sync completed!");
+				fetchGoogleStatus();
+			} else {
+				toast.error(res.message || "Failed to backup to Google Drive");
+			}
+		} catch (error) {
+			toast.error(
+				error instanceof Error
+					? error.message
+					: "Network error during Google Drive sync",
+			);
+		} finally {
+			setSyncingGoogle(false);
+		}
+	};
 
-  const testAlarm = () => {
-    triggerNotification({
-      title: "DayPulse System Alert & Chime",
-      message: "Proactive alert reminder is active! You will be notified ahead of tasks and routines.",
-      type: "system",
-    });
-  };
+	const handleRestoreGoogle = async () => {
+		if (
+			!confirm(
+				"Are you sure you want to restore data from your Google Drive backup?",
+			)
+		)
+			return;
+		setRestoringGoogle(true);
+		try {
+			const res = await api.post("/sync/restore", {});
+			if (res.success) {
+				toast.success(res.message || "Data restored from Google Drive!");
+				window.dispatchEvent(new CustomEvent("daypulse:refresh"));
+			} else {
+				toast.error(res.message || "Failed to restore from Google Drive");
+			}
+		} catch (error) {
+			toast.error(
+				error instanceof Error
+					? error.message
+					: "Network error during Google Drive restore",
+			);
+		} finally {
+			setRestoringGoogle(false);
+		}
+	};
 
-  return (
-    <div className="space-y-8 max-w-4xl">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-white">System Settings & Cloud Sync</h1>
-        <p className="text-xs text-slate-400 mt-1">
-          Configure Google Drive cloud synchronization, profile preferences, audio alarms, and local backups.
-        </p>
-      </div>
+	const handleDisconnectGoogle = async () => {
+		if (!confirm("Are you sure you want to disconnect your Google Account?"))
+			return;
+		try {
+			const res = await api.post("/sync/disconnect");
+			if (res.success) {
+				toast.success("Google Account disconnected");
+				if (typeof window !== "undefined") {
+					if (googleStatus.googleEmail) {
+						localStorage.removeItem(
+							`daypulse_google_connected_${googleStatus.googleEmail}`,
+						);
+					}
+					localStorage.removeItem("daypulse_google_connected_user");
+				}
+				fetchGoogleStatus();
+			} else {
+				toast.error(res.message || "Failed to disconnect");
+			}
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : "Network error");
+		}
+	};
 
-      {/* Google Drive Cloud Sync Hub */}
-      <div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-xl space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
-          <div className="flex items-center gap-2.5">
-            <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-blue-600 to-cyan-500 flex items-center justify-center text-white shadow-md shadow-blue-500/20">
-              <Cloud className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="text-sm font-bold text-white">Google Drive Cloud Sync</h2>
-              <p className="text-[11px] text-slate-400">Automated multi-device cloud backup & restore</p>
-            </div>
-          </div>
+	const handleSimulateSync = async (action: "upload" | "restore") => {
+		setSimulating(true);
+		try {
+			const res = await api.post("/sync/simulate", {
+				action: action === "upload" ? "export" : "import",
+			});
+			if (res.success) {
+				toast.success(res.message);
+				fetchGoogleStatus();
+				if (action === "restore") {
+					window.dispatchEvent(new CustomEvent("daypulse:refresh"));
+				}
+			} else {
+				toast.error(res.message || "Simulation failed");
+			}
+		} catch (error) {
+			toast.error(
+				error instanceof Error ? error.message : "Simulation request error",
+			);
+		} finally {
+			setSimulating(false);
+		}
+	};
 
-          <div className="flex items-center gap-2">
-            <span
-              className={`text-xs px-2.5 py-1 rounded-full font-semibold border ${
-                googleStatus.connected
-                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
-                  : "bg-slate-800 text-slate-400 border-slate-700"
-              }`}
-            >
-              {googleStatus.connected
-                ? `Connected: ${googleStatus.googleEmail}`
-                : "Not Connected"}
-            </span>
-          </div>
-        </div>
+	const testAlarm = () => {
+		triggerNotification({
+			title: "DayPulse System Alert & Chime",
+			message:
+				"Proactive alert reminder is active! You will be notified ahead of tasks and routines.",
+			type: "system",
+		});
+	};
 
-        {/* Sync Status Banner */}
-        <div className="p-4 rounded-2xl border border-slate-800 bg-slate-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <p className="text-xs font-semibold text-slate-200">
-              Cloud Archive File: <span className="text-emerald-400 font-mono">DayPulse_Backup.json</span>
-            </p>
-            <p className="text-[11px] text-slate-400 mt-0.5">
-              {googleStatus.lastGoogleSyncAt
-                ? `Last synchronized: ${new Date(googleStatus.lastGoogleSyncAt).toLocaleString()}`
-                : "No cloud sync performed yet"}
-            </p>
-          </div>
+	return (
+		<div className="space-y-8 max-w-4xl">
+			<div>
+				<h1 className="text-2xl font-bold tracking-tight text-white">
+					System Settings & Cloud Sync
+				</h1>
+				<p className="text-xs text-slate-400 mt-1">
+					Configure Google Drive cloud synchronization, profile preferences,
+					audio alarms, and local backups.
+				</p>
+			</div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            {!googleStatus.connected ? (
-              <Button
-                variant="emerald"
-                size="sm"
-                onClick={handleConnectGoogle}
-                className="gap-2 text-xs"
-              >
-                <KeyRound className="w-4 h-4" />
-                <span>Connect Google Drive</span>
-              </Button>
-            ) : (
-              <>
-                <Button
-                  variant="emerald"
-                  size="sm"
-                  onClick={handleUploadGoogle}
-                  disabled={syncingGoogle}
-                  className="gap-2 text-xs"
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 ${syncingGoogle ? "animate-spin" : ""}`} />
-                  <span>{syncingGoogle ? "Syncing..." : "Sync & Backup Now"}</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleRestoreGoogle}
-                  disabled={restoringGoogle}
-                  className="gap-2 text-xs"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>{restoringGoogle ? "Restoring..." : "Restore from Drive"}</span>
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleDisconnectGoogle}
-                  className="text-red-400 hover:text-red-300 hover:bg-red-500/10 text-xs gap-1"
-                  title="Disconnect Google Account"
-                >
-                  <Unlink className="w-3.5 h-3.5" />
-                  <span>Disconnect</span>
-                </Button>
-              </>
-            )}
-          </div>
-        </div>
+			{/* Google Drive Cloud Sync Hub */}
+			<div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-xl space-y-5">
+				<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
+					<div className="flex items-center gap-2.5">
+						<div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-blue-600 to-cyan-500 flex items-center justify-center text-white shadow-md shadow-blue-500/20">
+							<Cloud className="w-5 h-5" />
+						</div>
+						<div>
+							<h2 className="text-sm font-bold text-white">
+								Google Drive Cloud Sync
+							</h2>
+							<p className="text-[11px] text-slate-400">
+								Automated multi-device cloud backup & restore
+							</p>
+						</div>
+					</div>
 
-        {/* Sandbox Simulation / Instant Test Box */}
-        <div className="rounded-2xl border border-cyan-500/20 bg-cyan-950/15 p-4 space-y-2.5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Shield className="w-4 h-4 text-cyan-400" />
-              <span className="text-xs font-bold text-slate-200">Google Drive Sandbox Simulator</span>
-            </div>
-            <span className="text-[10px] text-cyan-400 uppercase font-semibold">Immediate Local Test</span>
-          </div>
-          <p className="text-xs text-slate-300 leading-relaxed">
-            Test the complete cloud synchronization lifecycle (payload validation, cloud archiving, and atomic database restoration) immediately without needing external API credentials.
-          </p>
-          <div className="flex flex-wrap items-center gap-2 pt-1">
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => handleSimulateSync("upload")}
-              disabled={simulating}
-              className="text-xs gap-1.5"
-            >
-              <Upload className="w-3.5 h-3.5 text-cyan-400" />
-              <span>Simulate Cloud Backup</span>
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => handleSimulateSync("restore")}
-              disabled={simulating}
-              className="text-xs gap-1.5"
-            >
-              <Download className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Simulate Cloud Restore</span>
-            </Button>
-          </div>
-        </div>
+					<div className="flex items-center gap-2">
+						<span
+							className={`text-xs px-2.5 py-1 rounded-full font-semibold border ${
+								googleStatus.connected
+									? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+									: "bg-slate-800 text-slate-400 border-slate-700"
+							}`}
+						>
+							{googleStatus.connected
+								? `Connected: ${googleStatus.googleEmail}`
+								: "Not Connected"}
+						</span>
+					</div>
+				</div>
 
-        {/* Collapsible Setup Guide */}
-        <div className="pt-1">
-          <button
-            type="button"
-            onClick={() => setShowSetupGuide(!showSetupGuide)}
-            className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-emerald-400 transition cursor-pointer font-medium"
-          >
-            <span>{showSetupGuide ? "Hide" : "Show"} Google Cloud OAuth setup instructions (.env)</span>
-            <ExternalLink className="w-3 h-3" />
-          </button>
+				{/* Sync Status Banner */}
+				<div className="p-4 rounded-2xl border border-slate-800 bg-slate-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+					<div>
+						<p className="text-xs font-semibold text-slate-200">
+							Cloud Archive File:{" "}
+							<span className="text-emerald-400 font-mono">
+								DayPulse_Backup.json
+							</span>
+						</p>
+						<p className="text-[11px] text-slate-400 mt-0.5">
+							{googleStatus.lastGoogleSyncAt
+								? `Last synchronized: ${new Date(googleStatus.lastGoogleSyncAt).toLocaleString()}`
+								: "No cloud sync performed yet"}
+						</p>
+					</div>
 
-          {showSetupGuide && (
-            <div className="mt-3 rounded-2xl border border-slate-800 bg-slate-950 p-4 text-xs text-slate-300 space-y-2 leading-relaxed">
-              <p className="font-semibold text-white">How to connect your own Google Cloud Client ID & Secret:</p>
-              <ol className="list-decimal list-inside space-y-1.5 text-slate-400">
-                <li>Go to <strong className="text-slate-200">Google Cloud Console</strong> &gt; APIs &amp; Services &gt; Credentials.</li>
-                <li>Create an <strong className="text-slate-200">OAuth 2.0 Client ID</strong> (Web Application).</li>
-                <li>
-                  Add Authorized Redirect URI:
-                  <div className="mt-1 rounded-lg bg-slate-900 p-2 font-mono text-emerald-400 select-all border border-slate-800">
-                    http://localhost:3000/api/sync/google/callback
-                  </div>
-                </li>
-                <li>Enable the <strong className="text-slate-200">Google Drive API</strong> in your project.</li>
-                <li>Add the following keys to your project <strong className="text-slate-200">.env</strong>:
-                  <pre className="mt-1 rounded-lg bg-slate-900 p-2 font-mono text-slate-300 border border-slate-800">
-GOOGLE_CLIENT_ID=&quot;your-client-id.apps.googleusercontent.com&quot;
-GOOGLE_CLIENT_SECRET=&quot;your-client-secret&quot;
-                  </pre>
-                </li>
-              </ol>
-            </div>
-          )}
-        </div>
-      </div>
+					<div className="flex flex-wrap items-center gap-2">
+						{!googleStatus.connected ? (
+							<Button
+								variant="emerald"
+								size="sm"
+								onClick={handleConnectGoogle}
+								className="gap-2 text-xs"
+							>
+								<KeyRound className="w-4 h-4" />
+								<span>Connect Google Drive</span>
+							</Button>
+						) : (
+							<>
+								<Button
+									variant="emerald"
+									size="sm"
+									onClick={handleUploadGoogle}
+									disabled={syncingGoogle}
+									className="gap-2 text-xs"
+								>
+									<RefreshCw
+										className={`w-3.5 h-3.5 ${syncingGoogle ? "animate-spin" : ""}`}
+									/>
+									<span>
+										{syncingGoogle ? "Syncing..." : "Sync & Backup Now"}
+									</span>
+								</Button>
+								<Button
+									variant="outline"
+									size="sm"
+									onClick={handleRestoreGoogle}
+									disabled={restoringGoogle}
+									className="gap-2 text-xs"
+								>
+									<Download className="w-3.5 h-3.5" />
+									<span>
+										{restoringGoogle ? "Restoring..." : "Restore from Drive"}
+									</span>
+								</Button>
+								<Button
+									variant="ghost"
+									size="sm"
+									onClick={handleDisconnectGoogle}
+									className="text-red-400 hover:text-red-300 hover:bg-red-500/10 text-xs gap-1"
+									title="Disconnect Google Account"
+								>
+									<Unlink className="w-3.5 h-3.5" />
+									<span>Disconnect</span>
+								</Button>
+							</>
+						)}
+					</div>
+				</div>
 
-      {/* Manual JSON Backup & Offline Archival */}
-      <div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-xl space-y-4">
-        <div className="flex items-center gap-2 pb-3 border-b border-slate-800">
-          <FileText className="w-4 h-4 text-emerald-400" />
-          <h2 className="text-sm font-bold text-white">Direct JSON Backup & Offline Archival</h2>
-        </div>
+				{/* Sandbox Simulation / Instant Test Box */}
+				<div className="rounded-2xl border border-cyan-500/20 bg-cyan-950/15 p-4 space-y-2.5">
+					<div className="flex items-center justify-between">
+						<div className="flex items-center gap-2">
+							<Shield className="w-4 h-4 text-cyan-400" />
+							<span className="text-xs font-bold text-slate-200">
+								Google Drive Sandbox Simulator
+							</span>
+						</div>
+						<span className="text-[10px] text-cyan-400 uppercase font-semibold">
+							Immediate Local Test
+						</span>
+					</div>
+					<p className="text-xs text-slate-300 leading-relaxed">
+						Test the complete cloud synchronization lifecycle (payload
+						validation, cloud archiving, and atomic database restoration)
+						immediately without needing external API credentials.
+					</p>
+					<div className="flex flex-wrap items-center gap-2 pt-1">
+						<Button
+							size="sm"
+							variant="secondary"
+							onClick={() => handleSimulateSync("upload")}
+							disabled={simulating}
+							className="text-xs gap-1.5"
+						>
+							<Upload className="w-3.5 h-3.5 text-cyan-400" />
+							<span>Simulate Cloud Backup</span>
+						</Button>
+						<Button
+							size="sm"
+							variant="outline"
+							onClick={() => handleSimulateSync("restore")}
+							disabled={simulating}
+							className="text-xs gap-1.5"
+						>
+							<Download className="w-3.5 h-3.5 text-emerald-400" />
+							<span>Simulate Cloud Restore</span>
+						</Button>
+					</div>
+				</div>
 
-        <p className="text-xs text-slate-300 leading-relaxed">
-          Download your complete database in an open, portable JSON format. You can manually drag and drop this file into your Google Drive, email it, or restore it on any computer.
-        </p>
+				{/* Collapsible Setup Guide */}
+				<div className="pt-1">
+					<button
+						type="button"
+						onClick={() => setShowSetupGuide(!showSetupGuide)}
+						className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-emerald-400 transition cursor-pointer font-medium"
+					>
+						<span>
+							{showSetupGuide ? "Hide" : "Show"} Google Cloud OAuth setup
+							instructions (.env)
+						</span>
+						<ExternalLink className="w-3 h-3" />
+					</button>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-          {/* Export JSON */}
-          <div className="rounded-2xl border border-slate-800 bg-slate-950 p-5 space-y-3">
-            <div className="flex items-center gap-2 text-slate-200">
-              <Download className="w-4 h-4 text-emerald-400" />
-              <h3 className="text-xs font-bold uppercase tracking-wider">Export Data Snapshot</h3>
-            </div>
-            <p className="text-xs text-slate-400">
-              Download routines, habits, tasks, routine logs, and financial records into a single JSON file.
-            </p>
-            <Button variant="emerald" size="sm" onClick={handleExportBackup} className="w-full gap-2">
-              <Download className="w-4 h-4" />
-              <span>Download JSON Backup</span>
-            </Button>
-          </div>
+					{showSetupGuide && (
+						<div className="mt-3 rounded-2xl border border-slate-800 bg-slate-950 p-4 text-xs text-slate-300 space-y-2 leading-relaxed">
+							<p className="font-semibold text-white">
+								How to connect your own Google Cloud Client ID & Secret:
+							</p>
+							<ol className="list-decimal list-inside space-y-1.5 text-slate-400">
+								<li>
+									Go to{" "}
+									<strong className="text-slate-200">
+										Google Cloud Console
+									</strong>{" "}
+									&gt; APIs &amp; Services &gt; Credentials.
+								</li>
+								<li>
+									Create an{" "}
+									<strong className="text-slate-200">
+										OAuth 2.0 Client ID
+									</strong>{" "}
+									(Web Application).
+								</li>
+								<li>
+									Add Authorized Redirect URI:
+									<div className="mt-1 rounded-lg bg-slate-900 p-2 font-mono text-emerald-400 select-all border border-slate-800">
+										http://localhost:3000/api/sync/google/callback
+									</div>
+								</li>
+								<li>
+									Enable the{" "}
+									<strong className="text-slate-200">Google Drive API</strong>{" "}
+									in your project.
+								</li>
+								<li>
+									Add the following keys to your project{" "}
+									<strong className="text-slate-200">.env</strong>:
+									<pre className="mt-1 rounded-lg bg-slate-900 p-2 font-mono text-slate-300 border border-slate-800">
+										GOOGLE_CLIENT_ID=&quot;your-client-id.apps.googleusercontent.com&quot;
+										GOOGLE_CLIENT_SECRET=&quot;your-client-secret&quot;
+									</pre>
+								</li>
+							</ol>
+						</div>
+					)}
+				</div>
+			</div>
 
-          {/* Import JSON */}
-          <div className="rounded-2xl border border-slate-800 bg-slate-950 p-5 space-y-3">
-            <div className="flex items-center gap-2 text-slate-200">
-              <Upload className="w-4 h-4 text-teal-400" />
-              <h3 className="text-xs font-bold uppercase tracking-wider">Restore / Import File</h3>
-            </div>
-            <p className="text-xs text-slate-400">
-              Restore routines, events, and transactions from a previous DayPulse backup file.
-            </p>
-            <label className="flex items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-800 px-4 py-2 text-xs font-semibold text-slate-200 hover:bg-slate-700/80 cursor-pointer transition">
-              <Upload className="w-4 h-4" />
-              <span>{importing ? "Importing..." : "Choose Backup File..."}</span>
-              <input
-                type="file"
-                accept=".json"
-                onChange={handleImportBackup}
-                disabled={importing}
-                className="hidden"
-              />
-            </label>
-          </div>
-        </div>
-      </div>
+			{/* Manual JSON Backup & Offline Archival */}
+			<div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-xl space-y-4">
+				<div className="flex items-center gap-2 pb-3 border-b border-slate-800">
+					<FileText className="w-4 h-4 text-emerald-400" />
+					<h2 className="text-sm font-bold text-white">
+						Direct JSON Backup & Offline Archival
+					</h2>
+				</div>
 
-      {/* Notification & Audio Engine */}
-      <div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-xl space-y-4">
-        <div className="flex items-center gap-2 pb-3 border-b border-slate-800">
-          <Bell className="w-4 h-4 text-amber-400" />
-          <h2 className="text-sm font-bold text-white">Notification & Alarm Engine</h2>
-        </div>
+				<p className="text-xs text-slate-300 leading-relaxed">
+					Download your complete database in an open, portable JSON format. You
+					can manually drag and drop this file into your Google Drive, email it,
+					or restore it on any computer.
+				</p>
 
-        <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-slate-800 bg-slate-950">
-            <div>
-              <p className="text-sm font-semibold text-slate-200">OS System & Browser Push</p>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Displays native popups ahead of scheduled routines and task deadlines.
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <span
-                className={`text-xs px-2.5 py-1 rounded-full font-semibold border ${
-                  permission === "granted"
-                    ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
-                    : "bg-amber-500/10 text-amber-400 border-amber-500/30"
-                }`}
-              >
-                {permission === "granted" ? "Granted" : "Needs Permission"}
-              </span>
-              {permission !== "granted" && (
-                <Button size="sm" variant="default" onClick={requestPermission}>
-                  Enable
-                </Button>
-              )}
-            </div>
-          </div>
+				<div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+					{/* Export JSON */}
+					<div className="rounded-2xl border border-slate-800 bg-slate-950 p-5 space-y-3">
+						<div className="flex items-center gap-2 text-slate-200">
+							<Download className="w-4 h-4 text-emerald-400" />
+							<h3 className="text-xs font-bold uppercase tracking-wider">
+								Export Data Snapshot
+							</h3>
+						</div>
+						<p className="text-xs text-slate-400">
+							Download routines, habits, tasks, routine logs, and financial
+							records into a single JSON file.
+						</p>
+						<Button
+							variant="emerald"
+							size="sm"
+							onClick={handleExportBackup}
+							className="w-full gap-2"
+						>
+							<Download className="w-4 h-4" />
+							<span>Download JSON Backup</span>
+						</Button>
+					</div>
 
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-slate-800 bg-slate-950">
-            <div>
-              <p className="text-sm font-semibold text-slate-200">Harmonic Audio Chime</p>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Plays a synthesized dual-tone harmonic chime on alert triggers.
-              </p>
-            </div>
-            <Button
-              size="sm"
-              variant={soundEnabled ? "emerald" : "secondary"}
-              onClick={toggleSound}
-              className="gap-2 self-start sm:self-center"
-            >
-              {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-              <span>{soundEnabled ? "Audio On" : "Muted"}</span>
-            </Button>
-          </div>
+					{/* Import JSON */}
+					<div className="rounded-2xl border border-slate-800 bg-slate-950 p-5 space-y-3">
+						<div className="flex items-center gap-2 text-slate-200">
+							<Upload className="w-4 h-4 text-teal-400" />
+							<h3 className="text-xs font-bold uppercase tracking-wider">
+								Restore / Import File
+							</h3>
+						</div>
+						<p className="text-xs text-slate-400">
+							Restore routines, events, and transactions from a previous
+							DayPulse backup file.
+						</p>
+						<label className="flex items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-800 px-4 py-2 text-xs font-semibold text-slate-200 hover:bg-slate-700/80 cursor-pointer transition">
+							<Upload className="w-4 h-4" />
+							<span>
+								{importing ? "Importing..." : "Choose Backup File..."}
+							</span>
+							<input
+								type="file"
+								accept=".json"
+								onChange={handleImportBackup}
+								disabled={importing}
+								className="hidden"
+							/>
+						</label>
+					</div>
+				</div>
+			</div>
 
-          <div className="pt-1">
-            <Button variant="outline" size="sm" onClick={testAlarm} className="gap-2">
-              <Bell className="w-4 h-4 text-emerald-400" />
-              <span>Test Audio Chime & Notification Now</span>
-            </Button>
-          </div>
-        </div>
-      </div>
+			{/* Notification & Audio Engine */}
+			<div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-xl space-y-4">
+				<div className="flex items-center gap-2 pb-3 border-b border-slate-800">
+					<Bell className="w-4 h-4 text-amber-400" />
+					<h2 className="text-sm font-bold text-white">
+						Notification & Alarm Engine
+					</h2>
+				</div>
 
-      {/* User Preferences */}
-      <div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-xl space-y-4">
-        <div className="flex items-center gap-2 pb-3 border-b border-slate-800">
-          <User className="w-4 h-4 text-emerald-400" />
-          <h2 className="text-sm font-bold text-white">User Profile & Currency</h2>
-        </div>
+				<div className="space-y-4">
+					<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-slate-800 bg-slate-950">
+						<div>
+							<p className="text-sm font-semibold text-slate-200">
+								OS System & Browser Push
+							</p>
+							<p className="text-xs text-slate-400 mt-0.5">
+								Displays native popups ahead of scheduled routines and task
+								deadlines.
+							</p>
+						</div>
+						<div className="flex items-center gap-2">
+							<span
+								className={`text-xs px-2.5 py-1 rounded-full font-semibold border ${
+									permission === "granted"
+										? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+										: "bg-amber-500/10 text-amber-400 border-amber-500/30"
+								}`}
+							>
+								{permission === "granted" ? "Granted" : "Needs Permission"}
+							</span>
+							{permission !== "granted" && (
+								<Button size="sm" variant="default" onClick={requestPermission}>
+									Enable
+								</Button>
+							)}
+						</div>
+					</div>
 
-        <form onSubmit={handleSaveProfile} className="space-y-4 max-w-md">
-          <div className="space-y-1.5">
-            <Label htmlFor="name">Display Name</Label>
-            <Input
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Your Name"
-            />
-          </div>
+					<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-slate-800 bg-slate-950">
+						<div>
+							<p className="text-sm font-semibold text-slate-200">
+								Harmonic Audio Chime
+							</p>
+							<p className="text-xs text-slate-400 mt-0.5">
+								Plays a synthesized dual-tone harmonic chime on alert triggers.
+							</p>
+						</div>
+						<Button
+							size="sm"
+							variant={soundEnabled ? "emerald" : "secondary"}
+							onClick={toggleSound}
+							className="gap-2 self-start sm:self-center"
+						>
+							{soundEnabled ? (
+								<Volume2 className="w-4 h-4" />
+							) : (
+								<VolumeX className="w-4 h-4" />
+							)}
+							<span>{soundEnabled ? "Audio On" : "Muted"}</span>
+						</Button>
+					</div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="currency">Default Currency</Label>
-            <select
-              id="currency"
-              value={currency}
-              onChange={(e) => setCurrency(e.target.value)}
-              className="flex h-10 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
-            >
-              {CURRENCIES.map((c) => (
-                <option key={c.code} value={c.code}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </div>
+					<div className="pt-1">
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={testAlarm}
+							className="gap-2"
+						>
+							<Bell className="w-4 h-4 text-emerald-400" />
+							<span>Test Audio Chime & Notification Now</span>
+						</Button>
+					</div>
+				</div>
+			</div>
 
-          <Button type="submit" variant="emerald" size="sm" disabled={savingProfile}>
-            {savingProfile ? "Saving..." : "Save Preferences"}
-          </Button>
-        </form>
-      </div>
-    </div>
-  );
+			{/* Categories & Custom Tags */}
+			<div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-xl space-y-4">
+				<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
+					<div className="flex items-center gap-2">
+						<Tag className="w-4 h-4 text-emerald-400" />
+						<h2 className="text-sm font-bold text-white">
+							Categories & Custom Tags
+						</h2>
+					</div>
+					<Button
+						type="button"
+						variant="outline"
+						size="sm"
+						onClick={() => setCategoryModalOpen(true)}
+						className="gap-2 text-xs border-slate-700/80 bg-slate-900/60 hover:bg-slate-800 text-slate-300"
+					>
+						<Tag className="w-3.5 h-3.5 text-emerald-400" />
+						<span>Manage All Categories</span>
+					</Button>
+				</div>
+				<p className="text-xs text-slate-400 leading-relaxed">
+					Customize your expense, income, and payment method categories with
+					custom labels and color accents.
+				</p>
+			</div>
+
+			{/* User Preferences */}
+			<div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-xl space-y-4">
+				<div className="flex items-center gap-2 pb-3 border-b border-slate-800">
+					<User className="w-4 h-4 text-emerald-400" />
+					<h2 className="text-sm font-bold text-white">
+						User Profile & Currency
+					</h2>
+				</div>
+
+				<form onSubmit={handleSaveProfile} className="space-y-4 max-w-md">
+					<div className="space-y-1.5">
+						<Label htmlFor="name">Display Name</Label>
+						<Input
+							id="name"
+							value={name}
+							onChange={(e) => setName(e.target.value)}
+							placeholder="Your Name"
+						/>
+					</div>
+
+					<CustomSelect
+						label="Default Currency"
+						value={currency}
+						onChange={(val) => setCurrency(val)}
+						options={CURRENCY_SELECT_OPTIONS}
+						allowManage={false}
+					/>
+
+					<Button
+						type="submit"
+						variant="emerald"
+						size="sm"
+						disabled={savingProfile}
+					>
+						{savingProfile ? "Saving..." : "Save Preferences"}
+					</Button>
+				</form>
+			</div>
+
+			<CategoryManagerModal
+				isOpen={categoryModalOpen}
+				onClose={() => setCategoryModalOpen(false)}
+			/>
+		</div>
+	);
 }
 
 export default function SettingsPage() {
-  return (
-    <React.Suspense
-      fallback={
-        <div className="py-20 text-center text-xs text-slate-400">
-          Loading settings & cloud sync hub...
-        </div>
-      }
-    >
-      <SettingsContent />
-    </React.Suspense>
-  );
+	return (
+		<React.Suspense
+			fallback={
+				<div className="py-20 text-center text-xs text-slate-400">
+					Loading settings & cloud sync hub...
+				</div>
+			}
+		>
+			<SettingsContent />
+		</React.Suspense>
+	);
 }

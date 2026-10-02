@@ -9,6 +9,7 @@ import { BottomDock } from "@/components/layout/bottom-dock";
 import { RoutineFormModal } from "@/components/routines/routine-form-modal";
 import { TaskFormModal } from "@/components/tasks/task-form-modal";
 import { TransactionFormModal } from "@/components/finances/transaction-form-modal";
+import { TrackerFormModal } from "@/components/trackers/tracker-form-modal";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -17,6 +18,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [routineModalOpen, setRoutineModalOpen] = React.useState(false);
   const [taskModalOpen, setTaskModalOpen] = React.useState(false);
   const [transactionModalOpen, setTransactionModalOpen] = React.useState(false);
+  const [trackerModalOpen, setTrackerModalOpen] = React.useState(false);
 
   React.useEffect(() => {
     if (!loading && !user) {
@@ -24,10 +26,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }
   }, [user, loading, router]);
 
-  const handleQuickAdd = (type: "routine" | "task" | "transaction") => {
+  const handleQuickAdd = (type: "routine" | "task" | "transaction" | "tracker") => {
     if (type === "routine") setRoutineModalOpen(true);
     if (type === "task") setTaskModalOpen(true);
     if (type === "transaction") setTransactionModalOpen(true);
+    if (type === "tracker") setTrackerModalOpen(true);
   };
 
   const handleRefresh = () => {
@@ -78,6 +81,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <TransactionFormModal
         isOpen={transactionModalOpen}
         onClose={() => setTransactionModalOpen(false)}
+        onSuccess={handleRefresh}
+      />
+      <TrackerFormModal
+        isOpen={trackerModalOpen}
+        onClose={() => setTrackerModalOpen(false)}
         onSuccess={handleRefresh}
       />
     </div>

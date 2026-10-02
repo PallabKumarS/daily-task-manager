@@ -1,7 +1,24 @@
 import dotenv from "dotenv";
 import path from "path";
+import fs from "fs";
+import { fileURLToPath } from "url";
 
-dotenv.config({ path: path.join(process.cwd(), ".env") });
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const candidatePaths = [
+  path.resolve(process.cwd(), "server", ".env"),
+  path.resolve(process.cwd(), ".env"),
+  path.resolve(__dirname, "../../../server/.env"),
+  path.resolve(__dirname, "../../../.env"),
+  path.resolve(__dirname, "../../.env"),
+];
+
+for (const p of candidatePaths) {
+  if (fs.existsSync(p)) {
+    dotenv.config({ path: p });
+  }
+}
 
 export default {
   env: process.env.NODE_ENV || "development",

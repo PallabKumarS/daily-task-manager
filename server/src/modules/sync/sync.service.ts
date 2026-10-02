@@ -56,11 +56,18 @@ export const getSyncStatusFromDB = async (userId: string): Promise<ISyncStatus> 
     where: { userId },
   });
 
+  const isConnected = Boolean(connection);
+  const isConfigured = isGoogleConfigured();
+
   return {
-    isConfigured: isGoogleConfigured(),
-    isConnected: Boolean(connection),
+    isConfigured,
+    isConnected,
+    configured: isConfigured,
+    connected: isConnected,
     email: connection?.googleEmail || null,
+    googleEmail: connection?.googleEmail || null,
     lastSyncAt: connection?.lastSyncAt || null,
+    lastGoogleSyncAt: connection?.lastSyncAt || null,
     driveFileId: connection?.driveFileId || null,
   };
 };
@@ -111,8 +118,11 @@ export const connectGoogleInDB = async (userId: string, code: string) => {
 
   return {
     isConnected: true,
+    connected: true,
     email: connection.googleEmail,
+    googleEmail: connection.googleEmail,
     lastSyncAt: connection.lastSyncAt,
+    lastGoogleSyncAt: connection.lastSyncAt,
   };
 };
 
@@ -132,6 +142,8 @@ export const uploadToDriveFromDB = async (userId: string) => {
       routineLogs: true,
       tasks: true,
       transactions: true,
+      dailyTrackers: true,
+      dailyTrackerLogs: true,
     },
   });
 
@@ -199,6 +211,34 @@ export const uploadToDriveFromDB = async (userId: string) => {
         createdAt: tr.createdAt.toISOString(),
         updatedAt: tr.updatedAt.toISOString(),
       })),
+      dailyTrackers: user.dailyTrackers.map((dt) => ({
+        id: dt.id,
+        name: dt.name,
+        category: dt.category,
+        unitName: dt.unitName,
+        defaultTarget: dt.defaultTarget,
+        unitPrice: dt.unitPrice,
+        currency: dt.currency,
+        description: dt.description,
+        color: dt.color,
+        isArchived: dt.isArchived,
+        createdAt: dt.createdAt.toISOString(),
+        updatedAt: dt.updatedAt.toISOString(),
+      })),
+      dailyTrackerLogs: user.dailyTrackerLogs.map((dtl) => ({
+        id: dtl.id,
+        trackerId: dtl.trackerId,
+        date: dtl.date,
+        value: dtl.value,
+        status: dtl.status,
+        unitPrice: dtl.unitPrice,
+        notes: dtl.notes,
+        isSettled: dtl.isSettled,
+        settledAt: dtl.settledAt ? dtl.settledAt.toISOString() : null,
+        settlementTransactionId: dtl.settlementTransactionId,
+        createdAt: dtl.createdAt.toISOString(),
+        updatedAt: dtl.updatedAt.toISOString(),
+      })),
     },
   };
 
@@ -260,7 +300,14 @@ export const restoreFromDriveInDB = async (userId: string, fileId?: string) => {
     throw new AppError(400, "Invalid backup file structure found in Google Drive.");
   }
 
-  const { routines = [], routineLogs = [], tasks = [], transactions = [] } = downloaded.data;
+  const {
+    routines = [],
+    routineLogs = [],
+    tasks = [],
+    transactions = [],
+    dailyTrackers = [],
+    dailyTrackerLogs = [],
+  } = downloaded.data;
 
   // Idempotent upserting: never duplicates existing entries
   for (const r of routines) {
@@ -379,6 +426,74 @@ export const restoreFromDriveInDB = async (userId: string, fileId?: string) => {
     });
   }
 
+  for (const dt of dailyTrackers) {
+    if (!dt?.id) continue;
+    await prisma.dailyTracker.upsert({
+      where: { id: dt.id },
+      update: {
+        name: dt.name,
+        category: dt.category,
+        unitName: dt.unitName,
+        defaultTarget: dt.defaultTarget,
+        unitPrice: dt.unitPrice,
+        currency: dt.currency,
+        description: dt.description,
+        color: dt.color,
+        isArchived: dt.isArchived,
+      },
+      create: {
+        id: dt.id,
+        userId,
+        name: dt.name,
+        category: dt.category,
+        unitName: dt.unitName,
+        defaultTarget: dt.defaultTarget,
+        unitPrice: dt.unitPrice,
+        currency: dt.currency,
+        description: dt.description,
+        color: dt.color,
+        isArchived: dt.isArchived,
+      },
+    });
+  }
+
+  for (const dtl of dailyTrackerLogs) {
+    if (!dtl?.id) continue;
+    const trackerExists = await prisma.dailyTracker.findUnique({ where: { id: dtl.trackerId } });
+    if (trackerExists) {
+      await prisma.dailyTrackerLog.upsert({
+        where: {
+          trackerId_date: {
+            trackerId: dtl.trackerId,
+            date: dtl.date,
+          },
+        },
+        update: {
+          value: dtl.value,
+          status: dtl.status,
+          unitPrice: dtl.unitPrice,
+          notes: dtl.notes,
+          isSettled: dtl.isSettled,
+          settledAt: dtl.settledAt ? new Date(dtl.settledAt) : null,
+          settlementTransactionId: dtl.settlementTransactionId,
+        },
+        create: {
+          id: dtl.id,
+          trackerId: dtl.trackerId,
+          userId,
+          date: dtl.date,
+          value: dtl.value,
+          status: dtl.status,
+          unitPrice: dtl.unitPrice,
+          notes: dtl.notes,
+          isSettled: dtl.isSettled,
+          settledAt: dtl.settledAt ? new Date(dtl.settledAt) : null,
+          settlementTransactionId: dtl.settlementTransactionId,
+        },
+      });
+    }
+  }
+
   broadcastSyncUpdate(userId, "sync", "restore", { restoredAt: new Date() });
 
   return {
@@ -388,6 +503,8 @@ export const restoreFromDriveInDB = async (userId: string, fileId?: string) => {
       routineLogs: routineLogs.length,
       tasks: tasks.length,
       transactions: transactions.length,
+      dailyTrackers: dailyTrackers.length,
+      dailyTrackerLogs: dailyTrackerLogs.length,
     },
   };
 };

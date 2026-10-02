@@ -5,11 +5,13 @@ import { DashboardView } from "@/components/dashboard/dashboard-view";
 import { RoutineFormModal } from "@/components/routines/routine-form-modal";
 import { TaskFormModal } from "@/components/tasks/task-form-modal";
 import { TransactionFormModal } from "@/components/finances/transaction-form-modal";
+import { TrackerFormModal } from "@/components/trackers/tracker-form-modal";
 
 export default function DashboardPage() {
   const [routineModalOpen, setRoutineModalOpen] = React.useState(false);
   const [taskModalOpen, setTaskModalOpen] = React.useState(false);
   const [transactionModalOpen, setTransactionModalOpen] = React.useState(false);
+  const [trackerModalOpen, setTrackerModalOpen] = React.useState(false);
   const [refreshKey, setRefreshKey] = React.useState(0);
 
   const handleRefresh = () => {
@@ -31,6 +33,7 @@ export default function DashboardPage() {
         onOpenRoutineModal={() => setRoutineModalOpen(true)}
         onOpenTaskModal={() => setTaskModalOpen(true)}
         onOpenTransactionModal={() => setTransactionModalOpen(true)}
+        onOpenTrackerModal={() => setTrackerModalOpen(true)}
       />
 
       <RoutineFormModal
@@ -46,6 +49,11 @@ export default function DashboardPage() {
       <TransactionFormModal
         isOpen={transactionModalOpen}
         onClose={() => setTransactionModalOpen(false)}
+        onSuccess={handleRefresh}
+      />
+      <TrackerFormModal
+        isOpen={trackerModalOpen}
+        onClose={() => setTrackerModalOpen(false)}
         onSuccess={handleRefresh}
       />
     </>

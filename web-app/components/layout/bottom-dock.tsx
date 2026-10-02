@@ -9,15 +9,16 @@ import {
   CheckSquare,
   TrendingUp,
   Settings,
+  Calculator,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const DOCK_ITEMS = [
   { href: "/dashboard", label: "Home", icon: LayoutDashboard },
   { href: "/routines", label: "Routines", icon: CalendarCheck },
+  { href: "/trackers", label: "Trackers", icon: Calculator },
   { href: "/tasks", label: "Tasks", icon: CheckSquare },
   { href: "/finances", label: "Finances", icon: TrendingUp },
-  { href: "/settings", label: "Sync", icon: Settings },
 ];
 
 export function BottomDock() {

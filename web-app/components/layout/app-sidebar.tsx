@@ -12,6 +12,7 @@ import {
   LogOut,
   Sparkles,
   Activity,
+  Calculator,
 } from "lucide-react";
 import { useAuth } from "@/components/providers/auth-provider";
 import { cn } from "@/lib/utils";
@@ -19,6 +20,7 @@ import { cn } from "@/lib/utils";
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/routines", label: "Daily Routines", icon: CalendarCheck },
+  { href: "/trackers", label: "Daily Trackers", icon: Calculator },
   { href: "/tasks", label: "Tasks & Events", icon: CheckSquare },
   { href: "/finances", label: "Finances & Ledger", icon: TrendingUp },
   { href: "/settings", label: "Sync & Settings", icon: Settings },

@@ -2,13 +2,13 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Plus, Activity, Calendar, Clock, CheckSquare, DollarSign, ChevronDown } from "lucide-react";
+import { Plus, Activity, Calendar, Clock, CheckSquare, DollarSign, ChevronDown, Calculator } from "lucide-react";
 import { NotificationCenter } from "@/components/layout/notification-center";
 import { formatReadableDate } from "@/lib/date-helpers";
 import { useAuth } from "@/components/providers/auth-provider";
 
 interface AppNavbarProps {
-  onQuickAdd?: (type: "routine" | "task" | "transaction") => void;
+  onQuickAdd?: (type: "routine" | "task" | "transaction" | "tracker") => void;
 }
 
 export function AppNavbar({ onQuickAdd }: AppNavbarProps) {
@@ -100,6 +100,20 @@ export function AppNavbar({ onQuickAdd }: AppNavbarProps) {
                     <CheckSquare className="w-3.5 h-3.5" />
                   </div>
                   <span>New Task / Event</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsQuickLogOpen(false);
+                    onQuickAdd("tracker");
+                  }}
+                  className="flex items-center gap-2.5 w-full text-left px-3 py-2 text-xs font-medium text-slate-200 hover:text-white hover:bg-slate-800/80 rounded-xl transition cursor-pointer"
+                >
+                  <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-purple-500/10 text-purple-400">
+                    <Calculator className="w-3.5 h-3.5" />
+                  </div>
+                  <span>New Daily Tracker</span>
                 </button>
 
                 <button

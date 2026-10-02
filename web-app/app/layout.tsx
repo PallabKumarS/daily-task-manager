@@ -21,7 +21,13 @@ export const metadata: Metadata = {
     "Keep track of daily activities, routines, scheduled events, and cumulative spendings and earnings across devices.",
   manifest: "/manifest.json",
   icons: {
-    icon: "/favicon.ico",
+    icon: [
+      { url: "/icon.png", type: "image/png" },
+      { url: "/favicon.ico" },
+    ],
+    apple: [
+      { url: "/apple-icon.png", type: "image/png" },
+    ],
   },
 };
 

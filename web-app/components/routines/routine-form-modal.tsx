@@ -1,236 +1,299 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
 import * as React from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import { toast } from "sonner";
-import { Modal } from "@/components/ui/dialog";
+import * as z from "zod";
 import { Button } from "@/components/ui/button";
+import { CustomSelect, type SelectOption } from "@/components/ui/custom-select";
+import { Modal } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+const TIME_SLOT_OPTIONS: SelectOption[] = [
+	{
+		label: "Morning",
+		value: "morning",
+		color: "#f59e0b",
+		badge: "06:00 - 12:00",
+	},
+	{
+		label: "Afternoon",
+		value: "afternoon",
+		color: "#38bdf8",
+		badge: "12:00 - 17:00",
+	},
+	{
+		label: "Evening",
+		value: "evening",
+		color: "#818cf8",
+		badge: "17:00 - 21:00",
+	},
+	{ label: "Night", value: "night", color: "#a855f7", badge: "21:00 - 04:00" },
+	{ label: "Anytime", value: "anytime", color: "#10b981", badge: "Flexible" },
+];
+
+const ROUTINE_REMINDER_OPTIONS: SelectOption[] = [
+	{ label: "At Target Time", value: "0" },
+	{ label: "5 Minutes Before", value: "5" },
+	{ label: "10 Minutes Before", value: "10" },
+	{ label: "15 Minutes Before", value: "15" },
+	{ label: "30 Minutes Before", value: "30" },
+	{ label: "1 Hour Before", value: "60" },
+];
+
 const formSchema = z.object({
-  title: z.string().min(1, "Title is required"),
-  description: z.string().optional(),
-  timeSlot: z.enum(["morning", "afternoon", "evening", "night", "anytime"]),
-  targetTime: z.string().optional(),
-  daysOfWeek: z.string(),
-  reminderMinutes: z.number().min(0),
+	title: z.string().min(1, "Title is required"),
+	description: z.string().optional(),
+	timeSlot: z.string().min(1, "Time slot is required"),
+	targetTime: z.string().optional(),
+	daysOfWeek: z.string(),
+	reminderMinutes: z.number().min(0),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
 const DAYS = [
-  { label: "S", value: "0", name: "Sun" },
-  { label: "M", value: "1", name: "Mon" },
-  { label: "T", value: "2", name: "Tue" },
-  { label: "W", value: "3", name: "Wed" },
-  { label: "T", value: "4", name: "Thu" },
-  { label: "F", value: "5", name: "Fri" },
-  { label: "S", value: "6", name: "Sat" },
+	{ label: "S", value: "0", name: "Sun" },
+	{ label: "M", value: "1", name: "Mon" },
+	{ label: "T", value: "2", name: "Tue" },
+	{ label: "W", value: "3", name: "Wed" },
+	{ label: "T", value: "4", name: "Thu" },
+	{ label: "F", value: "5", name: "Fri" },
+	{ label: "S", value: "6", name: "Sat" },
 ];
 
 interface RoutineFormModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSuccess: () => void;
-  initialData?: {
-    id: string;
-    title: string;
-    description?: string | null;
-    timeSlot: string;
-    targetTime?: string | null;
-    daysOfWeek: string;
-    reminderMinutes: number;
-  } | null;
+	isOpen: boolean;
+	onClose: () => void;
+	onSuccess: () => void;
+	initialData?: {
+		id: string;
+		title: string;
+		description?: string | null;
+		timeSlot: string;
+		targetTime?: string | null;
+		daysOfWeek: string;
+		reminderMinutes: number;
+	} | null;
 }
 
 export function RoutineFormModal({
-  isOpen,
-  onClose,
-  onSuccess,
-  initialData,
+	isOpen,
+	onClose,
+	onSuccess,
+	initialData,
 }: RoutineFormModalProps) {
-  const [selectedDays, setSelectedDays] = React.useState<string[]>(["0", "1", "2", "3", "4", "5", "6"]);
+	const [selectedDays, setSelectedDays] = React.useState<string[]>([
+		"0",
+		"1",
+		"2",
+		"3",
+		"4",
+		"5",
+		"6",
+	]);
 
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    reset,
-    formState: { errors, isSubmitting },
-  } = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      title: "",
-      description: "",
-      timeSlot: "morning",
-      targetTime: "07:30",
-      daysOfWeek: "0,1,2,3,4,5,6",
-      reminderMinutes: 0,
-    },
-  });
+	const {
+		register,
+		handleSubmit,
+		setValue,
+		watch,
+		reset,
+		formState: { errors, isSubmitting },
+	} = useForm<FormValues>({
+		resolver: zodResolver(formSchema),
+		defaultValues: {
+			title: "",
+			description: "",
+			timeSlot: "morning",
+			targetTime: "07:30",
+			daysOfWeek: "0,1,2,3,4,5,6",
+			reminderMinutes: 0,
+		},
+	});
 
-  React.useEffect(() => {
-    if (initialData) {
-      const days = initialData.daysOfWeek ? initialData.daysOfWeek.split(",") : ["0", "1", "2", "3", "4", "5", "6"];
-      setSelectedDays(days);
-      reset({
-        title: initialData.title,
-        description: initialData.description || "",
-        timeSlot: (initialData.timeSlot as FormValues["timeSlot"]) || "morning",
-        targetTime: initialData.targetTime || "07:30",
-        daysOfWeek: initialData.daysOfWeek || "0,1,2,3,4,5,6",
-        reminderMinutes: initialData.reminderMinutes || 0,
-      });
-    } else {
-      setSelectedDays(["0", "1", "2", "3", "4", "5", "6"]);
-      reset({
-        title: "",
-        description: "",
-        timeSlot: "morning",
-        targetTime: "07:30",
-        daysOfWeek: "0,1,2,3,4,5,6",
-        reminderMinutes: 0,
-      });
-    }
-  }, [initialData, reset, isOpen]);
+	const selectedTimeSlot = watch("timeSlot");
+	const selectedReminder = watch("reminderMinutes");
 
-  const toggleDay = (day: string) => {
-    let next: string[];
-    if (selectedDays.includes(day)) {
-      if (selectedDays.length === 1) return; // keep at least one day
-      next = selectedDays.filter((d) => d !== day);
-    } else {
-      next = [...selectedDays, day].sort();
-    }
-    setSelectedDays(next);
-    setValue("daysOfWeek", next.join(","));
-  };
+	// biome-ignore lint/correctness/useExhaustiveDependencies: reset form on modal open
+	React.useEffect(() => {
+		if (initialData) {
+			const days = initialData.daysOfWeek
+				? initialData.daysOfWeek.split(",")
+				: ["0", "1", "2", "3", "4", "5", "6"];
+			setSelectedDays(days);
+			reset({
+				title: initialData.title,
+				description: initialData.description || "",
+				timeSlot: (initialData.timeSlot as FormValues["timeSlot"]) || "morning",
+				targetTime: initialData.targetTime || "07:30",
+				daysOfWeek: initialData.daysOfWeek || "0,1,2,3,4,5,6",
+				reminderMinutes: initialData.reminderMinutes || 0,
+			});
+		} else {
+			setSelectedDays(["0", "1", "2", "3", "4", "5", "6"]);
+			reset({
+				title: "",
+				description: "",
+				timeSlot: "morning",
+				targetTime: "07:30",
+				daysOfWeek: "0,1,2,3,4,5,6",
+				reminderMinutes: 0,
+			});
+		}
+	}, [initialData, reset, isOpen]);
 
-  const onSubmit = async (data: FormValues) => {
-    try {
-      const url = initialData ? `/api/routines/${initialData.id}` : "/api/routines";
-      const method = initialData ? "PATCH" : "POST";
+	const toggleDay = (day: string) => {
+		let next: string[];
+		if (selectedDays.includes(day)) {
+			if (selectedDays.length === 1) return; // keep at least one day
+			next = selectedDays.filter((d) => d !== day);
+		} else {
+			next = [...selectedDays, day].sort();
+		}
+		setSelectedDays(next);
+		setValue("daysOfWeek", next.join(","));
+	};
 
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...data,
-          daysOfWeek: selectedDays.join(","),
-        }),
-      });
+	const onSubmit = async (data: FormValues) => {
+		try {
+			const url = initialData
+				? `/api/routines/${initialData.id}`
+				: "/api/routines";
+			const method = initialData ? "PATCH" : "POST";
 
-      const json = await res.json();
-      if (res.ok && json.success) {
-        toast.success(json.message || "Routine saved");
-        onSuccess();
-        onClose();
-      } else {
-        toast.error(json.message || "Failed to save routine");
-      }
-    } catch {
-      toast.error("Network error while saving routine");
-    }
-  };
+			const res = await fetch(url, {
+				method,
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					...data,
+					daysOfWeek: selectedDays.join(","),
+				}),
+			});
 
-  return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={initialData ? "Edit Routine" : "Create Daily Routine"}
-      description="Build sustainable daily habits and scheduled routine blocks"
-    >
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <div className="space-y-1.5">
-          <Label htmlFor="title">Routine Title</Label>
-          <Input id="title" placeholder="e.g. Morning Workout & Hydration" {...register("title")} />
-          {errors.title && <p className="text-xs text-red-400">{errors.title.message}</p>}
-        </div>
+			const json = await res.json();
+			if (res.ok && json.success) {
+				toast.success(json.message || "Routine saved");
+				onSuccess();
+				onClose();
+			} else {
+				toast.error(json.message || "Failed to save routine");
+			}
+		} catch {
+			toast.error("Network error while saving routine");
+		}
+	};
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="timeSlot">Time Slot</Label>
-            <select
-              id="timeSlot"
-              {...register("timeSlot")}
-              className="flex h-10 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
-            >
-              <option value="morning">Morning</option>
-              <option value="afternoon">Afternoon</option>
-              <option value="evening">Evening</option>
-              <option value="night">Night</option>
-              <option value="anytime">Anytime</option>
-            </select>
-          </div>
+	return (
+		<Modal
+			isOpen={isOpen}
+			onClose={onClose}
+			title={initialData ? "Edit Routine" : "Create Daily Routine"}
+			description="Build sustainable daily habits and scheduled routine blocks"
+		>
+			<form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+				<div className="space-y-1.5">
+					<Label htmlFor="title">Routine Title</Label>
+					<Input
+						id="title"
+						placeholder="e.g. Morning Workout & Hydration"
+						{...register("title")}
+					/>
+					{errors.title && (
+						<p className="text-xs text-red-400">{errors.title.message}</p>
+					)}
+				</div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="targetTime">Target Time</Label>
-            <Input id="targetTime" type="time" {...register("targetTime")} />
-          </div>
-        </div>
+				<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+					<CustomSelect
+						label="Time Slot"
+						value={selectedTimeSlot}
+						onChange={(val) =>
+							setValue("timeSlot", val, { shouldValidate: true })
+						}
+						options={TIME_SLOT_OPTIONS}
+						group="ROUTINE_SLOT"
+						placeholder="Select time slot..."
+					/>
 
-        <div className="space-y-1.5">
-          <Label>Active Days</Label>
-          <div className="flex items-center gap-1.5 pt-1">
-            {DAYS.map((d) => {
-              const isSelected = selectedDays.includes(d.value);
-              return (
-                <button
-                  key={d.value}
-                  type="button"
-                  onClick={() => toggleDay(d.value)}
-                  className={`flex-1 h-9 rounded-xl text-xs font-semibold transition cursor-pointer ${
-                    isSelected
-                      ? "bg-emerald-500 text-slate-950 shadow-sm"
-                      : "bg-slate-800 text-slate-400 hover:text-white"
-                  }`}
-                  title={d.name}
-                >
-                  {d.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+					<div className="space-y-1.5">
+						<Label htmlFor="targetTime">Target Time</Label>
+						<Input
+							id="targetTime"
+							type="time"
+							className="h-11"
+							{...register("targetTime")}
+						/>
+					</div>
+				</div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="reminderMinutes">Notification Reminder</Label>
-          <select
-            id="reminderMinutes"
-            {...register("reminderMinutes", { valueAsNumber: true })}
-            className="flex h-10 w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
-          >
-            <option value="0">At Target Time</option>
-            <option value="5">5 Minutes Before</option>
-            <option value="10">10 Minutes Before</option>
-            <option value="15">15 Minutes Before</option>
-            <option value="30">30 Minutes Before</option>
-          </select>
-        </div>
+				<div className="space-y-1.5">
+					<Label>Active Days</Label>
+					<div className="flex items-center gap-1.5 pt-1">
+						{DAYS.map((d) => {
+							const isSelected = selectedDays.includes(d.value);
+							return (
+								<button
+									key={d.value}
+									type="button"
+									onClick={() => toggleDay(d.value)}
+									className={`flex-1 h-9 rounded-xl text-xs font-semibold transition cursor-pointer ${
+										isSelected
+											? "bg-emerald-500 text-slate-950 shadow-sm"
+											: "bg-slate-800 text-slate-400 hover:text-white"
+									}`}
+									title={d.name}
+								>
+									{d.label}
+								</button>
+							);
+						})}
+					</div>
+				</div>
 
-        <div className="space-y-1.5">
-          <Label htmlFor="description">Notes / Instructions (Optional)</Label>
-          <textarea
-            id="description"
-            rows={2}
-            className="flex w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
-            placeholder="e.g. 500ml water, 20 pushups, stretch"
-            {...register("description")}
-          />
-        </div>
+				<CustomSelect
+					label="Notification Reminder"
+					value={String(selectedReminder ?? 0)}
+					onChange={(val) =>
+						setValue("reminderMinutes", Number(val) || 0, {
+							shouldValidate: true,
+						})
+					}
+					options={ROUTINE_REMINDER_OPTIONS}
+					group="REMINDER_TIME"
+				/>
 
-        <div className="flex justify-end gap-3 pt-3">
-          <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
-            Cancel
-          </Button>
-          <Button type="submit" variant="emerald" disabled={isSubmitting}>
-            {isSubmitting ? "Saving..." : initialData ? "Save Changes" : "Create Routine"}
-          </Button>
-        </div>
-      </form>
-    </Modal>
-  );
+				<div className="space-y-1.5">
+					<Label htmlFor="description">Notes / Instructions (Optional)</Label>
+					<textarea
+						id="description"
+						rows={2}
+						className="flex w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-500/30 focus-visible:border-emerald-500 transition duration-150"
+						placeholder="e.g. 500ml water, 20 pushups, stretch"
+						{...register("description")}
+					/>
+				</div>
+
+				<div className="flex justify-end gap-3 pt-3">
+					<Button
+						type="button"
+						variant="outline"
+						onClick={onClose}
+						disabled={isSubmitting}
+					>
+						Cancel
+					</Button>
+					<Button type="submit" variant="emerald" disabled={isSubmitting}>
+						{isSubmitting
+							? "Saving..."
+							: initialData
+								? "Save Changes"
+								: "Create Routine"}
+					</Button>
+				</div>
+			</form>
+		</Modal>
+	);
 }

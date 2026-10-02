@@ -22,6 +22,8 @@ model User {
   transactions     Transaction[]
   googleConnection GoogleConnection?
   categoryOptions  CategoryOption[]
+  dailyTrackers    DailyTracker[]
+  dailyTrackerLogs DailyTrackerLog[]
 }
 
 model GoogleConnection {
@@ -86,16 +88,32 @@ model Task {
   status              String    @default("PENDING")
   startDate           DateTime?
   dueDate             DateTime?
-  remindBeforeMinutes Int       @default(15)
-  reminderSent        Boolean   @default(false)
-  completedAt         DateTime?
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  remindBeforeMinutes   Int       @default(15)
+  reminderSent          Boolean   @default(false)
+  completedAt           DateTime?
 
-  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Recurring / Repeat Configuration
+  isRecurring           Boolean   @default(false)
+  repeatFrequency       String?   // "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY"
+  repeatInterval        Int       @default(1)
+  repeatDaysOfWeek      String?   // "0,1,2,3,4,5,6"
+  repeatTime            String?   // "21:00" or comma-separated "09:00,21:00"
+  repeatDayOfMonth      Int?      // 1-31
+  repeatMonthOfYear     Int?      // 1-12
+  repeatEndType         String?   // "NEVER" | "COUNT" | "UNTIL_DATE"
+  repeatCount           Int?      // Max count
+  completedOccurrences  Int       @default(0)
+  repeatUntil           DateTime? // Optional end cutoff date
+  lastTriggeredDate     String?   // "2026-10-03"
+
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, status])
   @@index([userId, dueDate])
+  @@index([userId, isRecurring])
 }
 
 model Transaction {
@@ -128,5 +146,49 @@ model CategoryOption {
 
   @@unique([userId, group, name])
   @@index([userId, group])
+}
+
+model DailyTracker {
+  id            String            @id @default(cuid())
+  userId        String
+  name          String
+  category      String            @default("Meals & Food")
+  unitName      String            @default("meals")
+  defaultTarget Float             @default(2)
+  unitPrice     Float?
+  currency      String            @default("USD")
+  description   String?
+  color         String?           @default("emerald")
+  isArchived    Boolean           @default(false)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  logs          DailyTrackerLog[]
+
+  @@index([userId])
+}
+
+model DailyTrackerLog {
+  id                      String        @id @default(cuid())
+  trackerId               String
+  userId                  String
+  date                    String        // Format: YYYY-MM-DD
+  value                   Float         @default(0)
+  status                  String        @default("LOGGED") // LOGGED | CANCELLED | SKIPPED
+  unitPrice               Float?
+  notes                   String?
+  isSettled               Boolean       @default(false)
+  settledAt               DateTime?
+  settlementTransactionId String?
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
+
+  tracker                 DailyTracker  @relation(fields: [trackerId], references: [id], onDelete: Cascade)
+  user                    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([trackerId, date])
+  @@index([userId, date])
+  @@index([trackerId, date])
 }
 

@@ -1,8 +1,12 @@
 export interface ISyncStatus {
   isConfigured: boolean;
   isConnected: boolean;
+  configured?: boolean;
+  connected?: boolean;
   email?: string | null;
-  lastSyncAt?: Date | null;
+  googleEmail?: string | null;
+  lastSyncAt?: Date | string | null;
+  lastGoogleSyncAt?: Date | string | null;
   driveFileId?: string | null;
 }
 
@@ -69,6 +73,34 @@ export interface IDayPulseBackup {
       description?: string | null;
       paymentMethod: string;
       date: string;
+      createdAt: string;
+      updatedAt: string;
+    }>;
+    dailyTrackers?: Array<{
+      id: string;
+      name: string;
+      category: string;
+      unitName: string;
+      defaultTarget: number;
+      unitPrice?: number | null;
+      currency: string;
+      description?: string | null;
+      color?: string | null;
+      isArchived: boolean;
+      createdAt: string;
+      updatedAt: string;
+    }>;
+    dailyTrackerLogs?: Array<{
+      id: string;
+      trackerId: string;
+      date: string;
+      value: number;
+      status: string;
+      unitPrice?: number | null;
+      notes?: string | null;
+      isSettled: boolean;
+      settledAt?: string | null;
+      settlementTransactionId?: string | null;
       createdAt: string;
       updatedAt: string;
     }>;

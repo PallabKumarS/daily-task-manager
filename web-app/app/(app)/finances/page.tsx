@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Plus, ChevronLeft, ChevronRight, Calendar } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight, Calendar, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/components/providers/auth-provider";
 import { FinanceSummaryCards } from "@/components/finances/finance-summary-cards";
@@ -9,6 +9,7 @@ import { CumulativeChart } from "@/components/finances/cumulative-chart";
 import { CategoryBreakdown } from "@/components/finances/category-breakdown";
 import { TransactionList, TransactionItem } from "@/components/finances/transaction-list";
 import { TransactionFormModal } from "@/components/finances/transaction-form-modal";
+import { CategoryManagerModal } from "@/components/categories/category-manager-modal";
 
 export default function FinancesPage() {
   const { user } = useAuth();
@@ -43,6 +44,7 @@ export default function FinancesPage() {
   const [loading, setLoading] = React.useState(true);
   const [modalOpen, setModalOpen] = React.useState(false);
   const [editingTransaction, setEditingTransaction] = React.useState<TransactionItem | null>(null);
+  const [categoryManagerOpen, setCategoryManagerOpen] = React.useState(false);
 
   const fetchData = React.useCallback(async () => {
     try {
@@ -77,8 +79,10 @@ export default function FinancesPage() {
 
     const onGlobalRefresh = () => fetchData();
     window.addEventListener("daypulse:refresh", onGlobalRefresh);
+    window.addEventListener("daypulse:categories-updated", onGlobalRefresh);
     return () => {
       window.removeEventListener("daypulse:refresh", onGlobalRefresh);
+      window.removeEventListener("daypulse:categories-updated", onGlobalRefresh);
     };
   }, [fetchData]);
 
@@ -141,10 +145,22 @@ export default function FinancesPage() {
           </p>
         </div>
 
-        <Button variant="emerald" size="sm" onClick={handleAddNew} className="gap-1.5 self-start sm:self-center">
-          <Plus className="w-4 h-4" />
-          <span>Record Transaction</span>
-        </Button>
+        <div className="flex items-center gap-2 self-start sm:self-center">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCategoryManagerOpen(true)}
+            className="gap-1.5 border-slate-700/80 bg-slate-900/60 hover:bg-slate-800 text-slate-300"
+          >
+            <Tag className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Categories</span>
+          </Button>
+
+          <Button variant="emerald" size="sm" onClick={handleAddNew} className="gap-1.5">
+            <Plus className="w-4 h-4" />
+            <span>Record Transaction</span>
+          </Button>
+        </div>
       </div>
 
       {/* Period & Date Navigator Bar */}
@@ -252,6 +268,13 @@ export default function FinancesPage() {
         onClose={() => setModalOpen(false)}
         onSuccess={fetchData}
         initialData={editingTransaction}
+      />
+
+      <CategoryManagerModal
+        isOpen={categoryManagerOpen}
+        onClose={() => setCategoryManagerOpen(false)}
+        defaultGroup="EXPENSE"
+        onUpdated={fetchData}
       />
     </div>
   );
