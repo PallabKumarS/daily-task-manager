@@ -14,6 +14,7 @@ import {
 import * as React from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 export interface RoutineItem {
 	id: string;
@@ -52,8 +53,17 @@ export function RoutineList({
 	onRefresh,
 	onAddNew,
 }: RoutineListProps) {
+	const confirm = useConfirm();
+
 	const handleDelete = async (id: string) => {
-		if (!confirm("Are you sure you want to delete this routine?")) return;
+		const ok = await confirm({
+			title: "Delete Routine",
+			description:
+				"Are you sure you want to delete this routine? This action cannot be undone.",
+			confirmText: "Delete",
+			variant: "destructive",
+		});
+		if (!ok) return;
 		try {
 			const res = await fetch(`/api/routines/${id}`, { method: "DELETE" });
 			const json = await res.json();

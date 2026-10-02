@@ -105,6 +105,7 @@ model Task {
   completedOccurrences  Int       @default(0)
   repeatUntil           DateTime? // Optional end cutoff date
   lastTriggeredDate     String?   // "2026-10-03"
+  lastCompletedDate     String?   // "2026-10-03" (records daily occurrence completion)
 
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt

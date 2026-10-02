@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Clock, Plus, Repeat, X } from "lucide-react";
+import { Calendar, Clock, Plus, Repeat, X } from "lucide-react";
 import * as React from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -414,21 +414,33 @@ export function TaskFormModal({
 
 					{!isRecurring ? (
 						<div className="space-y-1.5">
-							<Label htmlFor="dueDate">Target Date & Time</Label>
+							<div className="flex items-center justify-between">
+								<Label htmlFor="dueDate">Target Date & Time</Label>
+								<span className="text-[11px] text-emerald-400 font-medium flex items-center gap-1">
+									<Calendar className="w-3 h-3" />
+									<span>Click box to pick</span>
+								</span>
+							</div>
 							<Input
 								id="dueDate"
 								type="datetime-local"
-								className="h-11"
+								className="h-11 font-medium"
 								{...register("dueDate")}
 							/>
 						</div>
 					) : (
 						<div className="space-y-1.5">
-							<Label htmlFor="startDate">From When (Start Date)</Label>
+							<div className="flex items-center justify-between">
+								<Label htmlFor="startDate">From When (Start Date)</Label>
+								<span className="text-[11px] text-emerald-400 font-medium flex items-center gap-1">
+									<Calendar className="w-3 h-3" />
+									<span>Click box to pick</span>
+								</span>
+							</div>
 							<Input
 								id="startDate"
 								type="date"
-								className="h-11"
+								className="h-11 font-medium"
 								{...register("startDate")}
 							/>
 						</div>
@@ -551,11 +563,19 @@ export function TaskFormModal({
 
 								{/* Primary Trigger Time of Day */}
 								<div className="space-y-1.5">
-									<Label htmlFor="repeatTime">Alert Trigger Time of Day</Label>
+									<div className="flex items-center justify-between">
+										<Label htmlFor="repeatTime">
+											Alert Trigger Time of Day
+										</Label>
+										<span className="text-[11px] text-emerald-400 font-medium flex items-center gap-1">
+											<Clock className="w-3 h-3" />
+											<span>Click box to pick</span>
+										</span>
+									</div>
 									<Input
 										id="repeatTime"
 										type="time"
-										className="h-11"
+										className="h-11 font-medium"
 										{...register("repeatTime")}
 									/>
 								</div>
@@ -796,10 +816,18 @@ export function TaskFormModal({
 								)}
 
 								{repeatEndType === "UNTIL_DATE" && (
-									<div className="pt-1">
+									<div className="pt-1 space-y-1.5">
+										<div className="flex items-center justify-between">
+											<Label htmlFor="repeatUntil">Repeat Until Date</Label>
+											<span className="text-[11px] text-emerald-400 font-medium flex items-center gap-1">
+												<Calendar className="w-3 h-3" />
+												<span>Click box to pick</span>
+											</span>
+										</div>
 										<Input
+											id="repeatUntil"
 											type="date"
-											className="h-11"
+											className="h-11 font-medium"
 											{...register("repeatUntil")}
 										/>
 									</div>

@@ -61,6 +61,7 @@ export const createTaskInDB = async (userId: string, payload: ICreateTask) => {
 			repeatEndType: payload.repeatEndType || null,
 			repeatCount: payload.repeatCount ?? null,
 			repeatUntil: payload.repeatUntil ? new Date(payload.repeatUntil) : null,
+			lastCompletedDate: payload.lastCompletedDate || null,
 		},
 	});
 

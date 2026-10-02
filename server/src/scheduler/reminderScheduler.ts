@@ -109,6 +109,11 @@ export const startReminderScheduler = () => {
 					if (todayBeginning < startDay) continue;
 				}
 
+				// Skip if user already checked off today's occurrence
+				if (task.lastCompletedDate === todayStr) {
+					continue;
+				}
+
 				// Recurrence frequency checks
 				const frequency = task.repeatFrequency || "DAILY";
 

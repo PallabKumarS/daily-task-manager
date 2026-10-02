@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 import { api } from "@/lib/api-client";
 import { formatCurrency } from "@/lib/currency-symbols";
 import { cn } from "@/lib/utils";
@@ -79,6 +80,7 @@ export function TrackerCard({
 	onOpenEdit,
 	onOpenSettle,
 }: TrackerCardProps) {
+	const confirm = useConfirm();
 	const [currentValue, setCurrentValue] = React.useState<number>(
 		tracker.todayLog ? tracker.todayLog.value : 0,
 	);
@@ -163,12 +165,13 @@ export function TrackerCard({
 	};
 
 	const handleDelete = async () => {
-		if (
-			!window.confirm(
-				`Are you sure you want to delete tracker "${tracker.name}"?`,
-			)
-		)
-			return;
+		const ok = await confirm({
+			title: "Delete Tracker",
+			description: `Are you sure you want to delete tracker "${tracker.name}"? This action cannot be undone.`,
+			confirmText: "Delete",
+			variant: "destructive",
+		});
+		if (!ok) return;
 		try {
 			await api.delete(`/trackers/${tracker.id}`);
 			toast.success("Tracker deleted successfully");

@@ -23,6 +23,7 @@ import { CategoryManagerModal } from "@/components/categories/category-manager-m
 import { useAuth } from "@/components/providers/auth-provider";
 import { useNotifications } from "@/components/providers/notification-provider";
 import { Button } from "@/components/ui/button";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 import { CustomSelect, type SelectOption } from "@/components/ui/custom-select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -53,6 +54,7 @@ function SettingsContent() {
 		triggerNotification,
 	} = useNotifications();
 
+	const confirm = useConfirm();
 	const [name, setName] = React.useState(user?.name || "");
 	const [currency, setCurrency] = React.useState(user?.currency || "USD");
 	const [savingProfile, setSavingProfile] = React.useState(false);
@@ -251,12 +253,14 @@ function SettingsContent() {
 	};
 
 	const handleRestoreGoogle = async () => {
-		if (
-			!confirm(
-				"Are you sure you want to restore data from your Google Drive backup?",
-			)
-		)
-			return;
+		const ok = await confirm({
+			title: "Restore from Google Drive",
+			description:
+				"Are you sure you want to restore data from your Google Drive backup? Any local items modified since the backup will be updated.",
+			confirmText: "Restore Data",
+			variant: "warning",
+		});
+		if (!ok) return;
 		setRestoringGoogle(true);
 		try {
 			const res = await api.post("/sync/restore", {});
@@ -278,8 +282,14 @@ function SettingsContent() {
 	};
 
 	const handleDisconnectGoogle = async () => {
-		if (!confirm("Are you sure you want to disconnect your Google Account?"))
-			return;
+		const ok = await confirm({
+			title: "Disconnect Google Account",
+			description:
+				"Are you sure you want to disconnect your Google Account? Automated cloud backups to Google Drive will be paused.",
+			confirmText: "Disconnect",
+			variant: "destructive",
+		});
+		if (!ok) return;
 		try {
 			const res = await api.post("/sync/disconnect");
 			if (res.success) {

@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 import { api } from "@/lib/api-client";
 
 export interface SelectOption {
@@ -67,6 +68,7 @@ export function CustomSelect({
 	allowManage = true,
 	error,
 }: CustomSelectProps) {
+	const confirm = useConfirm();
 	const [isOpen, setIsOpen] = React.useState(false);
 	const [search, setSearch] = React.useState("");
 	const [isCreating, setIsCreating] = React.useState(false);
@@ -319,7 +321,13 @@ export function CustomSelect({
 
 	const handleDelete = async (e: React.MouseEvent, opt: SelectOption) => {
 		e.stopPropagation();
-		if (!window.confirm(`Delete option "${opt.label}"?`)) return;
+		const ok = await confirm({
+			title: "Delete Option",
+			description: `Are you sure you want to delete "${opt.label}"? This action cannot be undone.`,
+			confirmText: "Delete",
+			variant: "destructive",
+		});
+		if (!ok) return;
 
 		try {
 			if (onDeleteOption) {

@@ -19,9 +19,11 @@ export interface ICreateTask {
 	repeatEndType?: "NEVER" | "COUNT" | "UNTIL_DATE" | null;
 	repeatCount?: number | null;
 	repeatUntil?: string | null;
+	lastCompletedDate?: string | null;
 }
 
 export interface IUpdateTask extends Partial<ICreateTask> {
 	completedOccurrences?: number;
 	lastTriggeredDate?: string | null;
+	lastCompletedDate?: string | null;
 }

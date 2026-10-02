@@ -15,6 +15,7 @@ import * as React from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 
 export interface TaskItem {
 	id: string;
@@ -39,11 +40,12 @@ export interface TaskItem {
 	completedOccurrences?: number;
 	repeatUntil?: string | null;
 	lastTriggeredDate?: string | null;
+	lastCompletedDate?: string | null;
 }
 
 interface TaskListProps {
 	tasks: TaskItem[];
-	onToggleStatus: (id: string, currentStatus: string) => Promise<void>;
+	onToggleStatus: (task: TaskItem) => Promise<void>;
 	onEdit: (task: TaskItem) => void;
 	onRefresh: () => void;
 	onAddNew: () => void;
@@ -115,6 +117,7 @@ export function TaskList({
 	onRefresh,
 	onAddNew,
 }: TaskListProps) {
+	const confirm = useConfirm();
 	const [filterType, setFilterType] = React.useState<
 		"ALL" | "TASK" | "EVENT" | "RECURRING"
 	>("ALL");
@@ -123,7 +126,14 @@ export function TaskList({
 	>("ALL");
 
 	const handleDelete = async (id: string) => {
-		if (!confirm("Are you sure you want to delete this item?")) return;
+		const ok = await confirm({
+			title: "Delete Item",
+			description:
+				"Are you sure you want to delete this scheduled item? This action cannot be undone.",
+			confirmText: "Delete",
+			variant: "destructive",
+		});
+		if (!ok) return;
 		try {
 			const res = await fetch(`/api/tasks/${id}`, { method: "DELETE" });
 			const json = await res.json();
@@ -138,8 +148,17 @@ export function TaskList({
 		}
 	};
 
-	const handleToggle = async (id: string, currentStatus: string) => {
-		if (currentStatus !== "COMPLETED") {
+	const todayStr = React.useMemo(
+		() => new Date().toLocaleDateString("en-CA"),
+		[],
+	);
+
+	const handleToggle = async (item: TaskItem) => {
+		const isCurrentlyCompleted = item.isRecurring
+			? item.lastCompletedDate === todayStr
+			: item.status === "COMPLETED";
+
+		if (!isCurrentlyCompleted) {
 			try {
 				confetti({
 					particleCount: 40,
@@ -151,7 +170,7 @@ export function TaskList({
 				// ignore
 			}
 		}
-		await onToggleStatus(id, currentStatus);
+		await onToggleStatus(item);
 	};
 
 	const filtered = tasks.filter((t) => {
@@ -162,8 +181,13 @@ export function TaskList({
 			t.type !== filterType
 		)
 			return false;
-		if (filterStatus === "PENDING" && t.status === "COMPLETED") return false;
-		if (filterStatus === "COMPLETED" && t.status !== "COMPLETED") return false;
+
+		const isItemDone = t.isRecurring
+			? t.lastCompletedDate === todayStr
+			: t.status === "COMPLETED";
+
+		if (filterStatus === "PENDING" && isItemDone) return false;
+		if (filterStatus === "COMPLETED" && !isItemDone) return false;
 		return true;
 	});
 
@@ -325,7 +349,9 @@ export function TaskList({
 					</div>
 				) : (
 					filtered.map((item) => {
-						const isCompleted = item.status === "COMPLETED";
+						const isCompleted = item.isRecurring
+							? item.lastCompletedDate === todayStr
+							: item.status === "COMPLETED";
 						const dueInfo = formatDue(item.dueDate);
 
 						return (
@@ -340,7 +366,7 @@ export function TaskList({
 								<div className="flex items-start gap-3 min-w-0 flex-1">
 									<button
 										type="button"
-										onClick={() => handleToggle(item.id, item.status)}
+										onClick={() => handleToggle(item)}
 										className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border transition cursor-pointer ${
 											isCompleted
 												? "bg-emerald-500 border-emerald-400 text-slate-950"
@@ -354,7 +380,7 @@ export function TaskList({
 										<div className="flex flex-wrap items-center gap-2">
 											<h4
 												className={`text-sm font-semibold truncate ${
-													isCompleted
+													isCompleted && !item.isRecurring
 														? "text-slate-400 line-through"
 														: "text-slate-100"
 												}`}
@@ -371,9 +397,24 @@ export function TaskList({
 												</span>
 											)}
 											{item.isRecurring && (
-												<span className="rounded-md bg-teal-500/15 text-teal-300 border border-teal-500/30 px-2 py-0.5 text-[10px] font-semibold flex items-center gap-1">
-													<Repeat className="w-3 h-3 text-teal-400" />
-													<span>{formatRecurrenceSchedule(item)}</span>
+												<span
+													className={`rounded-md px-2 py-0.5 text-[10px] font-semibold flex items-center gap-1 border ${
+														isCompleted
+															? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
+															: "bg-teal-500/15 text-teal-300 border-teal-500/30"
+													}`}
+												>
+													{isCompleted ? (
+														<>
+															<Check className="w-3 h-3 text-emerald-400" />
+															<span>Done for Today • Next alarm tomorrow</span>
+														</>
+													) : (
+														<>
+															<Repeat className="w-3 h-3 text-teal-400" />
+															<span>{formatRecurrenceSchedule(item)}</span>
+														</>
+													)}
 												</span>
 											)}
 										</div>
@@ -404,7 +445,11 @@ export function TaskList({
 											{item.isRecurring && item.repeatTime && (
 												<div className="flex items-center gap-1 text-teal-300 bg-teal-500/10 border border-teal-500/20 rounded-md px-2 py-0.5 font-medium">
 													<Clock className="w-3 h-3 text-teal-400" />
-													<span>Daily Time: {item.repeatTime}</span>
+													<span>
+														{isCompleted
+															? `Alert times: ${item.repeatTime} (Resets tomorrow)`
+															: `Alert times: ${item.repeatTime}`}
+													</span>
 												</div>
 											)}
 

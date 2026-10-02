@@ -25,6 +25,7 @@ export const createTaskValidationSchema = z.object({
 	repeatEndType: z.enum(["NEVER", "COUNT", "UNTIL_DATE"]).optional().nullable(),
 	repeatCount: z.number().int().min(1).optional().nullable(),
 	repeatUntil: z.string().optional().nullable(),
+	lastCompletedDate: z.string().optional().nullable(),
 });
 
 export const updateTaskValidationSchema = z.object({
@@ -54,4 +55,5 @@ export const updateTaskValidationSchema = z.object({
 	repeatUntil: z.string().nullable().optional(),
 	completedOccurrences: z.number().int().min(0).optional(),
 	lastTriggeredDate: z.string().nullable().optional(),
+	lastCompletedDate: z.string().nullable().optional(),
 });
