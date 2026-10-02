@@ -1,46 +1,79 @@
 # DayPulse — Daily Activity Flow, Routine Mastery & Financial Pulse
 
-> An all-in-one daily productivity and wealth tracking web application built with Next.js 16, React 19, TypeScript, Tailwind CSS v4, and Prisma ORM.
+> A high-performance daily productivity, habit loop, and wealth tracking platform designed with a decoupled architecture: persistent standalone Express + WebSocket + Prisma backend server and zero-secret client frameworks (Next.js 16 Web App, Electron Desktop wrapper, and Capacitor Android mobile wrapper).
 
 ---
 
-## Features
+## Architecture Overview
+
+```
+daily-task-tracker/ (Monorepo Workspace)
+├── server/                     # Standalone Express + TypeScript + Socket.io Server
+│   ├── src/
+│   │   ├── config/             # Environment, JWT, Vault, and Google OAuth settings
+│   │   ├── modules/
+│   │   │   ├── auth/           # User registration, JWT login, profile management
+│   │   │   ├── routine/        # Daily routines, streaks, and completion logs
+│   │   │   ├── task/           # Tasks, events, priority scheduling, advance alerts
+│   │   │   ├── finance/        # Ledger expenses/income & cumulative cashflow analytics
+│   │   │   ├── sync/           # Google Drive OAuth, AES-256 token vault & single-file sync
+│   │   │   └── socket/         # Socket.io real-time alarm engine & multi-device sync
+│   │   ├── scheduler/          # 30-second recurring cron reminder & alarm dispatcher
+│   │   ├── middlewares/        # JWT auth, Zod validation, global error handler
+│   │   └── utils/              # AES-256-GCM cryptoVault, Google Drive v3 client, prisma
+│   ├── prisma/                 # Prisma ORM schema & SQLite database (dev.db)
+│   └── package.json            # Server dependencies (Express, Socket.io, Prisma, node-cron)
+│
+├── web-app/                    # Next.js 16 (React 19) App Router UI Client
+│   ├── app/                    # Responsive application views (Landing, Dashboard, Routines, Tasks, Finances, Settings)
+│   ├── components/             # Reusable UI widgets, modals, charts, dock, navbar
+│   ├── lib/
+│   │   ├── api-client.ts       # Unified API client attaching Bearer tokens
+│   │   ├── socket-client.ts    # Socket.io client receiving server alarms & sync updates
+│   │   ├── audio-chime.ts      # HTML5 Web Audio synthesized dual-tone harmonic chime
+│   │   └── web-notification.ts # Native browser push notifications
+│   └── package.json            # Frontend dependencies
+│
+├── desktop-app/                # Electron desktop client wrapper
+└── android-app/                # Capacitor Android mobile client wrapper
+```
+
+---
+
+## Core Capabilities
 
 ### 1. Daily Activity & Routine Loops
-- Group routines by time slots: **Morning**, **Afternoon**, **Evening**, **Night**, and **Anytime**.
-- Active days of week configuration (Sunday through Saturday).
+- Group daily habits by time slots: **Morning**, **Afternoon**, **Evening**, **Night**, and **Anytime**.
+- Recurrence days configuration (Sunday through Saturday).
 - Target completion times with proactive advance notifications.
-- Streak engine with habit milestone celebrations.
+- Streak engine with confetti celebration upon completion.
 
 ### 2. Task & Event Precision Scheduler
-- Discrete separation between **Tasks** (action items) and **Events** (time meetings/engagements).
+- Discrete separation between **Tasks** (action items) and **Events** (calendar engagements).
 - Priority Matrix: **Low**, **Medium**, **High**, and **Urgent**.
 - Due date/time tracking with overdue status indicators.
 - Advance reminder lead times: 5m, 10m, 15m, 30m, 1h before deadline.
 
 ### 3. Cumulative Spendings & Earnings Ledger
 - Daily transaction logging for **Spendings** (expenses) and **Earnings** (income).
-- Itemized categories (Food, Housing & Bills, Transport, Salary, Freelance, Investments, etc.).
+- Itemized categories (Food & Dining, Housing & Utilities, Transport, Salary, Freelance, Investments).
 - Multi-currency support: USD ($), EUR (€), GBP (£), BDT (৳), INR (₹), CAD, AUD, JPY.
-- Cumulative cashflow trajectory chart (running net balance over days/months/years).
-- Period toggles: **Weekly**, **Monthly**, and **Yearly** analysis.
-- Automatic savings rate calculation (`Net / Income * 100`).
+- Interactive SVG trajectory chart tracking cumulative net flow.
+- Period filters: **Weekly**, **Monthly**, and **Yearly** analysis.
+- Automatic savings rate calculation (`(Income - Expenses) / Income * 100`).
 
-### 4. Dual Notification & Alarm Engine
-- **Harmonic Audio Chime**: Synthesized dual-tone audio chime (C5/G5 harmonic sine waves) via standard HTML5 Web Audio API (works 100% offline, zero external audio assets required).
-- **Native OS / Browser Push Notifications**: Triggers system alerts for upcoming tasks, events, and routine targets.
-- **In-App Notification Center**: History drawer tracking notifications with unread badges, mark-read, and quick mute switches.
+### 4. Real-Time Alarm & Background Notification Engine
+- **Persistent Server Scheduler**: Evaluates upcoming task deadlines and routine start times every 30 seconds and pushes alarms directly to connected clients over WebSockets.
+- **Harmonic Audio Chime**: Synthesized dual-tone harmonic chime (C5/G5 harmonic sine waves) via HTML5 Web Audio API (works 100% offline, zero external audio assets required).
+- **Native OS / Browser Push Notifications**: System-level notifications for deadlines and daily protocols.
+- **In-App Notification Center**: Drawer tracking notifications with unread counts and quick audio toggles.
 
-### 5. Multi-User & Multi-Device Synchronization
-- User registration and JWT authentication with secure HTTP-only cookies and Bearer token compatibility.
-- Instant synchronization across all logged-in devices (phones, tablets, laptops, desktops).
-- **One-Click JSON Data Export**: Full backup archive for Google Drive, offline backup, or device transfer.
-- **One-Click JSON Data Restore**: Transaction-safe data import.
-
-### 6. Cross-Platform Ready (PWA / APK / EXE)
-- Mobile-first responsive UI with bottom dock on phones and expandable sidebar on desktops.
-- Web app manifest for direct PWA homescreen installation.
-- Clean RESTful API architecture ready to be packaged with **Capacitor** (Android APK) or **Electron** (Desktop EXE).
+### 5. Google Drive Cloud Sync & Vault Security
+- **AES-256-GCM Token Encryption**: Google OAuth access and refresh tokens are encrypted using AES-256-GCM with PBKDF2 key derivation and authentication tags before database persistence.
+- **Targeted Single-File Overwrite**: Google Drive backups target and overwrite the existing `DayPulse_Backup.json` file rather than creating duplicate files on each sync.
+- **Idempotent Upsert Restoration**: Restoring backups uses record-level upserts to ensure repeated imports never generate duplicate records.
+- **Multi-Device Live Sync**: Database mutations trigger immediate WebSocket broadcasts to update all connected devices in real time.
+- **Sandbox Simulation Mode**: Built-in test sandbox allows verifying cloud synchronization workflows locally without needing immediate Google Cloud credentials.
 
 ---
 
@@ -55,90 +88,36 @@
 npm install
 ```
 
-### 3. Database Initialization
+### 3. Database Setup (Server)
 ```bash
-npx prisma db push
+npm run db:push
 ```
 
-### 4. Running Development Server
+### 4. Running the Development Stack
+Run server (port 5000) and web app (port 3000):
 ```bash
-npm run dev
-```
-Open [http://localhost:3000](http://localhost:3000) or open `http://<your-local-ip>:3000` from your phone on the same Wi-Fi.
+# Terminal 1: Backend Server (Express + WebSocket + Scheduler)
+npm run dev:server
 
-### 5. Production Build
-```bash
-npm run build
-npm run start
+# Terminal 2: Frontend Web App (Next.js UI)
+npm run dev:web
 ```
+
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
-## Project Structure
+## Google Cloud OAuth Setup (Optional for Cloud Sync)
 
-```
-├── app/
-│   ├── (app)/                  # Authenticated app routes
-│   │   ├── dashboard/          # Daily overview & quick logs
-│   │   ├── routines/           # Daily habits & streaks
-│   │   ├── tasks/              # Scheduled tasks & calendar events
-│   │   ├── finances/           # Cumulative spendings & earnings ledger
-│   │   └── settings/           # Sync, backup, audio & profile preferences
-│   ├── api/                    # Modular Next.js route handlers
-│   │   ├── auth/               # register, login, logout, me
-│   │   ├── routines/           # routines CRUD & toggle streak
-│   │   ├── tasks/              # tasks CRUD
-│   │   ├── finances/           # transactions CRUD & cumulative analytics
-│   │   └── backup/             # export & import JSON backups
-│   ├── login/                  # Sign-in page
-│   ├── register/               # Sign-up page
-│   ├── globals.css             # Tailwind v4 theme tokens
-│   ├── layout.tsx              # Root provider wrapper
-│   └── page.tsx                # Landing page
-├── components/
-│   ├── dashboard/              # Overview widgets & summaries
-│   ├── routines/               # Routine list, streak badges, form modals
-│   ├── tasks/                  # Task filter bars, items, form modals
-│   ├── finances/               # Cumulative SVG chart, breakdown, transaction list
-│   ├── landing/                # Hero section, feature grids, navbar & footer
-│   ├── layout/                 # Sidebar, mobile dock, notification center
-│   ├── providers/              # AuthProvider, NotificationProvider
-│   └── ui/                     # Accessible button, input, card, modal, badge
-├── lib/
-│   ├── prisma.ts               # PrismaClient singleton instance
-│   ├── jwt-auth.ts             # Token issuance & password hashing
-│   ├── send-response.ts        # Standardized API response format
-│   ├── audio-chime.ts          # HTML5 Web Audio harmonic chime
-│   ├── web-notification.ts     # Native browser notification wrapper
-│   ├── currency-symbols.ts     # Currency options & categories
-│   ├── date-helpers.ts         # Formatting & streak calculations
-│   └── utils.ts                # Tailwind class merger (cn)
-└── prisma/
-    └── schema.prisma           # Prisma schema (SQLite / PostgreSQL ready)
-```
-
----
-
-## Google Drive Cloud Sync & Backup
-
-DayPulse supports native **Google Drive v3 API** synchronization to back up and restore your daily routines, scheduled events, and financial ledgers across devices.
-
-### 1. Connecting Your Google Cloud Account
+To enable live Google Drive synchronization:
 1. Open [Google Cloud Console](https://console.cloud.google.com/) and create a project.
-2. Under **APIs & Services > Library**, search and enable **Google Drive API**.
-3. Under **APIs & Services > Credentials**, create an **OAuth 2.0 Client ID** (Web application):
-   - **Authorized redirect URI**: `http://localhost:3000/api/sync/google/callback`
-4. Add the generated credentials to your `.env` file:
+2. In **APIs & Services > Library**, search and enable **Google Drive API**.
+3. In **APIs & Services > Credentials**, create an **OAuth 2.0 Client ID** (Web application):
+   - **Authorized redirect URI**: `http://localhost:5000/api/v1/sync/google/callback`
+4. Add the generated credentials to `server/.env`:
    ```env
    GOOGLE_CLIENT_ID="your-client-id.apps.googleusercontent.com"
    GOOGLE_CLIENT_SECRET="your-client-secret"
-   GOOGLE_REDIRECT_URI="http://localhost:3000/api/sync/google/callback"
+   GOOGLE_REDIRECT_URI="http://localhost:5000/api/v1/sync/google/callback"
    ```
-5. Navigate to **Sync & Settings** in DayPulse, click **Connect Google Drive**, and grant authorization.
-
-### 2. Synchronization Capabilities
-- **One-Click Cloud Backup**: Uploads/updates `DayPulse_Backup.json` into your Google Drive, isolated to app files (`drive.file` scope) for maximum privacy.
-- **One-Click Cloud Restore**: Pulls your backup from Google Drive and restores routines, tasks, and transactions in a database transaction.
-- **Automatic Token Refresh**: Seamlessly rotates expired Google access tokens in the background using your refresh token.
-- **Sandbox Simulation Mode**: Built-in test sandbox allows verifying cloud synchronization workflows locally without needing immediate Google Cloud credentials.
-- **Direct Portable JSON**: Download and restore raw JSON snapshots for local backups or manual Google Drive folder drag-and-drop.
+5. Navigate to **System Settings & Cloud Sync** in DayPulse, click **Connect Google Drive**, and grant authorization.

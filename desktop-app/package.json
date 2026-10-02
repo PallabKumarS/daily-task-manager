@@ -1,0 +1,9 @@
+{
+  "name": "desktop-app",
+  "version": "1.0.0",
+  "description": "DayPulse Electron Desktop Client",
+  "main": "main.js",
+  "scripts": {
+    "start": "echo 'Desktop app client ready for Electron launch'"
+  }
+}

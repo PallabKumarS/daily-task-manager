@@ -1,0 +1,8 @@
+{
+  "name": "android-app",
+  "version": "1.0.0",
+  "description": "DayPulse Capacitor Android Client",
+  "scripts": {
+    "start": "echo 'Android app client ready for Capacitor build'"
+  }
+}
