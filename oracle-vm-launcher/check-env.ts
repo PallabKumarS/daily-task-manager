@@ -201,7 +201,9 @@ async function main() {
 		);
 
 		if (exactMinimal) {
-			console.log(`  Found exact match from your screenshot:\n    "${exactMinimal.displayName}"\n    (OCID: ${exactMinimal.id})`);
+			console.log(
+				`  Found exact match from your screenshot:\n    "${exactMinimal.displayName}"\n    (OCID: ${exactMinimal.id})`,
+			);
 		} else {
 			const matching = images.filter(
 				(img) =>
