@@ -353,9 +353,11 @@ async function main() {
 	const { provider, compartmentId, region } = getAuthProvider();
 	const sshKey = getSshKey();
 
-	const computeClient = new core.ComputeClient({
-		authenticationDetailsProvider: provider,
-	});
+	const computeClient = new core.ComputeClient(
+		{ authenticationDetailsProvider: provider },
+		{ retryConfiguration: common.NoRetryConfigurationDetails },
+	);
+
 	const networkClient = new core.VirtualNetworkClient({
 		authenticationDetailsProvider: provider,
 	});
@@ -363,9 +365,16 @@ async function main() {
 		authenticationDetailsProvider: provider,
 	});
 
-	// Resolve target configuration parameters
-	const instanceName =
-		process.env.OCI_INSTANCE_NAME?.trim() || "nodejs-servers";
+	// Multi-instance target list resolution
+	const rawNames =
+		process.env.OCI_INSTANCE_NAMES?.trim() ||
+		process.env.OCI_INSTANCE_NAME?.trim() ||
+		"nodejs,nextjs-1,nextjs-2,nextjs-3";
+	const targetInstanceNames = rawNames
+		.split(",")
+		.map((s) => s.trim())
+		.filter(Boolean);
+
 	const shape = process.env.OCI_SHAPE?.trim() || "VM.Standard.A1.Flex";
 	const ocpus = Number.parseInt(process.env.OCI_OCPUS || "1", 10);
 	const memoryInGBs = Number.parseInt(process.env.OCI_MEMORY_IN_GBS || "6", 10);
@@ -377,10 +386,10 @@ async function main() {
 		process.env.OCI_BOOT_VOLUME_VPU || "10",
 		10,
 	);
-	const faultDomain = process.env.OCI_FAULT_DOMAIN?.trim() || "FAULT-DOMAIN-1";
+	const configuredFaultDomain = process.env.OCI_FAULT_DOMAIN?.trim();
 	const assignPublicIp = process.env.OCI_ASSIGN_PUBLIC_IP !== "false";
 	const retryInterval = Number.parseInt(
-		process.env.OCI_RETRY_INTERVAL_SECONDS || "45",
+		process.env.OCI_RETRY_INTERVAL_SECONDS || "15",
 		10,
 	);
 
@@ -394,177 +403,285 @@ async function main() {
 	console.log("\n=======================================================");
 	console.log("   Target Instance Specifications (Matches image_87): ");
 	console.log("=======================================================");
-	console.log(`- Instance Name:      ${instanceName}`);
+	console.log(`- Instance Queue:     ${targetInstanceNames.join(", ")}`);
+	console.log(`- Total Instances:    ${targetInstanceNames.length}`);
 	console.log(
-		`- Shape:              ${shape} (${ocpus} OCPU, ${memoryInGBs} GB RAM)`,
+		`- Per-VM Shape:       ${shape} (${ocpus} OCPU, ${memoryInGBs} GB RAM)`,
 	);
 	console.log(
-		`- Boot Volume:        ${bootVolumeSize} GB (VPU: ${bootVolumeVpu})`,
+		`- Per-VM Boot Volume: ${bootVolumeSize} GB (VPU: ${bootVolumeVpu})`,
 	);
 	console.log(`- Availability Domain:${availabilityDomain}`);
-	console.log(`- Fault Domain:       ${faultDomain}`);
+	console.log(
+		`- Fault Domain:       ${configuredFaultDomain || "Auto (cycling 1, 2, 3)"}`,
+	);
 	console.log(`- Region:             ${region}`);
 	console.log(`- Subnet ID:          ${subnetId}`);
 	console.log(`- Assign Public IP:   ${assignPublicIp}`);
 	console.log(`- Retry Interval:     ${retryInterval} seconds`);
 	console.log("=======================================================\n");
 
-	const launchRequest: core.requests.LaunchInstanceRequest = {
-		launchInstanceDetails: {
-			compartmentId,
-			displayName: instanceName,
-			availabilityDomain,
-			faultDomain,
-			shape,
-			shapeConfig: {
-				ocpus,
-				memoryInGBs,
-			},
-			sourceDetails: {
-				sourceType: "image",
-				imageId,
-				bootVolumeSizeInGBs: bootVolumeSize,
-				bootVolumeVpusPerGB: bootVolumeVpu,
-			},
-			isPvEncryptionInTransitEnabled: true,
-			createVnicDetails: {
-				assignPublicIp,
-				subnetId,
-				displayName: "VNIC-nodejs",
-			},
-			metadata: {
-				ssh_authorized_keys: sshKey,
-			},
-			agentConfig: {
-				isMonitoringDisabled: false,
-				isManagementDisabled: true,
-				pluginsConfig: [
-					{
-						name: "Custom Logs Monitoring",
-						desiredState:
-							core.models.InstanceAgentPluginConfigDetails.DesiredState.Enabled,
-					},
-					{
-						name: "Compute Instance Run Command",
-						desiredState:
-							core.models.InstanceAgentPluginConfigDetails.DesiredState.Enabled,
-					},
-					{
-						name: "Compute Instance Monitoring",
-						desiredState:
-							core.models.InstanceAgentPluginConfigDetails.DesiredState.Enabled,
-					},
-					{
-						name: "Cloud Guard Workload Protection",
-						desiredState:
-							core.models.InstanceAgentPluginConfigDetails.DesiredState.Enabled,
-					},
-				],
-			},
-		},
-	};
-
-	let attempt = 1;
-	console.log(
-		"Starting automated launch loop. Press Ctrl+C at any time to stop.\n",
+	// Inspect existing instances in compartment
+	console.log("Checking existing instances in your OCI compartment...");
+	const existingListRes = await computeClient.listInstances({ compartmentId });
+	const activeInstances = existingListRes.items.filter(
+		(i) =>
+			i.lifecycleState !== core.models.Instance.LifecycleState.Terminated &&
+			i.lifecycleState !== core.models.Instance.LifecycleState.Terminating,
 	);
 
-	while (true) {
-		const timestamp = new Date().toISOString().replace("T", " ").slice(0, 19);
-		process.stdout.write(
-			`[Attempt #${attempt} | ${timestamp}] Sending LaunchInstance request... `,
+	interface InstanceRecord {
+		name: string;
+		id?: string;
+		lifecycleState?: string;
+		publicIp?: string;
+		privateIp?: string;
+	}
+
+	const records: InstanceRecord[] = [];
+	const pendingTargets: string[] = [];
+
+	for (const targetName of targetInstanceNames) {
+		const existingMatch = activeInstances.find(
+			(i) => i.displayName === targetName,
 		);
-
-		try {
-			const res = await computeClient.launchInstance(launchRequest);
-			const instance = res.instance;
-
+		if (existingMatch) {
 			console.log(
-				"\n\n=======================================================",
+				`[EXISTS] Instance "${targetName}" is already active (OCID: ${existingMatch.id}). Skipping creation.`,
 			);
-			console.log("   SUCCESS! ORACLE CLOUD INSTANCE CREATED!            ");
-			console.log("=======================================================");
-			console.log(`- Instance Name:    ${instance.displayName}`);
-			console.log(`- Instance OCID:    ${instance.id}`);
-			console.log(`- Lifecycle State:  ${instance.lifecycleState}`);
-			console.log(`- Created At:       ${instance.timeCreated}`);
-			console.log("=======================================================");
+			records.push({
+				name: targetName,
+				id: existingMatch.id,
+				lifecycleState: existingMatch.lifecycleState,
+			});
+		} else {
+			pendingTargets.push(targetName);
+		}
+	}
 
-			// Audible notification
-			process.stdout.write("\x07\x07\x07");
+	const stateFilePath = path.resolve(process.cwd(), "created_instances.json");
+	const saveState = () => {
+		try {
+			fs.writeFileSync(stateFilePath, JSON.stringify(records, null, 2), "utf8");
+		} catch {
+			// Ignore file save errors
+		}
+	};
+	saveState();
 
-			console.log("\nWaiting 15 seconds to fetch assigned Public IP...");
-			await sleep(15000);
+	if (pendingTargets.length === 0) {
+		console.log(
+			"\nAll specified target instances are already created and active!",
+		);
+		console.log(`State recorded in: ${stateFilePath}`);
+		return;
+	}
+
+	console.log(
+		`\nQueue to provision (${pendingTargets.length} remaining): ${pendingTargets.join(", ")}`,
+	);
+	console.log(
+		"Starting automated multi-instance launch loop. Press Ctrl+C at any time to stop.\n",
+	);
+
+	const faultDomainCycle = [
+		"FAULT-DOMAIN-1",
+		"FAULT-DOMAIN-2",
+		"FAULT-DOMAIN-3",
+	];
+
+	for (let i = 0; i < pendingTargets.length; i++) {
+		const currentTargetName = pendingTargets[i];
+		const targetIndex = i + 1;
+		let attempt = 1;
+
+		console.log(`\n=======================================================`);
+		console.log(
+			`   [Target ${targetIndex}/${pendingTargets.length}] Launching: "${currentTargetName}"`,
+		);
+		console.log(`=======================================================`);
+
+		while (true) {
+			const faultDomain =
+				configuredFaultDomain ||
+				faultDomainCycle[(attempt - 1) % faultDomainCycle.length];
+
+			const launchRequest: core.requests.LaunchInstanceRequest = {
+				launchInstanceDetails: {
+					compartmentId,
+					displayName: currentTargetName,
+					availabilityDomain,
+					faultDomain,
+					shape,
+					shapeConfig: {
+						ocpus,
+						memoryInGBs,
+					},
+					sourceDetails: {
+						sourceType: "image",
+						imageId,
+						bootVolumeSizeInGBs: bootVolumeSize,
+						bootVolumeVpusPerGB: bootVolumeVpu,
+					},
+					isPvEncryptionInTransitEnabled: true,
+					createVnicDetails: {
+						assignPublicIp,
+						subnetId,
+						displayName: `VNIC-${currentTargetName}`,
+					},
+					metadata: {
+						ssh_authorized_keys: sshKey,
+					},
+					agentConfig: {
+						isMonitoringDisabled: false,
+						isManagementDisabled: true,
+						pluginsConfig: [
+							{
+								name: "Custom Logs Monitoring",
+								desiredState:
+									core.models.InstanceAgentPluginConfigDetails.DesiredState
+										.Enabled,
+							},
+							{
+								name: "Compute Instance Run Command",
+								desiredState:
+									core.models.InstanceAgentPluginConfigDetails.DesiredState
+										.Enabled,
+							},
+							{
+								name: "Compute Instance Monitoring",
+								desiredState:
+									core.models.InstanceAgentPluginConfigDetails.DesiredState
+										.Enabled,
+							},
+							{
+								name: "Cloud Guard Workload Protection",
+								desiredState:
+									core.models.InstanceAgentPluginConfigDetails.DesiredState
+										.Enabled,
+							},
+						],
+					},
+				},
+			};
+
+			const timestamp = new Date().toISOString().replace("T", " ").slice(0, 19);
+			process.stdout.write(
+				`[${currentTargetName} | Attempt #${attempt} | ${faultDomain} | ${timestamp}] Launching... `,
+			);
 
 			try {
-				const vnicAttachments = await computeClient.listVnicAttachments({
-					compartmentId,
-					instanceId: instance.id,
-				});
-				const vnicId = vnicAttachments.items?.[0]?.vnicId;
-				if (vnicId) {
-					const vnic = await networkClient.getVnic({ vnicId });
-					console.log(
-						`- Public IP:   ${vnic.vnic.publicIp || "None assigned"}`,
-					);
-					console.log(`- Private IP:  ${vnic.vnic.privateIp}`);
-					if (vnic.vnic.publicIp) {
-						console.log(
-							`\nConnect with:\n  ssh ubuntu@${vnic.vnic.publicIp}\n`,
-						);
+				const res = await computeClient.launchInstance(launchRequest);
+				const instance = res.instance;
+
+				console.log(
+					"\n\n=======================================================",
+				);
+				console.log(`   SUCCESS! "${instance.displayName}" CREATED!        `);
+				console.log("=======================================================");
+				console.log(`- Instance Name:    ${instance.displayName}`);
+				console.log(`- Instance OCID:    ${instance.id}`);
+				console.log(`- Lifecycle State:  ${instance.lifecycleState}`);
+				console.log(`- Fault Domain:     ${instance.faultDomain}`);
+				console.log(`- Created At:       ${instance.timeCreated}`);
+				console.log("=======================================================");
+
+				// Audible notification
+				process.stdout.write("\x07\x07\x07");
+
+				console.log("\nWaiting 15 seconds to fetch assigned Public IP...");
+				await sleep(15000);
+
+				let publicIp: string | undefined;
+				let privateIp: string | undefined;
+
+				try {
+					const vnicAttachments = await computeClient.listVnicAttachments({
+						compartmentId,
+						instanceId: instance.id,
+					});
+					const vnicId = vnicAttachments.items?.[0]?.vnicId;
+					if (vnicId) {
+						const vnic = await networkClient.getVnic({ vnicId });
+						publicIp = vnic.vnic.publicIp;
+						privateIp = vnic.vnic.privateIp;
+						console.log(`- Public IP:   ${publicIp || "None assigned"}`);
+						console.log(`- Private IP:  ${privateIp || "None assigned"}`);
+						if (publicIp) {
+							console.log(`\nConnect with:\n  ssh ubuntu@${publicIp}\n`);
+						}
 					}
+				} catch {
+					console.log(
+						"Could not query VNIC public IP immediately. Check OCI Console for IP address.",
+					);
 				}
-			} catch {
+
+				records.push({
+					name: currentTargetName,
+					id: instance.id,
+					lifecycleState: instance.lifecycleState,
+					publicIp,
+					privateIp,
+				});
+				saveState();
+
 				console.log(
-					"Could not query VNIC public IP immediately. Check OCI Console for IP address.",
+					`Finished provisioning "${currentTargetName}". Moving to next target in queue.\n`,
 				);
+				break;
+			} catch (err: unknown) {
+				const error = err as {
+					statusCode?: number;
+					serviceCode?: string;
+					message?: string;
+				};
+				const msg = error.message || String(err);
+				const code = error.serviceCode || "";
+				const status = error.statusCode;
+
+				const isOutOfCapacity =
+					status === 500 ||
+					code === "InternalError" ||
+					code === "OutOfCapacity" ||
+					code === "TooManyRequests" ||
+					msg.includes("Out of host capacity") ||
+					msg.includes("capacity");
+
+				if (isOutOfCapacity) {
+					console.log(
+						`Out of host capacity for ${shape}. Retrying in ${retryInterval}s...`,
+					);
+				} else {
+					console.log(`Failed (Status: ${status}, Code: ${code}): ${msg}`);
+					if (status === 400 || status === 401 || status === 404) {
+						console.error(
+							"\n[CRITICAL ERROR] The request was rejected by OCI due to invalid credentials or parameters.",
+						);
+						console.error(
+							"Please verify your .env settings and run 'npm run check-env' to troubleshoot.",
+						);
+						process.exit(1);
+					}
+					console.log(`Retrying in ${retryInterval}s...`);
+				}
 			}
 
-			console.log(
-				"Instance is now provisioning in Oracle Cloud. Exiting cleanly.",
-			);
-			process.exit(0);
-		} catch (err: unknown) {
-			const error = err as {
-				statusCode?: number;
-				serviceCode?: string;
-				message?: string;
-			};
-			const msg = error.message || String(err);
-			const code = error.serviceCode || "";
-			const status = error.statusCode;
-
-			const isOutOfCapacity =
-				status === 500 ||
-				code === "InternalError" ||
-				code === "OutOfCapacity" ||
-				code === "TooManyRequests" ||
-				msg.includes("Out of host capacity") ||
-				msg.includes("capacity");
-
-			if (isOutOfCapacity) {
-				console.log(
-					`Out of host capacity for ${shape}. Retrying in ${retryInterval}s...`,
-				);
-			} else {
-				console.log(`Failed (Status: ${status}, Code: ${code}): ${msg}`);
-				// If error is authentication or invalid request, inform user
-				if (status === 400 || status === 401 || status === 404) {
-					console.error(
-						"\n[CRITICAL ERROR] The request was rejected by OCI due to invalid credentials or parameters.",
-					);
-					console.error(
-						"Please verify your .env settings and run 'npm run check-env' to troubleshoot.",
-					);
-					process.exit(1);
-				}
-				console.log(`Retrying in ${retryInterval}s...`);
-			}
+			attempt++;
+			await sleep(retryInterval * 1000);
 		}
-
-		attempt++;
-		await sleep(retryInterval * 1000);
 	}
+
+	console.log("\n=======================================================");
+	console.log("   ALL TARGET INSTANCES SUCCESSFULLY PROVISIONED!      ");
+	console.log("=======================================================");
+	for (const rec of records) {
+		console.log(
+			`- ${rec.name.padEnd(15)} | IP: ${(rec.publicIp || "Pending").padEnd(16)} | OCID: ${rec.id || "N/A"}`,
+		);
+	}
+	console.log("=======================================================\n");
+	console.log(`Saved provisioning summary to: ${stateFilePath}`);
 }
 
 main().catch((err) => {

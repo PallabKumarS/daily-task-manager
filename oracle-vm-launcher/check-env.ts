@@ -248,6 +248,30 @@ async function main() {
 		);
 	}
 
+	// 5. Existing Instances
+	console.log("\n[5/5] Checking Existing Compute Instances...");
+	try {
+		const instances = await computeClient.listInstances({ compartmentId });
+		const active = instances.items.filter(
+			(i) =>
+				i.lifecycleState !== core.models.Instance.LifecycleState.Terminated &&
+				i.lifecycleState !== core.models.Instance.LifecycleState.Terminating,
+		);
+		if (active.length === 0) {
+			console.log("  No active compute instances currently running.");
+		} else {
+			console.log(`  Found ${active.length} active instance(s):`);
+			for (const inst of active) {
+				console.log(
+					`  - "${inst.displayName}" (${inst.shape}) - State: ${inst.lifecycleState}`,
+				);
+			}
+		}
+	} catch (err: unknown) {
+		const msg = err instanceof Error ? err.message : String(err);
+		console.log(`  Unable to list instances: ${msg}`);
+	}
+
 	console.log("\n=======================================================");
 	console.log("   Everything looks good! You can run: npm start       ");
 	console.log("=======================================================\n");
