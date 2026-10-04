@@ -1,0 +1,23 @@
+import type * as identity from "oci-identity";
+
+export async function resolveAvailabilityDomain(
+	identityClient: identity.IdentityClient,
+	compartmentId: string,
+): Promise<string> {
+	if (process.env.OCI_AVAILABILITY_DOMAIN?.trim()) {
+		return process.env.OCI_AVAILABILITY_DOMAIN.trim();
+	}
+
+	const adResp = await identityClient.listAvailabilityDomains({
+		compartmentId,
+	});
+	const ads = adResp.items || [];
+	if (ads.length === 0) {
+		throw new Error("No Availability Domains found for compartment.");
+	}
+
+	const ad1 = ads.find((a) => a?.name?.includes("AD-1"));
+	const selected = ad1 ? ad1.name : ads[0].name;
+	console.log(`[AD] Selected Availability Domain: "${selected}"`);
+	return selected as string;
+}
