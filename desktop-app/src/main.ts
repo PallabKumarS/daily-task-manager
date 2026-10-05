@@ -13,10 +13,16 @@ import {
 	type IpcApiRequest,
 } from "./db/ipc-dispatcher.js";
 import { closePrismaDatabase, initPrismaDatabase } from "./db/prisma-client.js";
+import { ensureDevServerReady, stopDevServer } from "./dev-server-helper.js";
 import {
 	startLocalScheduler,
 	stopLocalScheduler,
 } from "./scheduler/local-scheduler.js";
+import {
+	closeSplashWindow,
+	createSplashWindow,
+	updateSplashStatus,
+} from "./splash-window.js";
 import { destroyTray, setupTray } from "./tray-manager.js";
 import type { AlarmNotificationPayload } from "./types.js";
 
@@ -68,6 +74,7 @@ async function createMainWindow(): Promise<BrowserWindow> {
 		height: 850,
 		minWidth: 920,
 		minHeight: 640,
+		show: false,
 		title: "DayPulse",
 		icon: getWindowIcon(),
 		backgroundColor: "#09090b",
@@ -85,16 +92,6 @@ async function createMainWindow(): Promise<BrowserWindow> {
 			event.preventDefault();
 			mainWindow?.hide();
 		}
-	});
-
-	const targetUrl = process.env.APP_URL || "http://localhost:3000";
-	console.log(`[DayPulse Desktop] Loading client UI from: ${targetUrl}`);
-
-	mainWindow.loadURL(targetUrl).catch((err) => {
-		console.warn(
-			`[DayPulse Desktop] Failed to load ${targetUrl}:`,
-			err.message,
-		);
 	});
 
 	return mainWindow;
@@ -122,20 +119,22 @@ function registerIpcHandlers(): void {
 }
 
 app.whenReady().then(async () => {
-	// 1. Initialize hidden audio synthesizer window
-	initAudioPlayer();
+	// 1. Show animated splash screen immediately
+	createSplashWindow();
+	updateSplashStatus("Initializing local database...");
 
-	// 2. Initialize in-process SQLite database
-	await initPrismaDatabase();
+	// 2. Initialize hidden audio synthesizer window
+	initAudioPlayer();
 
 	// 3. Register IPC handlers
 	registerIpcHandlers();
 
-	// 4. Create primary UI window
-	const win = await createMainWindow();
+	// 4. Initialize in-process SQLite database
+	await initPrismaDatabase();
+	updateSplashStatus("Loading workspace...");
 
-	// 5. Start in-process background reminder scheduler
-	startLocalScheduler(win);
+	// 5. Create primary UI window (hidden while loading)
+	const win = await createMainWindow();
 
 	// 6. Setup System Tray
 	setupTray(
@@ -148,6 +147,32 @@ app.whenReady().then(async () => {
 			app.quit();
 		},
 	);
+
+	// 7. Start in-process background reminder scheduler
+	startLocalScheduler(win);
+
+	// 8. Ensure UI development server is running in dev mode
+	const targetUrl = process.env.APP_URL || "http://localhost:3000";
+	if (process.env.NODE_ENV !== "production") {
+		await ensureDevServerReady(targetUrl);
+	}
+
+	// 9. Load URL with retry handling
+	updateSplashStatus("Connecting to DayPulse interface...");
+	for (let attempt = 1; attempt <= 30; attempt++) {
+		try {
+			await win.loadURL(targetUrl);
+			console.log(`[DayPulse Desktop] UI connected at ${targetUrl}`);
+			break;
+		} catch {
+			await new Promise((r) => setTimeout(r, 1000));
+		}
+	}
+
+	// 10. Smoothly close splash screen and reveal main window
+	updateSplashStatus("Workspace ready!");
+	await new Promise((r) => setTimeout(r, 500));
+	await closeSplashWindow(win);
 });
 
 app.on("before-quit", async () => {
@@ -155,6 +180,7 @@ app.on("before-quit", async () => {
 	stopLocalScheduler();
 	destroyAudioPlayer();
 	destroyTray();
+	stopDevServer();
 	await closePrismaDatabase();
 });
 
