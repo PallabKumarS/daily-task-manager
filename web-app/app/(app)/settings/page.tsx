@@ -28,6 +28,11 @@ import { CustomSelect, type SelectOption } from "@/components/ui/custom-select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/lib/api-client";
+import {
+	extractManifestFromZip,
+	fileToBase64,
+	triggerDownloadArchive,
+} from "@/lib/backup-archive";
 import { CURRENCIES } from "@/lib/currency-symbols";
 
 const CURRENCY_SELECT_OPTIONS: SelectOption[] = CURRENCIES.map((c) => ({
@@ -156,33 +161,38 @@ function SettingsContent() {
 
 	const handleExportBackup = async () => {
 		try {
-			const res = await api.post<{ backup: unknown }>("/sync/simulate", {
-				action: "export",
-			});
-			if (!res.success || !res.data?.backup) {
-				toast.error("Failed to generate backup");
+			const res = await api.post<{
+				fileName: string;
+				base64: string;
+				manifest?: {
+					exportedAt: string;
+					counts: Record<string, number>;
+				};
+			}>("/sync/archive/export");
+
+			if (!res.success || !res.data?.base64) {
+				toast.error("Failed to generate backup archive");
 				return;
 			}
 
-			const dataStr =
-				"data:text/json;charset=utf-8," +
-				encodeURIComponent(JSON.stringify(res.data.backup, null, 2));
-			const downloadAnchor = document.createElement("a");
-			const timestamp = new Date().toISOString().slice(0, 10);
-			downloadAnchor.setAttribute("href", dataStr);
-			downloadAnchor.setAttribute(
-				"download",
-				`DayPulse_Backup_${timestamp}.json`,
+			const saveRes = await triggerDownloadArchive(
+				res.data.base64,
+				res.data.fileName || "DayPulse_Backup.zip",
 			);
-			document.body.appendChild(downloadAnchor);
-			downloadAnchor.click();
-			downloadAnchor.remove();
 
-			toast.success(
-				"Backup downloaded successfully. Keep it safe or sync to Google Drive.",
-			);
-		} catch {
-			toast.error("Error creating backup download");
+			if (saveRes.saved) {
+				toast.success(
+					saveRes.path
+						? `Backup archive saved: ${saveRes.path}`
+						: `Backup archive downloaded (${res.data.fileName})`,
+				);
+			}
+		} catch (error) {
+			const msg =
+				error instanceof Error
+					? error.message
+					: "Error creating backup download";
+			toast.error(msg);
 		}
 	};
 
@@ -192,22 +202,74 @@ function SettingsContent() {
 
 		setImporting(true);
 		try {
-			const text = await file.text();
-			const parsed = JSON.parse(text);
+			const isZip =
+				file.name.endsWith(".zip") ||
+				file.name.endsWith(".daypulse") ||
+				file.type.includes("zip");
 
-			const res = await api.post("/sync/simulate", {
-				action: "import",
-				data: parsed,
-			});
+			if (isZip) {
+				const base64Data = await fileToBase64(file);
+				const manifest = await extractManifestFromZip(file);
 
-			if (res.success) {
-				toast.success(res.message || "Data restored successfully");
-				window.dispatchEvent(new CustomEvent("daypulse:refresh"));
+				const confirmDesc = manifest
+					? `Backup from ${new Date(manifest.exportedAt).toLocaleDateString()} for ${manifest.user?.name || "User"}.\n\nContains: ${manifest.counts.tasks} tasks, ${manifest.counts.routines} routines, ${manifest.counts.transactions} transactions, ${manifest.counts.trackers} trackers.\n\nExisting records will be safely updated and merged.`
+					: "The archive will be safely unpacked and merged with your local database.";
+
+				const ok = await confirm({
+					title: "Restore Backup Archive?",
+					description: confirmDesc,
+					confirmText: "Restore & Merge",
+					variant: "default",
+				});
+
+				if (!ok) {
+					setImporting(false);
+					e.target.value = "";
+					return;
+				}
+
+				const res = await api.post<{
+					restoredCounts?: Record<string, number>;
+				}>("/sync/archive/restore", {
+					archiveBase64: base64Data,
+				});
+
+				if (res.success) {
+					toast.success(res.message || "Archive successfully restored");
+					window.dispatchEvent(new CustomEvent("daypulse:refresh"));
+				} else {
+					toast.error(res.message || "Failed to restore archive");
+				}
 			} else {
-				toast.error(res.message || "Failed to restore backup");
+				// Legacy JSON fallback
+				const text = await file.text();
+				const parsed = JSON.parse(text);
+
+				const ok = await confirm({
+					title: "Restore Legacy JSON Backup?",
+					description:
+						"Restore routines, tasks, and transactions from this legacy JSON file?",
+					confirmText: "Restore Data",
+					variant: "default",
+				});
+
+				if (!ok) {
+					setImporting(false);
+					e.target.value = "";
+					return;
+				}
+
+				const res = await api.post("/sync/restore", parsed);
+				if (res.success) {
+					toast.success(res.message || "Data restored successfully");
+					window.dispatchEvent(new CustomEvent("daypulse:refresh"));
+				} else {
+					toast.error(res.message || "Failed to restore backup");
+				}
 			}
-		} catch {
-			toast.error("Invalid JSON backup file");
+		} catch (err) {
+			const msg = err instanceof Error ? err.message : "Invalid backup file";
+			toast.error(msg);
 		} finally {
 			setImporting(false);
 			e.target.value = "";
@@ -559,65 +621,72 @@ function SettingsContent() {
 				</div>
 			</div>
 
-			{/* Manual JSON Backup & Offline Archival */}
+			{/* Manual Multi-Collection ZIP Archive & Offline Backup */}
 			<div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-xl space-y-4">
 				<div className="flex items-center gap-2 pb-3 border-b border-slate-800">
 					<FileText className="w-4 h-4 text-emerald-400" />
 					<h2 className="text-sm font-bold text-white">
-						Direct JSON Backup & Offline Archival
+						Multi-Collection ZIP Archive & Offline Backup
 					</h2>
 				</div>
 
 				<p className="text-xs text-slate-300 leading-relaxed">
-					Download your complete database in an open, portable JSON format. You
-					can manually drag and drop this file into your Google Drive, email it,
-					or restore it on any computer.
+					Export all database collections (tasks, routines, routine logs,
+					transactions, trackers, tracker logs, categories) as individual JSON
+					files bundled into a compressed ZIP archive (
+					<code className="text-emerald-400 font-mono">
+						DayPulse_Backup.zip
+					</code>
+					). Includes a verified manifest with SHA256 checksums and safe merge
+					capability.
 				</p>
 
 				<div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-					{/* Export JSON */}
+					{/* Export ZIP */}
 					<div className="rounded-2xl border border-slate-800 bg-slate-950 p-5 space-y-3">
 						<div className="flex items-center gap-2 text-slate-200">
 							<Download className="w-4 h-4 text-emerald-400" />
 							<h3 className="text-xs font-bold uppercase tracking-wider">
-								Export Data Snapshot
+								Export ZIP Archive
 							</h3>
 						</div>
 						<p className="text-xs text-slate-400">
-							Download routines, habits, tasks, routine logs, and financial
-							records into a single JSON file.
+							Generates a compressed multi-JSON archive of all your collections
+							with metadata and checksums.
 						</p>
 						<Button
 							variant="emerald"
 							size="sm"
 							onClick={handleExportBackup}
-							className="w-full gap-2"
+							className="w-full gap-2 cursor-pointer"
 						>
 							<Download className="w-4 h-4" />
-							<span>Download JSON Backup</span>
+							<span>Export Backup ZIP</span>
 						</Button>
 					</div>
 
-					{/* Import JSON */}
+					{/* Import Archive */}
 					<div className="rounded-2xl border border-slate-800 bg-slate-950 p-5 space-y-3">
 						<div className="flex items-center gap-2 text-slate-200">
 							<Upload className="w-4 h-4 text-teal-400" />
 							<h3 className="text-xs font-bold uppercase tracking-wider">
-								Restore / Import File
+								Restore Archive / Backup
 							</h3>
 						</div>
 						<p className="text-xs text-slate-400">
-							Restore routines, events, and transactions from a previous
-							DayPulse backup file.
+							Inspects and restores tasks, routines, and wealth logs from a{" "}
+							<code className="text-teal-400">.zip</code>,{" "}
+							<code className="text-teal-400">.daypulse</code>, or legacy{" "}
+							<code className="text-teal-400">.json</code> file.
 						</p>
 						<label className="flex items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-800 px-4 py-2 text-xs font-semibold text-slate-200 hover:bg-slate-700/80 cursor-pointer transition">
 							<Upload className="w-4 h-4" />
 							<span>
-								{importing ? "Importing..." : "Choose Backup File..."}
+								{importing ? "Processing..." : "Select Archive File..."}
 							</span>
 							<input
 								type="file"
-								accept=".json"
+								accept=".zip,.daypulse,.json,application/zip"
 								onChange={handleImportBackup}
 								disabled={importing}
 								className="hidden"

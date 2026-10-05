@@ -1,4 +1,4 @@
-import { type ChildProcess, spawn } from "node:child_process";
+import { type ChildProcess, execSync, spawn } from "node:child_process";
 import * as fs from "node:fs";
 import * as http from "node:http";
 import * as path from "node:path";
@@ -6,18 +6,23 @@ import { updateSplashStatus } from "./splash-window.js";
 
 let nextDevProcess: ChildProcess | null = null;
 
-export async function isUrlResponding(url: string): Promise<boolean> {
+export async function isUrlResponding(
+	url: string,
+	timeoutMs = 3000,
+): Promise<boolean> {
 	return new Promise((resolve) => {
 		try {
 			const parsed = new URL(url);
 			const req = http.get(
 				{
-					hostname: parsed.hostname,
+					hostname:
+						parsed.hostname === "localhost" ? "127.0.0.1" : parsed.hostname,
 					port: parsed.port || 80,
 					path: parsed.pathname || "/",
-					timeout: 800,
+					timeout: timeoutMs,
 				},
 				(res) => {
+					res.resume();
 					resolve(res.statusCode !== undefined && res.statusCode < 500);
 				},
 			);
@@ -32,16 +37,51 @@ export async function isUrlResponding(url: string): Promise<boolean> {
 	});
 }
 
+function cleanStalePortProcesses(port = 3000): void {
+	if (process.platform !== "win32") return;
+	try {
+		const stdout = execSync(`netstat -ano | findstr ":${port}"`, {
+			encoding: "utf-8",
+			stdio: ["ignore", "pipe", "ignore"],
+		});
+		const lines = stdout.trim().split("\n");
+		for (const line of lines) {
+			const parts = line.trim().split(/\s+/);
+			const state = parts[3];
+			const pid = parts[parts.length - 1];
+			if (
+				state === "LISTENING" &&
+				pid &&
+				pid !== "0" &&
+				pid !== String(process.pid)
+			) {
+				console.log(
+					`[DayPulse Desktop] Cleaning stale process (PID ${pid}) on port ${port}...`,
+				);
+				try {
+					execSync(`taskkill /pid ${pid} /T /F`, { stdio: "ignore" });
+				} catch {
+					// Ignore if already exited
+				}
+			}
+		}
+	} catch {
+		// Port was not in use
+	}
+}
+
 export async function ensureDevServerReady(
-	targetUrl = "http://localhost:3000",
+	targetUrl = "http://localhost:3000/dashboard",
 ): Promise<void> {
-	const alreadyUp = await isUrlResponding(targetUrl);
+	const healthUrl = "http://127.0.0.1:3000/api/health";
+	const alreadyUp = await isUrlResponding(healthUrl, 2000);
 	if (alreadyUp) {
-		console.log(
-			`[DayPulse Desktop] UI server already responsive at ${targetUrl}`,
-		);
+		console.log(`[DayPulse Desktop] UI server verified at ${healthUrl}`);
 		return;
 	}
+
+	// Clean any zombie process that holds the port without responding to HTTP
+	cleanStalePortProcesses(3000);
 
 	const webDirCandidates = [
 		path.resolve(process.cwd(), "web-app"),
@@ -82,23 +122,37 @@ export async function ensureDevServerReady(
 			...process.env,
 			PORT: "3000",
 		},
-		stdio: "pipe",
+		stdio: ["ignore", "pipe", "pipe"],
 		shell: isWin,
 	});
 
-	nextDevProcess.stdout?.on("data", (data) => {
-		const out = data.toString().trim();
+	nextDevProcess.stdout?.on("data", (data: Buffer) => {
+		const out = data.toString();
+		process.stdout.write(`[Next.js Dev] ${out}`);
 		if (out.includes("Ready in") || out.includes("compiled")) {
 			updateSplashStatus("UI server ready. Compiling workspace...");
 		}
 	});
 
-	// Poll up to 45 seconds for Next.js to start
+	nextDevProcess.stderr?.on("data", (data: Buffer) => {
+		const err = data.toString();
+		process.stderr.write(`[Next.js Dev (err)] ${err}`);
+	});
+
+	nextDevProcess.on("exit", (code) => {
+		if (code !== null && code !== 0) {
+			console.warn(
+				`[DayPulse Desktop] Next.js dev server exited with code ${code}`,
+			);
+		}
+	});
+
+	// Poll up to 30 seconds for Next.js to start
 	const start = Date.now();
-	while (Date.now() - start < 45000) {
-		await new Promise((r) => setTimeout(r, 1000));
-		if (await isUrlResponding(targetUrl)) {
-			console.log(`[DayPulse Desktop] UI server verified at ${targetUrl}`);
+	while (Date.now() - start < 30000) {
+		await new Promise((r) => setTimeout(r, 800));
+		if (await isUrlResponding(healthUrl, 1500)) {
+			console.log(`[DayPulse Desktop] UI server responsive at ${healthUrl}`);
 			updateSplashStatus("Workspace ready!");
 			return;
 		}
@@ -110,9 +164,21 @@ export async function ensureDevServerReady(
 }
 
 export function stopDevServer(): void {
-	if (nextDevProcess) {
-		console.log("[DayPulse Desktop] Stopping spawned Next.js dev process...");
-		nextDevProcess.kill("SIGTERM");
+	if (nextDevProcess && nextDevProcess.pid) {
+		console.log(
+			`[DayPulse Desktop] Terminating Next.js process tree (PID ${nextDevProcess.pid})...`,
+		);
+		try {
+			if (process.platform === "win32") {
+				execSync(`taskkill /pid ${nextDevProcess.pid} /T /F`, {
+					stdio: "ignore",
+				});
+			} else {
+				process.kill(-nextDevProcess.pid, "SIGTERM");
+			}
+		} catch {
+			// Process tree already terminated
+		}
 		nextDevProcess = null;
 	}
 }

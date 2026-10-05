@@ -1,10 +1,21 @@
-import { getCurrentUserId, getPrismaClient } from "./prisma-client.js";
+import bcrypt from "bcryptjs";
+import { createBackupArchive } from "./archive-builder.js";
+import {
+	previewBackupArchive,
+	restoreBackupArchive,
+} from "./archive-extractor.js";
+import {
+	getCurrentUserId,
+	getPrismaClient,
+	setCurrentUserId,
+} from "./prisma-client.js";
 
 export interface IpcApiRequest {
 	endpoint: string;
 	method?: string;
 	body?: unknown;
 	query?: Record<string, string>;
+	token?: string | null;
 }
 
 export interface IpcApiResponse<T = unknown> {
@@ -24,7 +35,28 @@ export async function handleIpcApiDispatch(
 	req: IpcApiRequest,
 ): Promise<IpcApiResponse> {
 	const prisma = getPrismaClient();
-	const userId = getCurrentUserId();
+	let userId = getCurrentUserId();
+
+	// Resolve user from token if passed
+	if (req.token) {
+		const tokenVal = req.token.trim();
+		let potentialUserId = "";
+		if (tokenVal.startsWith("daypulse_token_")) {
+			potentialUserId = tokenVal.slice("daypulse_token_".length);
+		} else if (tokenVal.length > 10 && !tokenVal.includes(" ")) {
+			potentialUserId = tokenVal;
+		}
+
+		if (potentialUserId) {
+			const matchedUser = await prisma.user.findUnique({
+				where: { id: potentialUserId },
+			});
+			if (matchedUser) {
+				userId = matchedUser.id;
+				setCurrentUserId(matchedUser.id);
+			}
+		}
+	}
 
 	const rawEndpoint = req.endpoint.replace(/^\/api\/v1/, "");
 	const [pathname, queryString] = rawEndpoint.split("?");
@@ -45,8 +77,23 @@ export async function handleIpcApiDispatch(
 		// ================= AUTH ROUTES =================
 		if (pathname === "/auth/me" && method === "GET") {
 			let user = await prisma.user.findUnique({ where: { id: userId } });
-			if (!user) {
-				user = await prisma.user.findFirst();
+			if (!user || user.id === "local_user_default") {
+				// Prioritize real user if available (e.g. pallabkumar26@gmail.com)
+				const realUser = await prisma.user.findFirst({
+					where: { email: { not: "local@daypulse.app" } },
+					orderBy: { createdAt: "desc" },
+				});
+				if (realUser) {
+					user = realUser;
+					setCurrentUserId(realUser.id);
+					userId = realUser.id;
+				} else if (!user) {
+					user = await prisma.user.findFirst();
+					if (user) {
+						setCurrentUserId(user.id);
+						userId = user.id;
+					}
+				}
 			}
 			return {
 				statusCode: 200,
@@ -67,18 +114,105 @@ export async function handleIpcApiDispatch(
 			return { statusCode: 200, success: true, data: updated };
 		}
 
-		if (
-			(pathname === "/auth/login" || pathname === "/auth/register") &&
-			method === "POST"
-		) {
-			let user = await prisma.user.findUnique({ where: { id: userId } });
+		if (pathname === "/auth/login" && method === "POST") {
+			const email = String(body.email || "")
+				.toLowerCase()
+				.trim();
+			const password = String(body.password || "");
+
+			const user = await prisma.user.findUnique({ where: { email } });
 			if (!user) {
-				user = await prisma.user.findFirst();
+				return {
+					statusCode: 401,
+					success: false,
+					message: "Invalid email or password.",
+					data: null,
+				};
 			}
+
+			const isPasswordMatched = await bcrypt.compare(
+				password,
+				user.passwordHash,
+			);
+			if (!isPasswordMatched) {
+				return {
+					statusCode: 401,
+					success: false,
+					message: "Invalid email or password.",
+					data: null,
+				};
+			}
+
+			setCurrentUserId(user.id);
 			return {
 				statusCode: 200,
 				success: true,
-				data: { user, token: "daypulse_standalone_token" },
+				data: {
+					user: {
+						id: user.id,
+						email: user.email,
+						name: user.name,
+						currency: user.currency,
+						createdAt: user.createdAt,
+					},
+					token: `daypulse_token_${user.id}`,
+				},
+			};
+		}
+
+		if (pathname === "/auth/register" && method === "POST") {
+			const email = String(body.email || "")
+				.toLowerCase()
+				.trim();
+			const password = String(body.password || "");
+			const name = String(body.name || "User");
+			const currency = String(body.currency || "USD").toUpperCase();
+
+			const existingUser = await prisma.user.findUnique({ where: { email } });
+			if (existingUser) {
+				return {
+					statusCode: 409,
+					success: false,
+					message: "An account with this email address already exists.",
+					data: null,
+				};
+			}
+
+			const salt = await bcrypt.genSalt(10);
+			const passwordHash = await bcrypt.hash(password, salt);
+
+			const newUser = await prisma.user.create({
+				data: {
+					name,
+					email,
+					passwordHash,
+					currency,
+				},
+			});
+
+			setCurrentUserId(newUser.id);
+			return {
+				statusCode: 201,
+				success: true,
+				data: {
+					user: {
+						id: newUser.id,
+						email: newUser.email,
+						name: newUser.name,
+						currency: newUser.currency,
+						createdAt: newUser.createdAt,
+					},
+					token: `daypulse_token_${newUser.id}`,
+				},
+			};
+		}
+
+		if (pathname === "/auth/logout" && method === "POST") {
+			return {
+				statusCode: 200,
+				success: true,
+				message: "Logged out successfully",
+				data: null,
 			};
 		}
 
@@ -367,17 +501,86 @@ export async function handleIpcApiDispatch(
 
 		// ================= TRACKERS ROUTES =================
 		if (pathname === "/trackers" && method === "GET") {
-			const todayStr = new Date().toISOString().slice(0, 10);
+			const targetDate = query.date || new Date().toISOString().slice(0, 10);
+			const [yearStr, monthStr] = targetDate.split("-");
+			const year = Number(yearStr) || new Date().getFullYear();
+			const month = Number(monthStr) || new Date().getMonth() + 1;
+
+			const lastDay = new Date(year, month, 0).getDate();
+			const monthStartDate = `${year}-${String(month).padStart(2, "0")}-01`;
+			const monthEndDate = `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+
 			const trackers = await prisma.dailyTracker.findMany({
 				where: { userId, isArchived: false },
 				include: {
 					logs: {
-						where: { date: todayStr },
+						where: {
+							date: {
+								gte: monthStartDate,
+								lte: monthEndDate,
+							},
+						},
 					},
 				},
-				orderBy: { createdAt: "desc" },
+				orderBy: { createdAt: "asc" },
 			});
-			return { statusCode: 200, success: true, data: trackers };
+
+			const formatted = trackers.map((tracker) => {
+				const todayLog =
+					tracker.logs.find((l) => l.date === targetDate) || null;
+
+				let totalUnitsMonth = 0;
+				let totalCostMonth = 0;
+				let unsettledUnits = 0;
+				let unsettledCost = 0;
+				let cancelledDays = 0;
+
+				for (const log of tracker.logs) {
+					totalUnitsMonth += log.value;
+					const rate = log.unitPrice ?? tracker.unitPrice ?? 0;
+					const cost = log.value * rate;
+					totalCostMonth += cost;
+
+					if (!log.isSettled) {
+						unsettledUnits += log.value;
+						unsettledCost += cost;
+					}
+
+					if (log.status === "CANCELLED" || (log.value === 0 && log.notes)) {
+						cancelledDays += 1;
+					}
+				}
+
+				return {
+					...tracker,
+					todayLog: todayLog
+						? {
+								id: todayLog.id,
+								date: todayLog.date,
+								value: todayLog.value,
+								status: todayLog.status,
+								unitPrice: todayLog.unitPrice,
+								notes: todayLog.notes,
+								isSettled: todayLog.isSettled,
+								settledAt: todayLog.settledAt,
+							}
+						: null,
+					todayValue: todayLog ? todayLog.value : 0,
+					isLoggedToday: Boolean(todayLog),
+					monthStats: {
+						year,
+						month,
+						totalUnits: totalUnitsMonth,
+						totalCost: Number(totalCostMonth.toFixed(2)),
+						unsettledUnits,
+						unsettledCost: Number(unsettledCost.toFixed(2)),
+						cancelledDays,
+						daysLoggedCount: tracker.logs.length,
+					},
+				};
+			});
+
+			return { statusCode: 200, success: true, data: formatted };
 		}
 
 		if (pathname === "/trackers" && method === "POST") {
@@ -434,7 +637,254 @@ export async function handleIpcApiDispatch(
 			return { statusCode: 200, success: true, data: log };
 		}
 
+		const trackerSettleMatch = pathname.match(/^\/trackers\/([^/]+)\/settle$/);
+		if (trackerSettleMatch && method === "POST") {
+			const trackerId = trackerSettleMatch[1];
+			const tracker = await prisma.dailyTracker.findFirst({
+				where: { id: trackerId, userId },
+			});
+			if (!tracker) {
+				return {
+					statusCode: 404,
+					success: false,
+					message: "Tracker not found",
+					data: null,
+				};
+			}
+
+			const startDate = String(body.startDate || "");
+			const endDate = String(body.endDate || "");
+
+			const unsettledLogs = await prisma.dailyTrackerLog.findMany({
+				where: {
+					trackerId,
+					userId,
+					date: { gte: startDate, lte: endDate },
+					isSettled: false,
+					value: { gt: 0 },
+				},
+			});
+
+			if (unsettledLogs.length === 0) {
+				return {
+					statusCode: 400,
+					success: false,
+					message: "No unsettled items found for the selected period.",
+					data: null,
+				};
+			}
+
+			let totalAmount = 0;
+			let totalUnits = 0;
+			for (const log of unsettledLogs) {
+				const rate = log.unitPrice ?? tracker.unitPrice ?? 0;
+				totalAmount += log.value * rate;
+				totalUnits += log.value;
+			}
+			totalAmount = Number(totalAmount.toFixed(2));
+
+			const settlementDescription =
+				typeof body.notes === "string" && body.notes
+					? body.notes
+					: `Settlement: ${tracker.name} (${totalUnits} ${tracker.unitName}, ${startDate} to ${endDate})`;
+
+			const [transaction] = await prisma.$transaction([
+				prisma.transaction.create({
+					data: {
+						userId,
+						type: "EXPENSE",
+						amount: totalAmount,
+						category:
+							typeof body.category === "string"
+								? body.category
+								: tracker.category || "Meals & Food",
+						description: settlementDescription,
+						paymentMethod:
+							typeof body.paymentMethod === "string"
+								? body.paymentMethod
+								: "Cash",
+						date: new Date(),
+					},
+				}),
+				prisma.dailyTrackerLog.updateMany({
+					where: { id: { in: unsettledLogs.map((l) => l.id) } },
+					data: { isSettled: true, settledAt: new Date() },
+				}),
+			]);
+
+			return {
+				statusCode: 200,
+				success: true,
+				message: "Tracker settlement recorded in finances.",
+				data: {
+					transaction,
+					settledLogsCount: unsettledLogs.length,
+					totalAmount,
+				},
+			};
+		}
+
 		const trackerMatch = pathname.match(/^\/trackers\/([^/]+)$/);
+		if (trackerMatch && method === "GET") {
+			const trackerId = trackerMatch[1];
+			const tracker = await prisma.dailyTracker.findFirst({
+				where: { id: trackerId, userId },
+			});
+
+			if (!tracker) {
+				return {
+					statusCode: 404,
+					success: false,
+					message: "Tracker not found",
+					data: null,
+				};
+			}
+
+			const now = new Date();
+			const targetYear = query.year ? Number(query.year) : now.getFullYear();
+			const targetMonth = query.month
+				? Number(query.month)
+				: now.getMonth() + 1;
+
+			const monthStr = String(targetMonth).padStart(2, "0");
+			const lastDay = new Date(targetYear, targetMonth, 0).getDate();
+			const startDate = `${targetYear}-${monthStr}-01`;
+			const endDate = `${targetYear}-${monthStr}-${String(lastDay).padStart(2, "0")}`;
+
+			const logs = await prisma.dailyTrackerLog.findMany({
+				where: {
+					trackerId,
+					userId,
+					date: { gte: startDate, lte: endDate },
+				},
+				orderBy: { date: "asc" },
+			});
+
+			const logMap = new Map<string, (typeof logs)[0]>();
+			for (const log of logs) {
+				logMap.set(log.date, log);
+			}
+
+			const days = [];
+			let totalUnits = 0;
+			let totalCost = 0;
+			let unsettledUnits = 0;
+			let unsettledCost = 0;
+			let settledCost = 0;
+			let cancelledDaysCount = 0;
+			let loggedDaysCount = 0;
+
+			for (let dayNum = 1; dayNum <= lastDay; dayNum++) {
+				const dayStr = String(dayNum).padStart(2, "0");
+				const dateKey = `${targetYear}-${monthStr}-${dayStr}`;
+				const existingLog = logMap.get(dateKey);
+
+				if (existingLog) {
+					loggedDaysCount += 1;
+					const rate = existingLog.unitPrice ?? tracker.unitPrice ?? 0;
+					const dayCost = existingLog.value * rate;
+					totalUnits += existingLog.value;
+					totalCost += dayCost;
+
+					if (existingLog.isSettled) {
+						settledCost += dayCost;
+					} else {
+						unsettledUnits += existingLog.value;
+						unsettledCost += dayCost;
+					}
+
+					if (
+						existingLog.status === "CANCELLED" ||
+						(existingLog.value === 0 && existingLog.notes)
+					) {
+						cancelledDaysCount += 1;
+					}
+
+					days.push({
+						date: dateKey,
+						dayNumber: dayNum,
+						value: existingLog.value,
+						status: existingLog.status,
+						unitPrice: rate,
+						dayCost: Number(dayCost.toFixed(2)),
+						notes: existingLog.notes,
+						isSettled: existingLog.isSettled,
+						settledAt: existingLog.settledAt,
+						logId: existingLog.id,
+					});
+				} else {
+					days.push({
+						date: dateKey,
+						dayNumber: dayNum,
+						value: 0,
+						status: "UNLOGGED",
+						unitPrice: tracker.unitPrice ?? 0,
+						dayCost: 0,
+						notes: null,
+						isSettled: false,
+						settledAt: null,
+						logId: null,
+					});
+				}
+			}
+
+			return {
+				statusCode: 200,
+				success: true,
+				data: {
+					tracker,
+					period: {
+						year: targetYear,
+						month: targetMonth,
+						daysInMonth: lastDay,
+						startDate,
+						endDate,
+					},
+					stats: {
+						totalUnits,
+						totalCost: Number(totalCost.toFixed(2)),
+						unsettledUnits,
+						unsettledCost: Number(unsettledCost.toFixed(2)),
+						settledCost: Number(settledCost.toFixed(2)),
+						cancelledDaysCount,
+						loggedDaysCount,
+					},
+					days,
+					logs,
+				},
+			};
+		}
+
+		if (trackerMatch && method === "PATCH") {
+			const trackerId = trackerMatch[1];
+			const updated = await prisma.dailyTracker.update({
+				where: { id: trackerId },
+				data: {
+					name: typeof body.name === "string" ? body.name : undefined,
+					category:
+						typeof body.category === "string" ? body.category : undefined,
+					unitName:
+						typeof body.unitName === "string" ? body.unitName : undefined,
+					defaultTarget:
+						body.defaultTarget !== undefined
+							? Number(body.defaultTarget)
+							: undefined,
+					unitPrice:
+						body.unitPrice !== undefined
+							? body.unitPrice
+								? Number(body.unitPrice)
+								: null
+							: undefined,
+					currency:
+						typeof body.currency === "string" ? body.currency : undefined,
+					description:
+						typeof body.description === "string" ? body.description : undefined,
+					color: typeof body.color === "string" ? body.color : undefined,
+				},
+			});
+			return { statusCode: 200, success: true, data: updated };
+		}
+
 		if (trackerMatch && method === "DELETE") {
 			const trackerId = trackerMatch[1];
 			await prisma.dailyTracker.delete({ where: { id: trackerId } });
@@ -471,7 +921,473 @@ export async function handleIpcApiDispatch(
 			return { statusCode: 200, success: true, data: null };
 		}
 
-		// ================= SYNC STUBS =================
+		// ================= SYNC & BACKUP ROUTES =================
+		if (pathname === "/sync/export" && method === "POST") {
+			const currentUser = await prisma.user.findUnique({
+				where: { id: userId },
+			});
+			const tasks = await prisma.task.findMany({ where: { userId } });
+			const routines = await prisma.routine.findMany({ where: { userId } });
+			const routineLogs = await prisma.routineLog.findMany({
+				where: { userId },
+			});
+			const transactions = await prisma.transaction.findMany({
+				where: { userId },
+			});
+			const trackers = await prisma.dailyTracker.findMany({
+				where: { userId },
+			});
+			const trackerLogs = await prisma.dailyTrackerLog.findMany({
+				where: { userId },
+			});
+			const categories = await prisma.categoryOption.findMany({
+				where: { userId },
+			});
+
+			const backupBundle = {
+				version: 1,
+				exportedAt: new Date().toISOString(),
+				user: currentUser
+					? {
+							id: currentUser.id,
+							name: currentUser.name,
+							email: currentUser.email,
+							currency: currentUser.currency,
+						}
+					: null,
+				tasks,
+				routines,
+				routineLogs,
+				transactions,
+				trackers,
+				trackerLogs,
+				categories,
+			};
+
+			return {
+				statusCode: 200,
+				success: true,
+				data: backupBundle,
+			};
+		}
+
+		if (pathname === "/sync/restore" && method === "POST") {
+			const backup = body as {
+				version?: number;
+				user?: {
+					id?: string;
+					name?: string;
+					email?: string;
+					currency?: string;
+				};
+				tasks?: Array<Record<string, unknown>>;
+				routines?: Array<Record<string, unknown>>;
+				routineLogs?: Array<Record<string, unknown>>;
+				transactions?: Array<Record<string, unknown>>;
+				trackers?: Array<Record<string, unknown>>;
+				trackerLogs?: Array<Record<string, unknown>>;
+				categories?: Array<Record<string, unknown>>;
+			};
+
+			if (!backup || typeof backup !== "object") {
+				return {
+					statusCode: 400,
+					success: false,
+					message: "Invalid backup bundle format",
+					data: null,
+				};
+			}
+
+			// Restore categories
+			if (Array.isArray(backup.categories)) {
+				for (const c of backup.categories) {
+					const id = String(c.id);
+					await prisma.categoryOption
+						.upsert({
+							where: { id },
+							create: {
+								id,
+								userId,
+								name: String(c.name || "General"),
+								group: String(c.group || "EXPENSE"),
+								color: typeof c.color === "string" ? c.color : null,
+							},
+							update: {
+								name: String(c.name || "General"),
+								group: String(c.group || "EXPENSE"),
+								color: typeof c.color === "string" ? c.color : null,
+							},
+						})
+						.catch(() => null);
+				}
+			}
+
+			// Restore tasks
+			if (Array.isArray(backup.tasks)) {
+				for (const t of backup.tasks) {
+					const id = String(t.id);
+					await prisma.task
+						.upsert({
+							where: { id },
+							create: {
+								id,
+								userId,
+								title: String(t.title || "Restored Task"),
+								description:
+									typeof t.description === "string" ? t.description : null,
+								type: typeof t.type === "string" ? t.type : "TASK",
+								category:
+									typeof t.category === "string" ? t.category : "General",
+								priority:
+									typeof t.priority === "string" ? t.priority : "MEDIUM",
+								status: typeof t.status === "string" ? t.status : "PENDING",
+								startDate: t.startDate ? new Date(String(t.startDate)) : null,
+								dueDate: t.dueDate ? new Date(String(t.dueDate)) : null,
+								remindBeforeMinutes: Number(t.remindBeforeMinutes) || 15,
+								isRecurring: Boolean(t.isRecurring),
+								repeatFrequency:
+									typeof t.repeatFrequency === "string"
+										? t.repeatFrequency
+										: null,
+								repeatInterval: Number(t.repeatInterval) || 1,
+								repeatDaysOfWeek:
+									typeof t.repeatDaysOfWeek === "string"
+										? t.repeatDaysOfWeek
+										: null,
+								repeatTime:
+									typeof t.repeatTime === "string" ? t.repeatTime : null,
+							},
+							update: {
+								title: String(t.title || "Restored Task"),
+								description:
+									typeof t.description === "string" ? t.description : null,
+								type: typeof t.type === "string" ? t.type : "TASK",
+								category:
+									typeof t.category === "string" ? t.category : "General",
+								priority:
+									typeof t.priority === "string" ? t.priority : "MEDIUM",
+								status: typeof t.status === "string" ? t.status : "PENDING",
+								startDate: t.startDate ? new Date(String(t.startDate)) : null,
+								dueDate: t.dueDate ? new Date(String(t.dueDate)) : null,
+							},
+						})
+						.catch(() => null);
+				}
+			}
+
+			// Restore routines
+			if (Array.isArray(backup.routines)) {
+				for (const r of backup.routines) {
+					const id = String(r.id);
+					await prisma.routine
+						.upsert({
+							where: { id },
+							create: {
+								id,
+								userId,
+								title: String(r.title || "Routine"),
+								description:
+									typeof r.description === "string" ? r.description : null,
+								timeSlot:
+									typeof r.timeSlot === "string" ? r.timeSlot : "morning",
+								targetTime:
+									typeof r.targetTime === "string" ? r.targetTime : null,
+								daysOfWeek:
+									typeof r.daysOfWeek === "string"
+										? r.daysOfWeek
+										: "0,1,2,3,4,5,6",
+								reminderMinutes: Number(r.reminderMinutes) || 0,
+								streakCount: Number(r.streakCount) || 0,
+								lastCompletedDate:
+									typeof r.lastCompletedDate === "string"
+										? r.lastCompletedDate
+										: null,
+							},
+							update: {
+								title: String(r.title || "Routine"),
+								description:
+									typeof r.description === "string" ? r.description : null,
+								timeSlot:
+									typeof r.timeSlot === "string" ? r.timeSlot : "morning",
+								targetTime:
+									typeof r.targetTime === "string" ? r.targetTime : null,
+								daysOfWeek:
+									typeof r.daysOfWeek === "string"
+										? r.daysOfWeek
+										: "0,1,2,3,4,5,6",
+							},
+						})
+						.catch(() => null);
+				}
+			}
+
+			// Restore routine logs
+			if (Array.isArray(backup.routineLogs)) {
+				for (const rl of backup.routineLogs) {
+					const routineId = String(rl.routineId);
+					const date = String(rl.date);
+					await prisma.routineLog
+						.upsert({
+							where: {
+								routineId_date: { routineId, date },
+							},
+							create: {
+								routineId,
+								userId,
+								date,
+								completed: Boolean(rl.completed),
+							},
+							update: {
+								completed: Boolean(rl.completed),
+							},
+						})
+						.catch(() => null);
+				}
+			}
+
+			// Restore transactions
+			if (Array.isArray(backup.transactions)) {
+				for (const tx of backup.transactions) {
+					const id = String(tx.id);
+					await prisma.transaction
+						.upsert({
+							where: { id },
+							create: {
+								id,
+								userId,
+								type: String(tx.type || "EXPENSE"),
+								amount: Number(tx.amount) || 0,
+								category: String(tx.category || "General"),
+								description:
+									typeof tx.description === "string" ? tx.description : null,
+								paymentMethod:
+									typeof tx.paymentMethod === "string"
+										? tx.paymentMethod
+										: "Cash",
+								date: tx.date ? new Date(String(tx.date)) : new Date(),
+							},
+							update: {
+								type: String(tx.type || "EXPENSE"),
+								amount: Number(tx.amount) || 0,
+								category: String(tx.category || "General"),
+								description:
+									typeof tx.description === "string" ? tx.description : null,
+							},
+						})
+						.catch(() => null);
+				}
+			}
+
+			// Restore trackers
+			if (Array.isArray(backup.trackers)) {
+				for (const trk of backup.trackers) {
+					const id = String(trk.id);
+					await prisma.dailyTracker
+						.upsert({
+							where: { id },
+							create: {
+								id,
+								userId,
+								name: String(trk.name || "Tracker"),
+								category:
+									typeof trk.category === "string"
+										? trk.category
+										: "Meals & Food",
+								unitName:
+									typeof trk.unitName === "string" ? trk.unitName : "meals",
+								defaultTarget: Number(trk.defaultTarget) || 2,
+								unitPrice: trk.unitPrice ? Number(trk.unitPrice) : null,
+								currency:
+									typeof trk.currency === "string" ? trk.currency : "USD",
+								description:
+									typeof trk.description === "string" ? trk.description : null,
+								color: typeof trk.color === "string" ? trk.color : "emerald",
+							},
+							update: {
+								name: String(trk.name || "Tracker"),
+								unitPrice: trk.unitPrice ? Number(trk.unitPrice) : null,
+							},
+						})
+						.catch(() => null);
+				}
+			}
+
+			// Restore tracker logs
+			if (Array.isArray(backup.trackerLogs)) {
+				for (const tl of backup.trackerLogs) {
+					const trackerId = String(tl.trackerId);
+					const date = String(tl.date);
+					await prisma.dailyTrackerLog
+						.upsert({
+							where: {
+								trackerId_date: { trackerId, date },
+							},
+							create: {
+								trackerId,
+								userId,
+								date,
+								value: Number(tl.value) || 0,
+								status: typeof tl.status === "string" ? tl.status : "LOGGED",
+								unitPrice: tl.unitPrice ? Number(tl.unitPrice) : null,
+								notes: typeof tl.notes === "string" ? tl.notes : null,
+								isSettled: Boolean(tl.isSettled),
+							},
+							update: {
+								value: tl.value !== undefined ? Number(tl.value) : undefined,
+								status: typeof tl.status === "string" ? tl.status : undefined,
+								unitPrice:
+									tl.unitPrice !== undefined ? Number(tl.unitPrice) : undefined,
+								notes: typeof tl.notes === "string" ? tl.notes : undefined,
+								isSettled:
+									tl.isSettled !== undefined
+										? Boolean(tl.isSettled)
+										: undefined,
+							},
+						})
+						.catch(() => null);
+				}
+			}
+
+			return {
+				statusCode: 200,
+				success: true,
+				message: "Backup bundle successfully restored into local database",
+				data: { restoredAt: new Date().toISOString() },
+			};
+		}
+
+		if (pathname === "/sync/status" && method === "GET") {
+			const [taskCount, routineCount, txCount, trackerCount] =
+				await Promise.all([
+					prisma.task.count({ where: { userId } }),
+					prisma.routine.count({ where: { userId } }),
+					prisma.transaction.count({ where: { userId } }),
+					prisma.dailyTracker.count({ where: { userId } }),
+				]);
+
+			return {
+				statusCode: 200,
+				success: true,
+				data: {
+					connected: false,
+					lastSyncAt: null,
+					userId,
+					stats: {
+						tasks: taskCount,
+						routines: routineCount,
+						transactions: txCount,
+						trackers: trackerCount,
+					},
+				},
+			};
+		}
+
+		// ================= MULTI-COLLECTION ZIP ARCHIVE ROUTES =================
+		if (
+			(pathname === "/sync/archive/export" ||
+				pathname === "/sync/export-archive") &&
+			(method === "POST" || method === "GET")
+		) {
+			const archiveResult = await createBackupArchive(userId, prisma);
+			return {
+				statusCode: 200,
+				success: true,
+				message: "Backup ZIP archive created successfully",
+				data: {
+					fileName: archiveResult.fileName,
+					manifest: archiveResult.manifest,
+					base64: archiveResult.base64,
+				},
+			};
+		}
+
+		if (pathname === "/sync/archive/preview" && method === "POST") {
+			const archiveBase64 = String(
+				body.archiveBase64 || body.archive || body.data || "",
+			);
+			if (!archiveBase64) {
+				return {
+					statusCode: 400,
+					success: false,
+					message: "No archive payload provided for preview",
+					data: null,
+				};
+			}
+
+			const preview = await previewBackupArchive(archiveBase64);
+			return {
+				statusCode: preview.valid ? 200 : 400,
+				success: preview.valid,
+				message: preview.error || "Archive metadata loaded",
+				data: preview,
+			};
+		}
+
+		if (
+			(pathname === "/sync/archive/restore" ||
+				pathname === "/sync/restore-archive") &&
+			method === "POST"
+		) {
+			const archiveBase64 = String(
+				body.archiveBase64 || body.archive || body.data || "",
+			);
+			if (!archiveBase64) {
+				return {
+					statusCode: 400,
+					success: false,
+					message: "No archive payload provided for restore",
+					data: null,
+				};
+			}
+
+			const restoreResult = await restoreBackupArchive(
+				archiveBase64,
+				userId,
+				prisma,
+			);
+			return {
+				statusCode: 200,
+				success: true,
+				message:
+					"Archive successfully unpacked and restored into local database",
+				data: restoreResult,
+			};
+		}
+
+		if (pathname === "/sync/simulate" && method === "POST") {
+			const action = String(body.action || "").toLowerCase();
+			if (action === "export") {
+				const archiveResult = await createBackupArchive(userId, prisma);
+				return {
+					statusCode: 200,
+					success: true,
+					data: {
+						fileName: archiveResult.fileName,
+						manifest: archiveResult.manifest,
+						archiveBase64: archiveResult.base64,
+						backup: archiveResult.manifest,
+					},
+				};
+			}
+			if (action === "import") {
+				const importData = body.data;
+				if (typeof importData === "string") {
+					// Could be base64 zip archive
+					const restoreResult = await restoreBackupArchive(
+						importData,
+						userId,
+						prisma,
+					);
+					return {
+						statusCode: 200,
+						success: true,
+						message: "Data restored from backup archive",
+						data: restoreResult,
+					};
+				}
+			}
+		}
+
 		if (pathname.startsWith("/sync")) {
 			return {
 				statusCode: 200,

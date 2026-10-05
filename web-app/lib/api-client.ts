@@ -65,6 +65,7 @@ export async function apiRequest<T = unknown>(
 						endpoint: string;
 						method?: string;
 						body?: unknown;
+						token?: string | null;
 					}) => Promise<ApiResponse<T>>;
 				};
 			}
@@ -72,6 +73,7 @@ export async function apiRequest<T = unknown>(
 			endpoint,
 			method: options.method || "GET",
 			body: parsedBody,
+			token: getAuthToken(),
 		});
 
 		if (!ipcRes.success) {

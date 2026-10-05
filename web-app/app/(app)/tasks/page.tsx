@@ -3,6 +3,7 @@
 import * as React from "react";
 import { TaskFormModal } from "@/components/tasks/task-form-modal";
 import { type TaskItem, TaskList } from "@/components/tasks/task-list";
+import { api } from "@/lib/api-client";
 
 export default function TasksPage() {
 	const [tasks, setTasks] = React.useState<TaskItem[]>([]);
@@ -12,12 +13,9 @@ export default function TasksPage() {
 
 	const fetchTasks = React.useCallback(async () => {
 		try {
-			const res = await fetch("/api/tasks");
-			if (res.ok) {
-				const json = await res.json();
-				if (json.success) {
-					setTasks(json.data);
-				}
+			const res = await api.get<TaskItem[]>("/tasks");
+			if (res.success && res.data) {
+				setTasks(res.data);
 			}
 		} catch {
 			// ignore
@@ -56,13 +54,9 @@ export default function TasksPage() {
 			);
 
 			try {
-				await fetch(`/api/tasks/${item.id}`, {
-					method: "PATCH",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({
-						lastCompletedDate: nextLastCompletedDate,
-						status: "PENDING",
-					}),
+				await api.patch(`/tasks/${item.id}`, {
+					lastCompletedDate: nextLastCompletedDate,
+					status: "PENDING",
 				});
 				fetchTasks();
 			} catch {
@@ -80,11 +74,7 @@ export default function TasksPage() {
 			);
 
 			try {
-				await fetch(`/api/tasks/${item.id}`, {
-					method: "PATCH",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({ status: nextStatus }),
-				});
+				await api.patch(`/tasks/${item.id}`, { status: nextStatus });
 				fetchTasks();
 			} catch {
 				fetchTasks();

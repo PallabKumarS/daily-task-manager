@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { api } from "@/lib/api-client";
 
 export interface TaskItem {
 	id: string;
@@ -135,13 +136,12 @@ export function TaskList({
 		});
 		if (!ok) return;
 		try {
-			const res = await fetch(`/api/tasks/${id}`, { method: "DELETE" });
-			const json = await res.json();
-			if (res.ok && json.success) {
+			const res = await api.delete(`/tasks/${id}`);
+			if (res.success) {
 				toast.success("Item deleted");
 				onRefresh();
 			} else {
-				toast.error(json.message || "Failed to delete");
+				toast.error(res.message || "Failed to delete");
 			}
 		} catch {
 			toast.error("Network error while deleting");

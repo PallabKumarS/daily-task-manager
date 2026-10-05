@@ -445,9 +445,9 @@ export function TrackerCard({
 				<div className="flex items-center justify-between text-xs text-slate-400 mb-2">
 					<span>This Month:</span>
 					<span className="font-semibold text-slate-200">
-						{tracker.monthStats.totalUnits} {tracker.unitName}
+						{tracker.monthStats?.totalUnits ?? 0} {tracker.unitName}
 						{hasUnitPrice &&
-							` · ${formatCurrency(tracker.monthStats.totalCost, tracker.currency)}`}
+							` · ${formatCurrency(tracker.monthStats?.totalCost ?? 0, tracker.currency)}`}
 					</span>
 				</div>
 
@@ -456,7 +456,7 @@ export function TrackerCard({
 						<span className="text-amber-400 font-medium">Unsettled Due:</span>
 						<span className="font-bold text-amber-300">
 							{formatCurrency(
-								tracker.monthStats.unsettledCost,
+								tracker.monthStats?.unsettledCost ?? 0,
 								tracker.currency,
 							)}
 						</span>
@@ -474,7 +474,7 @@ export function TrackerCard({
 						<ChevronRight className="w-3.5 h-3.5 text-slate-400" />
 					</button>
 
-					{hasUnitPrice && tracker.monthStats.unsettledCost > 0 && (
+					{hasUnitPrice && (tracker.monthStats?.unsettledCost ?? 0) > 0 && (
 						<button
 							type="button"
 							onClick={() => onOpenSettle(tracker)}

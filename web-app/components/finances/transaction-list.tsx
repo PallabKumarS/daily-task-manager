@@ -4,6 +4,7 @@ import { ArrowDownRight, ArrowUpRight, Edit2, Trash2 } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { api } from "@/lib/api-client";
 import { formatCurrency } from "@/lib/currency-symbols";
 
 export interface TransactionItem {
@@ -45,13 +46,12 @@ export function TransactionList({
 		if (!ok) return;
 
 		try {
-			const res = await fetch(`/api/finances/${id}`, { method: "DELETE" });
-			const json = await res.json();
-			if (res.ok && json.success) {
+			const res = await api.delete(`/finances/${id}`);
+			if (res.success) {
 				toast.success("Transaction deleted");
 				onRefresh();
 			} else {
-				toast.error(json.message || "Failed to delete");
+				toast.error(res.message || "Failed to delete");
 			}
 		} catch {
 			toast.error("Network error while deleting");

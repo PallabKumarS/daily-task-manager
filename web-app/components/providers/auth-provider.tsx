@@ -1,205 +1,219 @@
 "use client";
 
-import * as React from "react";
 import { useRouter } from "next/navigation";
+import * as React from "react";
 import { toast } from "sonner";
 import {
-  api,
-  getAuthToken,
-  setAuthToken,
-  clearAuthToken,
+	api,
+	clearAuthToken,
+	getAuthToken,
+	setAuthToken,
 } from "@/lib/api-client";
 import { disconnectSocket, getSocket } from "@/lib/socket-client";
 
 export interface AuthUser {
-  id: string;
-  name: string;
-  email: string;
-  currency: string;
-  createdAt: string;
+	id: string;
+	name: string;
+	email: string;
+	currency: string;
+	createdAt: string;
 }
 
 interface AuthContextType {
-  user: AuthUser | null;
-  loading: boolean;
-  refreshUser: () => Promise<void>;
-  login: (email: string, password: string) => Promise<boolean>;
-  register: (
-    name: string,
-    email: string,
-    password: string,
-    currency?: string
-  ) => Promise<boolean>;
-  logout: () => Promise<void>;
-  updateProfile: (data: { name?: string; currency?: string }) => Promise<boolean>;
+	user: AuthUser | null;
+	loading: boolean;
+	refreshUser: () => Promise<void>;
+	login: (email: string, password: string) => Promise<boolean>;
+	register: (
+		name: string,
+		email: string,
+		password: string,
+		currency?: string,
+	) => Promise<boolean>;
+	logout: () => Promise<void>;
+	updateProfile: (data: {
+		name?: string;
+		currency?: string;
+	}) => Promise<boolean>;
 }
 
 const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = React.useState<AuthUser | null>(null);
-  const [loading, setLoading] = React.useState(true);
-  const router = useRouter();
+	const [user, setUser] = React.useState<AuthUser | null>(null);
+	const [loading, setLoading] = React.useState(true);
+	const router = useRouter();
 
-  const refreshUser = React.useCallback(async () => {
-    const token = getAuthToken();
-    if (!token) {
-      setUser(null);
-      setLoading(false);
-      return;
-    }
+	const refreshUser = React.useCallback(async () => {
+		const isDesktop =
+			typeof window !== "undefined" &&
+			Boolean((window as unknown as { electronAPI?: unknown }).electronAPI);
 
-    try {
-      const res = await api.get<AuthUser>("/auth/me");
-      if (res.success && res.data) {
-        setUser(res.data);
-        getSocket();
-        return;
-      }
-      setUser(null);
-      clearAuthToken();
-    } catch {
-      setUser(null);
-      clearAuthToken();
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+		const token = getAuthToken();
+		if (!token && !isDesktop) {
+			setUser(null);
+			setLoading(false);
+			return;
+		}
 
-  React.useEffect(() => {
-    refreshUser();
+		try {
+			const res = await api.get<AuthUser>("/auth/me");
+			if (res.success && res.data) {
+				setUser(res.data);
+				if (!token) {
+					setAuthToken(`daypulse_token_${res.data.id}`);
+				}
+				getSocket();
+				return;
+			}
+			if (!isDesktop) {
+				setUser(null);
+				clearAuthToken();
+			}
+		} catch {
+			if (!isDesktop) {
+				setUser(null);
+				clearAuthToken();
+			}
+		} finally {
+			setLoading(false);
+		}
+	}, []);
 
-    const handleUnauthorized = () => {
-      setUser(null);
-      clearAuthToken();
-      disconnectSocket();
-      router.push("/login");
-    };
+	React.useEffect(() => {
+		refreshUser();
 
-    window.addEventListener("daypulse:unauthorized", handleUnauthorized);
-    return () => {
-      window.removeEventListener("daypulse:unauthorized", handleUnauthorized);
-    };
-  }, [refreshUser, router]);
+		const handleUnauthorized = () => {
+			setUser(null);
+			clearAuthToken();
+			disconnectSocket();
+			router.push("/login");
+		};
 
-  const login = React.useCallback(
-    async (email: string, password: string): Promise<boolean> => {
-      try {
-        const res = await api.post<{ user: AuthUser; token: string }>(
-          "/auth/login",
-          { email, password }
-        );
+		window.addEventListener("daypulse:unauthorized", handleUnauthorized);
+		return () => {
+			window.removeEventListener("daypulse:unauthorized", handleUnauthorized);
+		};
+	}, [refreshUser, router]);
 
-        if (res.success && res.data.token) {
-          setAuthToken(res.data.token);
-          setUser(res.data.user);
-          getSocket();
-          toast.success(res.message || "Welcome back to DayPulse");
-          router.push("/dashboard");
-          return true;
-        }
+	const login = React.useCallback(
+		async (email: string, password: string): Promise<boolean> => {
+			try {
+				const res = await api.post<{ user: AuthUser; token: string }>(
+					"/auth/login",
+					{ email, password },
+				);
 
-        toast.error(res.message || "Failed to sign in");
-        return false;
-      } catch (error) {
-        const message =
-          error instanceof Error ? error.message : "Network error during login";
-        toast.error(message);
-        return false;
-      }
-    },
-    [router]
-  );
+				if (res.success && res.data.token) {
+					setAuthToken(res.data.token);
+					setUser(res.data.user);
+					getSocket();
+					toast.success(res.message || "Welcome back to DayPulse");
+					router.push("/dashboard");
+					return true;
+				}
 
-  const register = React.useCallback(
-    async (
-      name: string,
-      email: string,
-      password: string,
-      currency = "USD"
-    ): Promise<boolean> => {
-      try {
-        const res = await api.post<{ user: AuthUser; token: string }>(
-          "/auth/register",
-          { name, email, password, currency }
-        );
+				toast.error(res.message || "Failed to sign in");
+				return false;
+			} catch (error) {
+				const message =
+					error instanceof Error ? error.message : "Network error during login";
+				toast.error(message);
+				return false;
+			}
+		},
+		[router],
+	);
 
-        if (res.success && res.data.token) {
-          setAuthToken(res.data.token);
-          setUser(res.data.user);
-          getSocket();
-          toast.success("Account created successfully");
-          router.push("/dashboard");
-          return true;
-        }
+	const register = React.useCallback(
+		async (
+			name: string,
+			email: string,
+			password: string,
+			currency = "USD",
+		): Promise<boolean> => {
+			try {
+				const res = await api.post<{ user: AuthUser; token: string }>(
+					"/auth/register",
+					{ name, email, password, currency },
+				);
 
-        toast.error(res.message || "Registration failed");
-        return false;
-      } catch (error) {
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Network error during registration";
-        toast.error(message);
-        return false;
-      }
-    },
-    [router]
-  );
+				if (res.success && res.data.token) {
+					setAuthToken(res.data.token);
+					setUser(res.data.user);
+					getSocket();
+					toast.success("Account created successfully");
+					router.push("/dashboard");
+					return true;
+				}
 
-  const logout = React.useCallback(async () => {
-    try {
-      await api.post("/auth/logout").catch(() => {});
-    } finally {
-      clearAuthToken();
-      disconnectSocket();
-      setUser(null);
-      toast.success("Logged out successfully");
-      router.push("/");
-    }
-  }, [router]);
+				toast.error(res.message || "Registration failed");
+				return false;
+			} catch (error) {
+				const message =
+					error instanceof Error
+						? error.message
+						: "Network error during registration";
+				toast.error(message);
+				return false;
+			}
+		},
+		[router],
+	);
 
-  const updateProfile = React.useCallback(
-    async (data: { name?: string; currency?: string }): Promise<boolean> => {
-      try {
-        const res = await api.patch<AuthUser>("/auth/me", data);
-        if (res.success && res.data) {
-          setUser(res.data);
-          toast.success("Profile updated");
-          return true;
-        }
-        toast.error(res.message || "Update failed");
-        return false;
-      } catch (error) {
-        const message =
-          error instanceof Error ? error.message : "Failed to update profile";
-        toast.error(message);
-        return false;
-      }
-    },
-    []
-  );
+	const logout = React.useCallback(async () => {
+		try {
+			await api.post("/auth/logout").catch(() => {});
+		} finally {
+			clearAuthToken();
+			disconnectSocket();
+			setUser(null);
+			toast.success("Logged out successfully");
+			router.push("/");
+		}
+	}, [router]);
 
-  const value = React.useMemo(
-    () => ({
-      user,
-      loading,
-      refreshUser,
-      login,
-      register,
-      logout,
-      updateProfile,
-    }),
-    [user, loading, refreshUser, login, register, logout, updateProfile]
-  );
+	const updateProfile = React.useCallback(
+		async (data: { name?: string; currency?: string }): Promise<boolean> => {
+			try {
+				const res = await api.patch<AuthUser>("/auth/me", data);
+				if (res.success && res.data) {
+					setUser(res.data);
+					toast.success("Profile updated");
+					return true;
+				}
+				toast.error(res.message || "Update failed");
+				return false;
+			} catch (error) {
+				const message =
+					error instanceof Error ? error.message : "Failed to update profile";
+				toast.error(message);
+				return false;
+			}
+		},
+		[],
+	);
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+	const value = React.useMemo(
+		() => ({
+			user,
+			loading,
+			refreshUser,
+			login,
+			register,
+			logout,
+			updateProfile,
+		}),
+		[user, loading, refreshUser, login, register, logout, updateProfile],
+	);
+
+	return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth(): AuthContextType {
-  const context = React.useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
+	const context = React.useContext(AuthContext);
+	if (!context) {
+		throw new Error("useAuth must be used within an AuthProvider");
+	}
+	return context;
 }

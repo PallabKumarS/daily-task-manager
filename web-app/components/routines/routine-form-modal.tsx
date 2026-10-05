@@ -10,6 +10,7 @@ import { CustomSelect, type SelectOption } from "@/components/ui/custom-select";
 import { Modal } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { api } from "@/lib/api-client";
 
 const TIME_SLOT_OPTIONS: SelectOption[] = [
 	{
@@ -159,30 +160,31 @@ export function RoutineFormModal({
 
 	const onSubmit = async (data: FormValues) => {
 		try {
-			const url = initialData
-				? `/api/routines/${initialData.id}`
-				: "/api/routines";
-			const method = initialData ? "PATCH" : "POST";
+			const endpoint = initialData
+				? `/routines/${initialData.id}`
+				: "/routines";
+			const payload = {
+				...data,
+				daysOfWeek: selectedDays.join(","),
+			};
 
-			const res = await fetch(url, {
-				method,
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					...data,
-					daysOfWeek: selectedDays.join(","),
-				}),
-			});
+			const res = initialData
+				? await api.patch(endpoint, payload)
+				: await api.post(endpoint, payload);
 
-			const json = await res.json();
-			if (res.ok && json.success) {
-				toast.success(json.message || "Routine saved");
+			if (res.success) {
+				toast.success(res.message || "Routine saved");
 				onSuccess();
 				onClose();
 			} else {
-				toast.error(json.message || "Failed to save routine");
+				toast.error(res.message || "Failed to save routine");
 			}
-		} catch {
-			toast.error("Network error while saving routine");
+		} catch (error) {
+			const message =
+				error instanceof Error
+					? error.message
+					: "Network error while saving routine";
+			toast.error(message);
 		}
 	};
 

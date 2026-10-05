@@ -52,28 +52,16 @@ export function DashboardView({
 	const fetchData = React.useCallback(async () => {
 		try {
 			const [rRes, tRes, trRes, trkRes] = await Promise.all([
-				fetch("/api/routines"),
-				fetch("/api/tasks?upcoming=true"),
-				fetch("/api/finances?limit=10"),
-				fetch("/api/trackers"),
+				api.get<RoutineItem[]>("/routines"),
+				api.get<TaskItem[]>("/tasks?upcoming=true"),
+				api.get<TransactionItem[]>("/finances?limit=10"),
+				api.get<DailyTrackerItem[]>("/trackers"),
 			]);
 
-			if (rRes.ok) {
-				const rJson = await rRes.json();
-				if (rJson.success) setRoutines(rJson.data);
-			}
-			if (tRes.ok) {
-				const tJson = await tRes.json();
-				if (tJson.success) setTasks(tJson.data);
-			}
-			if (trRes.ok) {
-				const trJson = await trRes.json();
-				if (trJson.success) setTransactions(trJson.data);
-			}
-			if (trkRes.ok) {
-				const trkJson = await trkRes.json();
-				if (trkJson.success) setTrackers(trkJson.data);
-			}
+			if (rRes.success && rRes.data) setRoutines(rRes.data);
+			if (tRes.success && tRes.data) setTasks(tRes.data);
+			if (trRes.success && trRes.data) setTransactions(trRes.data);
+			if (trkRes.success && trkRes.data) setTrackers(trkRes.data);
 		} catch {
 			// Network load error
 		} finally {
@@ -179,14 +167,9 @@ export function DashboardView({
 		);
 
 		try {
-			await fetch(`/api/routines/${id}/toggle`, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({}),
-			});
+			await api.post(`/routines/${id}/toggle`, {});
 			fetchData();
 		} catch {
-			// revert on fail
 			fetchData();
 		}
 	};
@@ -215,13 +198,9 @@ export function DashboardView({
 			);
 
 			try {
-				await fetch(`/api/tasks/${task.id}`, {
-					method: "PATCH",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({
-						lastCompletedDate: todayStr,
-						status: "PENDING",
-					}),
+				await api.patch(`/tasks/${task.id}`, {
+					lastCompletedDate: todayStr,
+					status: "PENDING",
 				});
 				fetchData();
 			} catch {
@@ -239,11 +218,7 @@ export function DashboardView({
 			);
 
 			try {
-				await fetch(`/api/tasks/${task.id}`, {
-					method: "PATCH",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({ status: nextStatus }),
-				});
+				await api.patch(`/tasks/${task.id}`, { status: nextStatus });
 				fetchData();
 			} catch {
 				fetchData();

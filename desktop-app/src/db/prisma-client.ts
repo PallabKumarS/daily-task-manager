@@ -158,11 +158,46 @@ CREATE UNIQUE INDEX IF NOT EXISTS "DailyTrackerLog_trackerId_date_key" ON "Daily
 `;
 
 export function getDatabasePath(): string {
-	const baseDir = app.getPath("userData");
+	let baseDir: string;
+	if (app && typeof app.getPath === "function") {
+		baseDir = app.getPath("userData");
+	} else if (process.env.APPDATA) {
+		baseDir = path.join(process.env.APPDATA, "desktop-app");
+	} else {
+		baseDir = path.join(process.cwd(), ".data");
+	}
+
 	if (!fs.existsSync(baseDir)) {
 		fs.mkdirSync(baseDir, { recursive: true });
 	}
-	return path.join(baseDir, "daypulse.db");
+	const targetPath = path.join(baseDir, "daypulse.db");
+
+	// Auto-migrate from server dev.db if target does not exist yet
+	if (!fs.existsSync(targetPath)) {
+		const devDbCandidates = [
+			path.resolve(__dirname, "../../../server/prisma/dev.db"),
+			path.resolve(process.cwd(), "server/prisma/dev.db"),
+			path.resolve(process.cwd(), "../server/prisma/dev.db"),
+		];
+		for (const candidate of devDbCandidates) {
+			if (fs.existsSync(candidate)) {
+				try {
+					fs.copyFileSync(candidate, targetPath);
+					console.log(
+						`[DayPulse Database] Migrated seed database from: ${candidate}`,
+					);
+					break;
+				} catch (err) {
+					console.warn(
+						"[DayPulse Database] Failed to copy dev.db candidate:",
+						err,
+					);
+				}
+			}
+		}
+	}
+
+	return targetPath;
 }
 
 export function getCurrentUserId(): string {
@@ -200,8 +235,17 @@ export async function initPrismaDatabase(): Promise<PrismaClient> {
 		}
 	}
 
-	// Seed default workspace user if empty
-	const existingUser = await prismaInstance.user.findFirst();
+	// Prioritize primary user if available, otherwise any registered user
+	const existingUser =
+		(await prismaInstance.user.findFirst({
+			where: { email: "pallabkumar26@gmail.com" },
+		})) ||
+		(await prismaInstance.user.findFirst({
+			where: { email: { not: "local@daypulse.app" } },
+			orderBy: { createdAt: "desc" },
+		})) ||
+		(await prismaInstance.user.findFirst());
+
 	if (!existingUser) {
 		const defaultUser = await prismaInstance.user.create({
 			data: {
@@ -218,6 +262,9 @@ export async function initPrismaDatabase(): Promise<PrismaClient> {
 		);
 	} else {
 		currentUserId = existingUser.id;
+		console.log(
+			`[DayPulse Database] Active local user: ${existingUser.email} (${existingUser.id})`,
+		);
 	}
 
 	return prismaInstance;

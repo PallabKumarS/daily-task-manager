@@ -16,11 +16,20 @@ export interface ElectronBridgeApi {
 		callback: (payload: AlarmNotificationPayload) => void,
 	) => () => void;
 	syncNow: () => Promise<boolean>;
+	saveBackupFile?: (
+		defaultName: string,
+		base64Data: string,
+	) => Promise<{ success: boolean; filePath?: string; canceled: boolean }>;
+	pickBackupFile?: () => Promise<{
+		fileName: string;
+		base64Data: string;
+	} | null>;
 	dispatch: <T = unknown>(req: {
 		endpoint: string;
 		method?: string;
 		body?: unknown;
 		query?: Record<string, string>;
+		token?: string | null;
 	}) => Promise<{
 		statusCode: number;
 		success: boolean;

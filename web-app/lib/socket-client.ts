@@ -9,6 +9,11 @@ const SOCKET_URL =
 export function getSocket(): Socket | null {
 	if (typeof window === "undefined") return null;
 
+	const isDesktop = Boolean(
+		(window as unknown as { electronAPI?: unknown }).electronAPI,
+	);
+	if (isDesktop) return null;
+
 	const token = getAuthToken();
 	if (!token) {
 		if (socket) {

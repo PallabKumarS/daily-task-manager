@@ -203,24 +203,23 @@ export function updateSplashStatus(status: string): void {
 export async function closeSplashWindow(
 	mainWindow: BrowserWindow,
 ): Promise<void> {
+	mainWindow.show();
+	mainWindow.focus();
+
 	if (!splashWindow || splashWindow.isDestroyed()) {
-		mainWindow.show();
-		mainWindow.focus();
 		return;
 	}
 
-	// Smooth fade-out transition over 250ms
+	// Smooth fade-out transition over 200ms
 	let opacity = 1.0;
 	const fadeInterval = setInterval(() => {
-		opacity -= 0.15;
+		opacity -= 0.2;
 		if (opacity <= 0.05) {
 			clearInterval(fadeInterval);
 			if (splashWindow && !splashWindow.isDestroyed()) {
 				splashWindow.destroy();
 				splashWindow = null;
 			}
-			mainWindow.show();
-			mainWindow.focus();
 		} else if (splashWindow && !splashWindow.isDestroyed()) {
 			splashWindow.setOpacity(opacity);
 		}

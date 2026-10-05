@@ -11,6 +11,7 @@ import { CustomSelect, type SelectOption } from "@/components/ui/custom-select";
 import { Modal } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { api } from "@/lib/api-client";
 import { TASK_CATEGORIES } from "@/lib/currency-symbols";
 
 const TYPE_OPTIONS: SelectOption[] = [
@@ -307,8 +308,7 @@ export function TaskFormModal({
 
 	const onSubmit = async (data: FormValues) => {
 		try {
-			const url = initialData ? `/api/tasks/${initialData.id}` : "/api/tasks";
-			const method = initialData ? "PATCH" : "POST";
+			const endpoint = initialData ? `/tasks/${initialData.id}` : "/tasks";
 
 			// Combine primary time with any secondary times
 			const allTimes = [data.repeatTime, ...extraTimes].filter(Boolean);
@@ -319,25 +319,24 @@ export function TaskFormModal({
 				repeatTime: finalRepeatTime,
 			};
 
-			const res = await fetch(url, {
-				method,
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(payload),
-			});
+			const res = initialData
+				? await api.patch(endpoint, payload)
+				: await api.post(endpoint, payload);
 
-			const json = await res.json();
-			if (res.ok && json.success) {
+			if (res.success) {
 				toast.success(
-					json.message ||
+					res.message ||
 						`${data.type === "EVENT" ? "Event" : "Task"} saved successfully`,
 				);
 				onSuccess();
 				onClose();
 			} else {
-				toast.error(json.message || "Failed to save");
+				toast.error(res.message || "Failed to save");
 			}
-		} catch {
-			toast.error("Network error while saving");
+		} catch (error) {
+			const message =
+				error instanceof Error ? error.message : "Network error while saving";
+			toast.error(message);
 		}
 	};
 

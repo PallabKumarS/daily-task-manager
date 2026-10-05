@@ -15,6 +15,7 @@ import * as React from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { api } from "@/lib/api-client";
 
 export interface RoutineItem {
 	id: string;
@@ -65,13 +66,12 @@ export function RoutineList({
 		});
 		if (!ok) return;
 		try {
-			const res = await fetch(`/api/routines/${id}`, { method: "DELETE" });
-			const json = await res.json();
-			if (res.ok && json.success) {
+			const res = await api.delete(`/routines/${id}`);
+			if (res.success) {
 				toast.success("Routine deleted");
 				onRefresh();
 			} else {
-				toast.error(json.message || "Failed to delete");
+				toast.error(res.message || "Failed to delete");
 			}
 		} catch {
 			toast.error("Network error while deleting");
