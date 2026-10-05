@@ -3,7 +3,7 @@ import type { LaunchConfig } from "./types.js";
 
 interface LaunchDetailsParams {
 	targetName: string;
-	faultDomain: string;
+	faultDomain?: string;
 	compartmentId: string;
 	availabilityDomain: string;
 	imageId: string;
@@ -31,7 +31,7 @@ export function createLaunchDetails(
 			compartmentId,
 			displayName: targetName,
 			availabilityDomain,
-			faultDomain,
+			...(faultDomain ? { faultDomain } : {}),
 			shape: config.shape,
 			shapeConfig: {
 				ocpus: config.ocpus,

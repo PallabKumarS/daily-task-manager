@@ -2,8 +2,17 @@
   "name": "desktop-app",
   "version": "1.0.0",
   "description": "DayPulse Electron Desktop Client",
-  "main": "main.js",
+  "main": "dist/main.js",
   "scripts": {
-    "start": "echo 'Desktop app client ready for Electron launch'"
+    "build": "tsc",
+    "watch": "tsc -w",
+    "start": "tsc && electron .",
+    "dev": "tsc && electron ."
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.43",
+    "electron": "^44.5.1",
+    "socket.io-client": "^4.8.4",
+    "typescript": "^5.9.3"
   }
 }

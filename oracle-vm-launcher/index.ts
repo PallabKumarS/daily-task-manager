@@ -22,7 +22,6 @@ dotenv.config({ path: fs.existsSync(localEnv) ? localEnv : parentEnv });
 setupLogFilter();
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-const faultDomainCycle = ["FAULT-DOMAIN-1", "FAULT-DOMAIN-2", "FAULT-DOMAIN-3"];
 
 function loadConfig(): LaunchConfig {
 	const rawNames =
@@ -46,7 +45,7 @@ function loadConfig(): LaunchConfig {
 		configuredFaultDomain: process.env.OCI_FAULT_DOMAIN?.trim(),
 		assignPublicIp: process.env.OCI_ASSIGN_PUBLIC_IP !== "false",
 		retryInterval: Number.parseInt(
-			process.env.OCI_RETRY_INTERVAL_SECONDS || "60",
+			process.env.OCI_RETRY_INTERVAL_SECONDS || "85",
 			10,
 		),
 	};
@@ -98,7 +97,7 @@ async function main() {
 	);
 	console.log(`- Availability Domain:${availabilityDomain}`);
 	console.log(
-		`- Fault Domain:       ${config.configuredFaultDomain || "Auto (cycling 1, 2, 3)"}`,
+		`- Fault Domain:       ${config.configuredFaultDomain || "Auto (all fault domains simultaneously)"}`,
 	);
 	console.log(`- Region:             ${region}`);
 	console.log(`- Subnet ID:          ${subnetId}`);
@@ -156,25 +155,25 @@ async function main() {
 
 	let attemptCount = 1;
 	let currentTargetIndex = 0;
+	let activeInterval = config.retryInterval;
 	const pendingTargetsQueue = [...pendingTargets];
 
 	console.log(
 		`Starting automated launch queue (${pendingTargetsQueue.length} VMs remaining: [${pendingTargetsQueue.join(", ")}]).`,
 	);
 	console.log(
-		`Alternating targets every ${config.retryInterval}s across all 3 fault domains.\n`,
+		`Alternating targets every ${activeInterval}s across ${config.configuredFaultDomain || "all fault domains simultaneously"}.\n`,
 	);
 
 	while (pendingTargetsQueue.length > 0) {
 		const targetName =
 			pendingTargetsQueue[currentTargetIndex % pendingTargetsQueue.length];
-		const fdIndex = (attemptCount - 1) % faultDomainCycle.length;
-		const faultDomain =
-			config.configuredFaultDomain || faultDomainCycle[fdIndex];
+		const faultDomain = config.configuredFaultDomain;
+		const fdLabel = faultDomain || "ANY-FD";
 
 		const timeStr = new Date().toISOString().slice(11, 19);
 		process.stdout.write(
-			`[#${attemptCount} | ${targetName.padEnd(8)} | ${faultDomain} | ${timeStr}] Launching... `,
+			`[#${attemptCount} | ${targetName.padEnd(8)} | ${fdLabel.padEnd(14)} | ${timeStr}] Launching... `,
 		);
 
 		const launchRequest = createLaunchDetails({
@@ -243,10 +242,10 @@ async function main() {
 			}
 
 			console.log(
-				`\nRemaining to provision: [${pendingTargetsQueue.join(", ")}]. Next attempt in ${config.retryInterval}s...\n`,
+				`\nRemaining to provision: [${pendingTargetsQueue.join(", ")}]. Next attempt in ${activeInterval}s...\n`,
 			);
 			attemptCount++;
-			await sleep(config.retryInterval * 1000);
+			await sleep(activeInterval * 1000);
 		} catch (err: unknown) {
 			const error = err as {
 				statusCode?: number;
@@ -257,7 +256,7 @@ async function main() {
 			const code = error.serviceCode || "";
 			const status = error.statusCode;
 
-			let waitSeconds = config.retryInterval;
+			let waitSeconds = activeInterval;
 			const isOutOfCapacity =
 				status === 500 ||
 				code === "InternalError" ||
@@ -273,13 +272,14 @@ async function main() {
 					code === "TooManyRequests" ||
 					status === 429
 				) {
-					waitSeconds = Math.max(config.retryInterval, 60) + 10;
+					activeInterval = Math.max(activeInterval + 5, 85);
+					waitSeconds = activeInterval;
 					console.log(
-						`Rate limited on ${faultDomain}. Adding cooldown, retrying in ${waitSeconds}s...`,
+						`Rate limited on ${fdLabel}. Adjusting interval to ${waitSeconds}s to clear bucket refill...`,
 					);
 				} else {
 					console.log(
-						`Out of host capacity on ${faultDomain}. Retrying in ${waitSeconds}s...`,
+						`Out of host capacity on ${fdLabel}. Retrying in ${waitSeconds}s...`,
 					);
 				}
 			} else {

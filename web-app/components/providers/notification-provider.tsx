@@ -3,6 +3,7 @@
 import * as React from "react";
 import { toast } from "sonner";
 import { playNotificationChime } from "@/lib/audio-chime";
+import { dispatchUnifiedAlarm } from "@/lib/cross-platform-alarm";
 import {
   getNotificationPermission,
   requestNotificationPermission,
@@ -98,13 +99,18 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       notifiedIdsRef.current.add(alertId);
 
       if (soundEnabled) {
-        playNotificationChime();
+        dispatchUnifiedAlarm({
+          id: alertId,
+          title,
+          message,
+          type,
+        });
+      } else {
+        showSystemNotification(title, {
+          body: message,
+          tag: alertId,
+        });
       }
-
-      showSystemNotification(title, {
-        body: message,
-        tag: alertId,
-      });
 
       toast(title, {
         description: message,
