@@ -8,7 +8,15 @@ import {
 } from "electron";
 import { triggerDesktopAlarm } from "./alarm-manager.js";
 import { destroyAudioPlayer, initAudioPlayer } from "./audio-player.js";
-import { ensureServerRunning, stopServer } from "./server-manager.js";
+import {
+	handleIpcApiDispatch,
+	type IpcApiRequest,
+} from "./db/ipc-dispatcher.js";
+import { closePrismaDatabase, initPrismaDatabase } from "./db/prisma-client.js";
+import {
+	startLocalScheduler,
+	stopLocalScheduler,
+} from "./scheduler/local-scheduler.js";
 import { destroyTray, setupTray } from "./tray-manager.js";
 import type { AlarmNotificationPayload } from "./types.js";
 
@@ -103,6 +111,10 @@ function registerIpcHandlers(): void {
 		}
 	});
 
+	ipcMain.handle("api:dispatch", async (_event, req: IpcApiRequest) => {
+		return handleIpcApiDispatch(req);
+	});
+
 	ipcMain.handle("sync:now", async () => {
 		console.log("[DayPulse Desktop] Manual Google Drive sync requested");
 		return true;
@@ -113,16 +125,19 @@ app.whenReady().then(async () => {
 	// 1. Initialize hidden audio synthesizer window
 	initAudioPlayer();
 
-	// 2. Register IPC handlers
-	registerIpcHandlers();
+	// 2. Initialize in-process SQLite database
+	await initPrismaDatabase();
 
-	// 3. Ensure local core server is active
-	await ensureServerRunning(5000);
+	// 3. Register IPC handlers
+	registerIpcHandlers();
 
 	// 4. Create primary UI window
 	const win = await createMainWindow();
 
-	// 5. Setup System Tray
+	// 5. Start in-process background reminder scheduler
+	startLocalScheduler(win);
+
+	// 6. Setup System Tray
 	setupTray(
 		win,
 		() => {
@@ -135,11 +150,12 @@ app.whenReady().then(async () => {
 	);
 });
 
-app.on("before-quit", () => {
+app.on("before-quit", async () => {
 	isQuitting = true;
+	stopLocalScheduler();
 	destroyAudioPlayer();
 	destroyTray();
-	stopServer();
+	await closePrismaDatabase();
 });
 
 app.on("window-all-closed", () => {

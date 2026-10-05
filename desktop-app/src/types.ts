@@ -16,6 +16,17 @@ export interface ElectronBridgeApi {
 		callback: (payload: AlarmNotificationPayload) => void,
 	) => () => void;
 	syncNow: () => Promise<boolean>;
+	dispatch: <T = unknown>(req: {
+		endpoint: string;
+		method?: string;
+		body?: unknown;
+		query?: Record<string, string>;
+	}) => Promise<{
+		statusCode: number;
+		success: boolean;
+		message?: string;
+		data: T;
+	}>;
 }
 
 declare global {

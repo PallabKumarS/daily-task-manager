@@ -25,6 +25,9 @@ const api: ElectronBridgeApi = {
 	syncNow: async () => {
 		return ipcRenderer.invoke("sync:now");
 	},
+	dispatch: async (req) => {
+		return ipcRenderer.invoke("api:dispatch", req);
+	},
 };
 
 contextBridge.exposeInMainWorld("electronAPI", api);
