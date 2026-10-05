@@ -4,6 +4,7 @@ import {
 	previewBackupArchive,
 	restoreBackupArchive,
 } from "./archive-extractor.js";
+import { handleCategoryRoute } from "./category-handlers.js";
 import { calculateFinanceAnalytics } from "./finance-analytics.js";
 import {
 	executeGoogleSyncRestore,
@@ -245,6 +246,32 @@ export async function handleIpcApiDispatch(
 			return String(val);
 		};
 
+		const notFound = (entity: string): IpcApiResponse => ({
+			statusCode: 404,
+			success: false,
+			message: `${entity} not found`,
+			data: null,
+		});
+
+		// undefined = leave unchanged, empty/null = clear, otherwise parse
+		const optionalDate = (val: unknown): Date | null | undefined => {
+			if (val === undefined) return undefined;
+			if (val === null || val === "") return null;
+			const parsed = new Date(String(val));
+			return Number.isNaN(parsed.getTime()) ? null : parsed;
+		};
+
+		const optionalText = (val: unknown): string | null | undefined => {
+			if (val === undefined) return undefined;
+			return typeof val === "string" && val !== "" ? val : null;
+		};
+
+		const numberOr = (val: unknown, fallback: number): number => {
+			if (val === undefined || val === null || val === "") return fallback;
+			const parsed = Number(val);
+			return Number.isFinite(parsed) ? parsed : fallback;
+		};
+
 		// ================= TASK ROUTES =================
 		if (pathname === "/tasks" && method === "GET") {
 			const where: Record<string, unknown> = { userId };
@@ -296,7 +323,7 @@ export async function handleIpcApiDispatch(
 					status: typeof body.status === "string" ? body.status : "PENDING",
 					startDate: body.startDate ? new Date(String(body.startDate)) : null,
 					dueDate: body.dueDate ? new Date(String(body.dueDate)) : null,
-					remindBeforeMinutes: Number(body.remindBeforeMinutes) || 15,
+					remindBeforeMinutes: numberOr(body.remindBeforeMinutes, 15),
 					isRecurring: Boolean(body.isRecurring),
 					repeatFrequency: body.repeatFrequency
 						? String(body.repeatFrequency)
@@ -336,6 +363,29 @@ export async function handleIpcApiDispatch(
 		}
 
 		const taskMatch = pathname.match(/^\/tasks\/([^/]+)$/);
+		if (taskMatch && method === "GET") {
+			const taskId = taskMatch[1];
+			const task = await prisma.task.findFirst({
+				where: { id: taskId, userId },
+			});
+			if (!task) {
+				return notFound("Task not found");
+			}
+			return {
+				statusCode: 200,
+				success: true,
+				data: {
+					...task,
+					startDate: toIsoString(task.startDate),
+					dueDate: toIsoString(task.dueDate),
+					repeatUntil: toIsoString(task.repeatUntil),
+					completedAt: toIsoString(task.completedAt),
+					createdAt: toIsoString(task.createdAt) || new Date().toISOString(),
+					updatedAt: toIsoString(task.updatedAt) || new Date().toISOString(),
+				},
+			};
+		}
+
 		if (taskMatch && method === "PATCH") {
 			const taskId = taskMatch[1];
 			const updated = await prisma.task.update({
@@ -594,6 +644,36 @@ export async function handleIpcApiDispatch(
 		}
 
 		const routineMatch = pathname.match(/^\/routines\/([^/]+)$/);
+		if (routineMatch && method === "GET") {
+			const routineId = routineMatch[1];
+			const routine = await prisma.routine.findFirst({
+				where: { id: routineId, userId },
+				include: {
+					logs: {
+						orderBy: { date: "desc" },
+						take: 30,
+					},
+				},
+			});
+			if (!routine) {
+				return notFound("Routine not found");
+			}
+			const todayStr = new Date().toISOString().slice(0, 10);
+			const isCompletedToday = routine.logs.some(
+				(l) => l.date === todayStr && l.completed,
+			);
+			return {
+				statusCode: 200,
+				success: true,
+				data: {
+					...routine,
+					createdAt: toIsoString(routine.createdAt) || new Date().toISOString(),
+					updatedAt: toIsoString(routine.updatedAt) || new Date().toISOString(),
+					isCompletedToday,
+				},
+			};
+		}
+
 		if (routineMatch && method === "PATCH") {
 			const routineId = routineMatch[1];
 			const updated = await prisma.routine.update({
@@ -1020,7 +1100,16 @@ export async function handleIpcApiDispatch(
 			};
 		}
 
-		const trackerLogMatch = pathname.match(/^\/trackers\/([^/]+)\/log$/);
+		const trackerLogMatch = pathname.match(/^\/trackers\/([^/]+)\/logs?$/);
+		if (trackerLogMatch && method === "GET") {
+			const trackerId = trackerLogMatch[1];
+			const logs = await prisma.dailyTrackerLog.findMany({
+				where: { trackerId, userId },
+				orderBy: { date: "desc" },
+			});
+			return { statusCode: 200, success: true, data: logs };
+		}
+
 		if (trackerLogMatch && method === "POST") {
 			const trackerId = trackerLogMatch[1];
 			const dateStr =
@@ -1053,6 +1142,32 @@ export async function handleIpcApiDispatch(
 				},
 			});
 			return { statusCode: 200, success: true, data: log };
+		}
+
+		const trackerSingleLogMatch = pathname.match(
+			/^\/trackers\/([^/]+)\/logs?\/([^/]+)$/,
+		);
+		if (trackerSingleLogMatch && method === "PATCH") {
+			const logId = trackerSingleLogMatch[2];
+			const updated = await prisma.dailyTrackerLog.update({
+				where: { id: logId },
+				data: {
+					value: body.value !== undefined ? Number(body.value) : undefined,
+					status: typeof body.status === "string" ? body.status : undefined,
+					unitPrice:
+						body.unitPrice !== undefined ? Number(body.unitPrice) : undefined,
+					notes: typeof body.notes === "string" ? body.notes : undefined,
+					isSettled:
+						body.isSettled !== undefined ? Boolean(body.isSettled) : undefined,
+				},
+			});
+			return { statusCode: 200, success: true, data: updated };
+		}
+
+		if (trackerSingleLogMatch && method === "DELETE") {
+			const logId = trackerSingleLogMatch[2];
+			await prisma.dailyTrackerLog.delete({ where: { id: logId } });
+			return { statusCode: 200, success: true, data: null };
 		}
 
 		const trackerSettleMatch = pathname.match(/^\/trackers\/([^/]+)\/settle$/);
@@ -1330,59 +1445,16 @@ export async function handleIpcApiDispatch(
 		}
 
 		// ================= CATEGORIES ROUTES =================
-		if (pathname === "/categories" && method === "GET") {
-			const where: Record<string, unknown> = { userId };
-			if (query.group) where.group = query.group.toUpperCase();
-			const categories = await prisma.categoryOption.findMany({
-				where,
-				orderBy: { name: "asc" },
-			});
-			return { statusCode: 200, success: true, data: categories };
-		}
-
-		if (pathname === "/categories" && method === "POST") {
-			const category = await prisma.categoryOption.create({
-				data: {
-					userId,
-					name: String(body.name || "Custom"),
-					group: String(body.group || "EXPENSE").toUpperCase(),
-					color: typeof body.color === "string" ? body.color : null,
-				},
-			});
-			return { statusCode: 201, success: true, data: category };
-		}
-
-		if (pathname === "/categories" && method === "DELETE") {
-			await prisma.categoryOption.deleteMany({ where: { userId } });
-			return {
-				statusCode: 200,
-				success: true,
-				message: "All custom categories deleted",
-				data: null,
-			};
-		}
-
-		const catMatch = pathname.match(/^\/categories\/([^/]+)$/);
-		if (catMatch && method === "PATCH") {
-			const catId = catMatch[1];
-			const updated = await prisma.categoryOption.update({
-				where: { id: catId },
-				data: {
-					name: typeof body.name === "string" ? body.name : undefined,
-					color: typeof body.color === "string" ? body.color : undefined,
-					group:
-						typeof body.group === "string"
-							? body.group.toUpperCase()
-							: undefined,
-				},
-			});
-			return { statusCode: 200, success: true, data: updated };
-		}
-
-		if (catMatch && method === "DELETE") {
-			const catId = catMatch[1];
-			await prisma.categoryOption.delete({ where: { id: catId } });
-			return { statusCode: 200, success: true, data: null };
+		if (pathname === "/categories" || pathname.startsWith("/categories/")) {
+			const categoryResult = await handleCategoryRoute(
+				prisma,
+				userId,
+				method,
+				pathname,
+				query,
+				body,
+			);
+			if (categoryResult) return categoryResult;
 		}
 
 		// ================= SYNC & BACKUP ROUTES =================
@@ -1435,7 +1507,10 @@ export async function handleIpcApiDispatch(
 			};
 		}
 
-		if (pathname === "/sync/restore" && method === "POST") {
+		if (
+			(pathname === "/sync/restore" || pathname === "/sync/google/restore") &&
+			method === "POST"
+		) {
 			const backup = body as {
 				version?: number;
 				user?: {
@@ -1452,6 +1527,25 @@ export async function handleIpcApiDispatch(
 				trackerLogs?: Array<Record<string, unknown>>;
 				categories?: Array<Record<string, unknown>>;
 			};
+
+			const hasBackupPayload =
+				backup &&
+				typeof backup === "object" &&
+				(Array.isArray(backup.tasks) ||
+					Array.isArray(backup.routines) ||
+					Array.isArray(backup.transactions) ||
+					Array.isArray(backup.trackers) ||
+					Array.isArray(backup.categories));
+
+			if (!hasBackupPayload || pathname === "/sync/google/restore") {
+				const result = await executeGoogleSyncRestore(prisma, userId);
+				return {
+					statusCode: 200,
+					success: true,
+					message: result.message,
+					data: null,
+				};
+			}
 
 			if (!backup || typeof backup !== "object") {
 				return {
@@ -1880,16 +1974,6 @@ export async function handleIpcApiDispatch(
 				success: true,
 				message: result.message,
 				data: { lastSyncAt: result.lastSyncAt },
-			};
-		}
-
-		if (pathname === "/sync/restore" && method === "POST") {
-			const result = await executeGoogleSyncRestore(prisma, userId);
-			return {
-				statusCode: 200,
-				success: true,
-				message: result.message,
-				data: null,
 			};
 		}
 

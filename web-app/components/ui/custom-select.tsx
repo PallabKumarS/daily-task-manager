@@ -289,6 +289,13 @@ export function CustomSelect({
 					name: trimmed,
 					color: editingColor,
 				});
+			} else if (group) {
+				await api.post("/categories/rename", {
+					group,
+					oldName: opt.value,
+					newName: trimmed,
+					color: editingColor,
+				});
 			}
 
 			// Persist edit in localStorage
@@ -312,6 +319,10 @@ export function CustomSelect({
 			await refreshOptions();
 			setEditingValue(null);
 			toast.success(`Option updated to "${trimmed}"`);
+			if (typeof window !== "undefined") {
+				window.dispatchEvent(new CustomEvent("daypulse:categories-updated"));
+				window.dispatchEvent(new CustomEvent("daypulse:refresh"));
+			}
 		} catch {
 			toast.error("Failed to update option");
 		} finally {
