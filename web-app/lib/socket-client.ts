@@ -1,4 +1,4 @@
-import { io, Socket } from "socket.io-client";
+import { io, type Socket } from "socket.io-client";
 import { getAuthToken } from "./api-client";
 
 let socket: Socket | null = null;

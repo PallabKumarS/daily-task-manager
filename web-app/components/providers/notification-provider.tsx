@@ -2,16 +2,16 @@
 
 import * as React from "react";
 import { toast } from "sonner";
+import { api, getAuthToken } from "@/lib/api-client";
 import { playNotificationChime } from "@/lib/audio-chime";
 import { dispatchUnifiedAlarm } from "@/lib/cross-platform-alarm";
+import { getSocket } from "@/lib/socket-client";
 import {
 	getNotificationPermission,
+	isNotificationSupported,
 	requestNotificationPermission,
 	showSystemNotification,
-	isNotificationSupported,
 } from "@/lib/web-notification";
-import { getSocket } from "@/lib/socket-client";
-import { api, getAuthToken } from "@/lib/api-client";
 
 export interface AppNotification {
 	id: string;

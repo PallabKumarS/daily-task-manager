@@ -1,20 +1,20 @@
 "use client";
 
-import * as React from "react";
-import Link from "next/link";
 import {
-	Plus,
 	Activity,
-	Calendar,
-	Clock,
-	CheckSquare,
-	DollarSign,
-	ChevronDown,
 	Calculator,
+	Calendar,
+	CheckSquare,
+	ChevronDown,
+	Clock,
+	DollarSign,
+	Plus,
 } from "lucide-react";
+import Link from "next/link";
+import * as React from "react";
 import { NotificationCenter } from "@/components/layout/notification-center";
-import { formatReadableDate } from "@/lib/date-helpers";
 import { useAuth } from "@/components/providers/auth-provider";
+import { formatReadableDate } from "@/lib/date-helpers";
 
 interface AppNavbarProps {
 	onQuickAdd?: (type: "routine" | "task" | "transaction" | "tracker") => void;

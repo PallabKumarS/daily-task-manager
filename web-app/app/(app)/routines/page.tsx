@@ -1,8 +1,11 @@
 "use client";
 
 import * as React from "react";
-import { RoutineList, RoutineItem } from "@/components/routines/routine-list";
 import { RoutineFormModal } from "@/components/routines/routine-form-modal";
+import {
+	type RoutineItem,
+	RoutineList,
+} from "@/components/routines/routine-list";
 import { api } from "@/lib/api-client";
 
 export default function RoutinesPage() {

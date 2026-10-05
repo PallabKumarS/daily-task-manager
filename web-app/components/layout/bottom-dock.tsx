@@ -1,16 +1,16 @@
 "use client";
 
-import * as React from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import {
-	LayoutDashboard,
+	Calculator,
 	CalendarCheck,
 	CheckSquare,
-	TrendingUp,
+	LayoutDashboard,
 	Settings,
-	Calculator,
+	TrendingUp,
 } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import * as React from "react";
 import { cn } from "@/lib/utils";
 
 const DOCK_ITEMS = [

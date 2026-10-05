@@ -65,6 +65,10 @@ function cleanStalePortProcesses(port = 3000): void {
 				}
 			}
 		}
+		// Give Windows TCP stack a brief moment to release socket
+		execSync("powershell -Command Start-Sleep -Milliseconds 400", {
+			stdio: "ignore",
+		});
 	} catch {
 		// Port was not in use
 	}

@@ -57,8 +57,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 		}
 
 		try {
-			const res = await api.get<AuthUser>("/auth/me");
-			if (res.success && res.data) {
+			let res = await api.get<AuthUser>("/auth/me").catch(() => null);
+
+			// If running in desktop and first attempt failed, retry once briefly
+			if ((!res || !res.success) && isDesktop) {
+				await new Promise((r) => setTimeout(r, 250));
+				res = await api.get<AuthUser>("/auth/me").catch(() => null);
+			}
+
+			if (res?.success && res.data) {
 				setUser(res.data);
 				if (!token) {
 					setAuthToken(`daypulse_token_${res.data.id}`);

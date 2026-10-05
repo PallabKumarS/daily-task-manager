@@ -1,7 +1,7 @@
 "use client";
 
+import { ArrowDownRight, ArrowUpRight, Percent, Wallet } from "lucide-react";
 import * as React from "react";
-import { ArrowDownRight, ArrowUpRight, Wallet, Percent } from "lucide-react";
 import { formatCurrency } from "@/lib/currency-symbols";
 
 interface FinanceSummaryCardsProps {
