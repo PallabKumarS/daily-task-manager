@@ -1,18 +1,18 @@
 "use client";
 
-import * as React from "react";
 import {
 	Bell,
+	Calendar,
 	Check,
+	CheckCircle2,
+	Info,
+	Smartphone,
 	Trash2,
 	Volume2,
 	VolumeX,
-	Smartphone,
-	Calendar,
-	CheckCircle2,
-	Info,
 	X,
 } from "lucide-react";
+import * as React from "react";
 import { useNotifications } from "@/components/providers/notification-provider";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";

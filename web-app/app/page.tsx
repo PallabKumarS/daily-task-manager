@@ -1,12 +1,12 @@
 "use client";
 
-import * as React from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/components/providers/auth-provider";
-import { LandingNavbar } from "@/components/landing/landing-navbar";
-import { HeroSection } from "@/components/landing/hero-section";
+import * as React from "react";
 import { FeaturesGrid } from "@/components/landing/features-grid";
+import { HeroSection } from "@/components/landing/hero-section";
 import { LandingFooter } from "@/components/landing/landing-footer";
+import { LandingNavbar } from "@/components/landing/landing-navbar";
+import { useAuth } from "@/components/providers/auth-provider";
 
 export default function HomePage() {
 	const { user, loading } = useAuth();

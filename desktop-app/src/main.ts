@@ -78,7 +78,7 @@ if (process.platform === "win32") {
 		);
 		const shortcutPath = path.join(programsDir, "DayPulse.lnk");
 		const iconPath = getWindowIconPath();
-		shell.writeShortcutLink(shortcutPath, "create", {
+		shell.writeShortcutLink(shortcutPath, "replace", {
 			target: process.execPath,
 			args: `"${path.resolve(__dirname, "..")}"`,
 			appUserModelId: appId,
@@ -157,9 +157,48 @@ async function createMainWindow(): Promise<BrowserWindow> {
 			console.log(`[DayPulse Desktop] Navigated to: ${url}`);
 		});
 
+		mainWindow.webContents.on("before-input-event", (event, input) => {
+			if (
+				input.type === "keyDown" &&
+				(input.key === "F12" ||
+					(input.control && input.shift && input.key.toLowerCase() === "i"))
+			) {
+				mainWindow?.webContents.toggleDevTools();
+				event.preventDefault();
+			}
+		});
+
 		mainWindow.webContents.on(
 			"console-message",
-			(_event, level, message, line, sourceId) => {
+			(event: unknown, ...args: unknown[]) => {
+				let level = 0;
+				let message = "";
+				let line = 0;
+				let sourceId = "";
+
+				if (
+					typeof event === "object" &&
+					event !== null &&
+					"message" in (event as Record<string, unknown>)
+				) {
+					const ev = event as {
+						level?: number;
+						message?: string;
+						line?: number;
+						sourceId?: string;
+					};
+					level = ev.level ?? 0;
+					message = ev.message ?? "";
+					line = ev.line ?? 0;
+					sourceId = ev.sourceId ?? "";
+				} else {
+					level = typeof args[0] === "number" ? args[0] : 0;
+					message =
+						typeof args[1] === "string" ? args[1] : String(args[1] || "");
+					line = typeof args[2] === "number" ? args[2] : 0;
+					sourceId = typeof args[3] === "string" ? args[3] : "";
+				}
+
 				const tags = ["LOG", "INFO", "WARN", "ERROR"];
 				console.log(
 					`[Renderer ${tags[level] || "LOG"}] ${message} (${sourceId}:${line})`,
@@ -392,6 +431,15 @@ app.on("before-quit", async () => {
 	stopDevServer();
 	await closePrismaDatabase();
 });
+
+const handleTerminationSignal = () => {
+	isQuitting = true;
+	stopDevServer();
+	app.quit();
+};
+
+process.on("SIGINT", handleTerminationSignal);
+process.on("SIGTERM", handleTerminationSignal);
 
 app.on("window-all-closed", () => {
 	// On Windows/Linux, do not quit if running as background tray utility

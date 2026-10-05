@@ -239,11 +239,11 @@ export async function handleIpcApiDispatch(
 			};
 		}
 
-const toIsoString = (val: unknown): string | null => {
-	if (!val) return null;
-	if (val instanceof Date) return val.toISOString();
-	return String(val);
-};
+		const toIsoString = (val: unknown): string | null => {
+			if (!val) return null;
+			if (val instanceof Date) return val.toISOString();
+			return String(val);
+		};
 
 		// ================= TASK ROUTES =================
 		if (pathname === "/tasks" && method === "GET") {

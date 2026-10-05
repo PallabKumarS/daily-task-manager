@@ -1,14 +1,14 @@
 "use client";
 
-import * as React from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/components/providers/auth-provider";
-import { AppSidebar } from "@/components/layout/app-sidebar";
+import * as React from "react";
+import { TransactionFormModal } from "@/components/finances/transaction-form-modal";
 import { AppNavbar } from "@/components/layout/app-navbar";
+import { AppSidebar } from "@/components/layout/app-sidebar";
 import { BottomDock } from "@/components/layout/bottom-dock";
+import { useAuth } from "@/components/providers/auth-provider";
 import { RoutineFormModal } from "@/components/routines/routine-form-modal";
 import { TaskFormModal } from "@/components/tasks/task-form-modal";
-import { TransactionFormModal } from "@/components/finances/transaction-form-modal";
 import { TrackerFormModal } from "@/components/trackers/tracker-form-modal";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -52,7 +52,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 	}
 
 	if (!user) {
-		return null;
+		return (
+			<div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-400">
+				<div className="flex flex-col items-center gap-3">
+					<div className="h-8 w-8 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
+					<p className="text-xs">Authenticating workspace...</p>
+				</div>
+			</div>
+		);
 	}
 
 	return (

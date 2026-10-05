@@ -1,18 +1,18 @@
 "use client";
 
-import * as React from "react";
 import {
+	ArrowRight,
+	Bell,
 	CalendarCheck,
 	CheckSquare,
-	TrendingUp,
 	Cloud,
-	Bell,
 	Flame,
+	Layers,
 	PieChart,
 	Shield,
-	Layers,
-	ArrowRight,
+	TrendingUp,
 } from "lucide-react";
+import * as React from "react";
 
 const FEATURES = [
 	{
