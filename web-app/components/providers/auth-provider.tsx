@@ -70,7 +70,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 				setUser(null);
 				clearAuthToken();
 			}
-		} catch {
+		} catch (error) {
+			console.error("[Auth] refreshUser failed:", error);
 			if (!isDesktop) {
 				setUser(null);
 				clearAuthToken();

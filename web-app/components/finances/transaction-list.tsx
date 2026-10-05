@@ -3,6 +3,7 @@
 import { ArrowDownRight, ArrowUpRight, Edit2, Trash2 } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { api } from "@/lib/api-client";
 import { formatCurrency } from "@/lib/currency-symbols";
@@ -58,6 +59,29 @@ export function TransactionList({
 		}
 	};
 
+	const handleClearAll = async () => {
+		const ok = await confirm({
+			title: "Delete All Transactions",
+			description:
+				"Are you sure you want to delete all transaction records? This action cannot be undone.",
+			confirmText: "Delete All",
+			variant: "destructive",
+		});
+		if (!ok) return;
+
+		try {
+			const res = await api.delete("/finances");
+			if (res.success) {
+				toast.success("All transactions deleted");
+				onRefresh();
+			} else {
+				toast.error(res.message || "Failed to delete transactions");
+			}
+		} catch {
+			toast.error("Network error while deleting");
+		}
+	};
+
 	const filtered = transactions.filter((t) => {
 		if (filterType === "ALL") return true;
 		return t.type === filterType;
@@ -75,40 +99,53 @@ export function TransactionList({
 					</p>
 				</div>
 
-				<div className="flex items-center gap-1 rounded-xl bg-slate-950 p-1 border border-slate-800">
-					<button
-						type="button"
-						onClick={() => setFilterType("ALL")}
-						className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
-							filterType === "ALL"
-								? "bg-slate-800 text-white"
-								: "text-slate-400 hover:text-white"
-						}`}
-					>
-						All
-					</button>
-					<button
-						type="button"
-						onClick={() => setFilterType("EXPENSE")}
-						className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
-							filterType === "EXPENSE"
-								? "bg-red-500/20 text-red-400"
-								: "text-slate-400 hover:text-white"
-						}`}
-					>
-						Expenses
-					</button>
-					<button
-						type="button"
-						onClick={() => setFilterType("INCOME")}
-						className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
-							filterType === "INCOME"
-								? "bg-emerald-500/20 text-emerald-400"
-								: "text-slate-400 hover:text-white"
-						}`}
-					>
-						Income
-					</button>
+				<div className="flex items-center gap-2 self-start sm:self-center">
+					{transactions.length > 0 && (
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={handleClearAll}
+							className="h-8 gap-1.5 border-rose-900/40 text-rose-400 hover:bg-rose-950/30 hover:text-rose-300 hover:border-rose-800 text-xs px-2.5"
+						>
+							<Trash2 className="w-3.5 h-3.5" />
+							<span>Clear All</span>
+						</Button>
+					)}
+					<div className="flex items-center gap-1 rounded-xl bg-slate-950 p-1 border border-slate-800">
+						<button
+							type="button"
+							onClick={() => setFilterType("ALL")}
+							className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
+								filterType === "ALL"
+									? "bg-slate-800 text-white"
+									: "text-slate-400 hover:text-white"
+							}`}
+						>
+							All
+						</button>
+						<button
+							type="button"
+							onClick={() => setFilterType("EXPENSE")}
+							className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
+								filterType === "EXPENSE"
+									? "bg-red-500/20 text-red-400"
+									: "text-slate-400 hover:text-white"
+							}`}
+						>
+							Expenses
+						</button>
+						<button
+							type="button"
+							onClick={() => setFilterType("INCOME")}
+							className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
+								filterType === "INCOME"
+									? "bg-emerald-500/20 text-emerald-400"
+									: "text-slate-400 hover:text-white"
+							}`}
+						>
+							Income
+						</button>
+					</div>
 				</div>
 			</div>
 

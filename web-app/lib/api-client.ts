@@ -80,6 +80,14 @@ export async function apiRequest<T = unknown>(
 			throw new Error(ipcRes.message || "An error occurred in local storage");
 		}
 
+		const reqMethod = (options.method || "GET").toUpperCase();
+		if (
+			typeof window !== "undefined" &&
+			["POST", "PATCH", "PUT", "DELETE"].includes(reqMethod)
+		) {
+			window.dispatchEvent(new CustomEvent("daypulse:refresh"));
+		}
+
 		return ipcRes;
 	}
 
@@ -121,6 +129,14 @@ export async function apiRequest<T = unknown>(
 			}
 		}
 		throw new Error(json.message || "An unexpected API error occurred");
+	}
+
+	const reqMethod = (options.method || "GET").toUpperCase();
+	if (
+		typeof window !== "undefined" &&
+		["POST", "PATCH", "PUT", "DELETE"].includes(reqMethod)
+	) {
+		window.dispatchEvent(new CustomEvent("daypulse:refresh"));
 	}
 
 	return json;

@@ -222,6 +222,28 @@ export function TaskList({
 		return { text: formatted, isOverdue };
 	};
 
+	const handleClearAll = async () => {
+		const ok = await confirm({
+			title: "Delete All Items",
+			description:
+				"Are you sure you want to delete all scheduled tasks and events? This action cannot be undone.",
+			confirmText: "Delete All",
+			variant: "destructive",
+		});
+		if (!ok) return;
+		try {
+			const res = await api.delete("/tasks");
+			if (res.success) {
+				toast.success("All scheduled items deleted");
+				onRefresh();
+			} else {
+				toast.error(res.message || "Failed to delete items");
+			}
+		} catch {
+			toast.error("Network error while deleting");
+		}
+	};
+
 	return (
 		<div className="space-y-4">
 			{/* Filter and Action Header */}
@@ -314,15 +336,28 @@ export function TaskList({
 					</div>
 				</div>
 
-				<Button
-					variant="emerald"
-					size="sm"
-					onClick={onAddNew}
-					className="gap-1.5 self-start sm:self-center"
-				>
-					<Plus className="w-4 h-4" />
-					<span>New Item</span>
-				</Button>
+				<div className="flex items-center gap-2 self-start sm:self-center">
+					{tasks.length > 0 && (
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={handleClearAll}
+							className="gap-1.5 border-rose-900/40 text-rose-400 hover:bg-rose-950/30 hover:text-rose-300 hover:border-rose-800"
+						>
+							<Trash2 className="w-4 h-4" />
+							<span>Clear All</span>
+						</Button>
+					)}
+					<Button
+						variant="emerald"
+						size="sm"
+						onClick={onAddNew}
+						className="gap-1.5"
+					>
+						<Plus className="w-4 h-4" />
+						<span>New Item</span>
+					</Button>
+				</div>
 			</div>
 
 			{/* Task List */}

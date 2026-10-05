@@ -24,6 +24,7 @@ export interface ElectronBridgeApi {
 		fileName: string;
 		base64Data: string;
 	} | null>;
+	openExternal?: (url: string) => Promise<boolean>;
 	dispatch: <T = unknown>(req: {
 		endpoint: string;
 		method?: string;

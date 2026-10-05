@@ -7,6 +7,7 @@ import {
 	ipcMain,
 	type NativeImage,
 	nativeImage,
+	shell,
 } from "electron";
 import { triggerDesktopAlarm } from "./alarm-manager.js";
 import { destroyAudioPlayer, initAudioPlayer } from "./audio-player.js";
@@ -28,9 +29,66 @@ import {
 import { destroyTray, setupTray } from "./tray-manager.js";
 import type { AlarmNotificationPayload } from "./types.js";
 
-// Windows AppUserModelID for Action Center notifications
+app.name = "DayPulse";
+app.setName("DayPulse");
+
+function getWindowIconPath(): string {
+	const candidates = [
+		path.resolve(__dirname, "../assets/favicon.ico"),
+		path.resolve(__dirname, "../../assets/favicon.ico"),
+		path.resolve(process.cwd(), "assets", "favicon.ico"),
+		path.resolve(process.cwd(), "..", "assets", "favicon.ico"),
+		path.resolve(__dirname, "../assets/logo.png"),
+		path.resolve(__dirname, "../../assets/logo.png"),
+		path.resolve(process.cwd(), "assets", "logo.png"),
+		path.resolve(process.cwd(), "..", "assets", "logo.png"),
+	];
+
+	for (const candidate of candidates) {
+		if (fs.existsSync(candidate)) return candidate;
+	}
+	return "";
+}
+
+function getWindowIcon(): NativeImage {
+	const iconPath = getWindowIconPath();
+	if (iconPath) {
+		try {
+			const img = nativeImage.createFromPath(iconPath);
+			if (!img.isEmpty()) return img;
+		} catch {
+			// Continue
+		}
+	}
+	return nativeImage.createEmpty();
+}
+
+// Windows AppUserModelID and Start Menu shortcut for DayPulse branding in Action Center & Taskbar
 if (process.platform === "win32") {
-	app.setAppUserModelId("com.daypulse.tracker");
+	const appId = "com.daypulse.tracker";
+	app.setAppUserModelId(appId);
+
+	try {
+		const programsDir = path.join(
+			app.getPath("appData"),
+			"Microsoft",
+			"Windows",
+			"Start Menu",
+			"Programs",
+		);
+		const shortcutPath = path.join(programsDir, "DayPulse.lnk");
+		const iconPath = getWindowIconPath();
+		shell.writeShortcutLink(shortcutPath, "create", {
+			target: process.execPath,
+			args: `"${path.resolve(__dirname, "..")}"`,
+			appUserModelId: appId,
+			icon: iconPath,
+			iconIndex: 0,
+			description: "DayPulse - Standalone Workspace",
+		});
+	} catch (err) {
+		console.warn("[DayPulse Desktop] Shortcut registration notice:", err);
+	}
 }
 
 let mainWindow: BrowserWindow | null = null;
@@ -51,26 +109,8 @@ app.on("second-instance", () => {
 	}
 });
 
-function getWindowIcon(): NativeImage {
-	const candidates = [
-		path.resolve(process.cwd(), "assets", "logo.png"),
-		path.resolve(process.cwd(), "..", "assets", "logo.png"),
-		path.resolve(__dirname, "../../assets/logo.png"),
-		path.resolve(__dirname, "../assets/logo.png"),
-	];
-
-	for (const candidate of candidates) {
-		try {
-			const img = nativeImage.createFromPath(candidate);
-			if (!img.isEmpty()) return img;
-		} catch {
-			// Continue
-		}
-	}
-	return nativeImage.createEmpty();
-}
-
 async function createMainWindow(): Promise<BrowserWindow> {
+	const iconPath = getWindowIconPath();
 	mainWindow = new BrowserWindow({
 		width: 1280,
 		height: 850,
@@ -78,7 +118,7 @@ async function createMainWindow(): Promise<BrowserWindow> {
 		minHeight: 640,
 		show: false,
 		title: "DayPulse",
-		icon: getWindowIcon(),
+		icon: iconPath || getWindowIcon(),
 		backgroundColor: "#09090b",
 		autoHideMenuBar: true,
 		webPreferences: {
@@ -97,6 +137,26 @@ async function createMainWindow(): Promise<BrowserWindow> {
 	});
 
 	if (process.env.NODE_ENV !== "production") {
+		if (process.argv.includes("--devtools")) {
+			mainWindow.webContents.openDevTools({ mode: "detach" });
+		}
+
+		mainWindow.webContents.on("preload-error", (_event, preloadPath, error) => {
+			console.error(`[Preload Error] in ${preloadPath}:`, error);
+		});
+
+		mainWindow.webContents.on("render-process-gone", (_event, details) => {
+			console.error("[Renderer Process Gone]", details);
+		});
+
+		mainWindow.webContents.on("did-start-loading", () => {
+			console.log("[DayPulse Desktop] WebContents started loading");
+		});
+
+		mainWindow.webContents.on("did-navigate", (_event, url) => {
+			console.log(`[DayPulse Desktop] Navigated to: ${url}`);
+		});
+
 		mainWindow.webContents.on(
 			"console-message",
 			(_event, level, message, line, sourceId) => {
@@ -138,6 +198,14 @@ function registerIpcHandlers(): void {
 	ipcMain.handle("sync:now", async () => {
 		console.log("[DayPulse Desktop] Manual Google Drive sync requested");
 		return true;
+	});
+
+	ipcMain.handle("shell:open-external", async (_event, url: string) => {
+		if (url && (url.startsWith("https://") || url.startsWith("http://"))) {
+			await shell.openExternal(url);
+			return true;
+		}
+		return false;
 	});
 
 	ipcMain.handle(
@@ -280,6 +348,9 @@ app.whenReady().then(async () => {
 	const navigateWithRetry = async (maxAttempts = 15) => {
 		for (let attempt = 1; attempt <= maxAttempts; attempt++) {
 			try {
+				console.log(
+					`[DayPulse Desktop] Loading URL (attempt ${attempt}/${maxAttempts}): ${targetUrl}`,
+				);
 				await win.loadURL(targetUrl);
 				console.log(`[DayPulse Desktop] UI connected at ${targetUrl}`);
 				revealWindow();
