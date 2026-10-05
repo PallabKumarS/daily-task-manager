@@ -9,6 +9,7 @@ import {
 	Droplet,
 	Milk,
 	Plus,
+	Trash2,
 	Utensils,
 } from "lucide-react";
 import * as React from "react";
@@ -20,6 +21,7 @@ import { TrackerFormModal } from "@/components/trackers/tracker-form-modal";
 import { TrackerSettlementModal } from "@/components/trackers/tracker-settlement-modal";
 import type { DailyTrackerItem } from "@/components/trackers/tracker-types";
 import { Button } from "@/components/ui/button";
+import { useConfirm } from "@/components/ui/confirm-dialog";
 import { api } from "@/lib/api-client";
 import { formatCurrency } from "@/lib/currency-symbols";
 
@@ -33,6 +35,7 @@ const getTodayDateString = (): string => {
 
 export default function TrackersPage() {
 	const { user } = useAuth();
+	const confirm = useConfirm();
 	const [trackers, setTrackers] = React.useState<DailyTrackerItem[]>([]);
 	const [loading, setLoading] = React.useState(true);
 	const [selectedDate, setSelectedDate] = React.useState<string>(
@@ -75,6 +78,29 @@ export default function TrackersPage() {
 			window.removeEventListener("daypulse:refresh", onGlobalRefresh);
 		};
 	}, [fetchTrackers]);
+
+	const handleClearAll = async () => {
+		const ok = await confirm({
+			title: "Delete All Trackers",
+			description:
+				"Are you sure you want to permanently delete all daily trackers and monitors? This action cannot be undone.",
+			confirmText: "Delete All",
+			variant: "destructive",
+		});
+		if (!ok) return;
+
+		try {
+			const res = await api.delete("/trackers");
+			if (res.success) {
+				toast.success("All trackers deleted");
+				fetchTrackers();
+			} else {
+				toast.error(res.message || "Failed to delete trackers");
+			}
+		} catch {
+			toast.error("Network error while deleting trackers");
+		}
+	};
 
 	const handlePrevDay = () => {
 		const d = new Date(`${selectedDate}T00:00:00`);
@@ -163,6 +189,17 @@ export default function TrackersPage() {
 				</div>
 
 				<div className="flex items-center gap-2.5">
+					{trackers.length > 0 && (
+						<Button
+							type="button"
+							variant="outline"
+							onClick={handleClearAll}
+							className="gap-1.5 border-rose-900/40 text-rose-400 hover:bg-rose-950/30 hover:text-rose-300 hover:border-rose-800"
+						>
+							<Trash2 className="w-4 h-4" />
+							<span>Clear All</span>
+						</Button>
+					)}
 					<Button
 						type="button"
 						onClick={() => {

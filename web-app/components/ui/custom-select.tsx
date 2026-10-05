@@ -449,7 +449,7 @@ export function CustomSelect({
 
 				{/* Dropdown Menu */}
 				{isOpen && (
-					<div className="absolute left-0 top-full z-50 mt-1.5 w-full rounded-2xl border border-slate-700/90 bg-slate-900/98 p-1.5 shadow-2xl shadow-black/80 backdrop-blur-2xl transition-all animate-in fade-in zoom-in-95 duration-100">
+					<div className="absolute left-0 top-full z-50 mt-1.5 w-full rounded-2xl border border-slate-700/90 bg-slate-900 p-1.5 shadow-2xl shadow-black/80 transition-all animate-in fade-in zoom-in-95 duration-100">
 						{/* Search filter */}
 						{activeOptions.length > 5 && !isCreating && !editingValue && (
 							<div className="mb-1.5 flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-950 px-2.5 py-1.5">

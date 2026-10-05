@@ -1,18 +1,18 @@
 "use client";
 
+import { ChevronLeft, ChevronRight, Plus, Tag } from "lucide-react";
 import * as React from "react";
-import { Plus, ChevronLeft, ChevronRight, Calendar, Tag } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useAuth } from "@/components/providers/auth-provider";
-import { FinanceSummaryCards } from "@/components/finances/finance-summary-cards";
-import { CumulativeChart } from "@/components/finances/cumulative-chart";
-import { CategoryBreakdown } from "@/components/finances/category-breakdown";
-import {
-	TransactionList,
-	TransactionItem,
-} from "@/components/finances/transaction-list";
-import { TransactionFormModal } from "@/components/finances/transaction-form-modal";
 import { CategoryManagerModal } from "@/components/categories/category-manager-modal";
+import { CategoryBreakdown } from "@/components/finances/category-breakdown";
+import { CumulativeChart } from "@/components/finances/cumulative-chart";
+import { FinanceSummaryCards } from "@/components/finances/finance-summary-cards";
+import { TransactionFormModal } from "@/components/finances/transaction-form-modal";
+import {
+	type TransactionItem,
+	TransactionList,
+} from "@/components/finances/transaction-list";
+import { useAuth } from "@/components/providers/auth-provider";
+import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api-client";
 
 export default function FinancesPage() {
@@ -64,19 +64,27 @@ export default function FinancesPage() {
 	const fetchData = React.useCallback(async () => {
 		try {
 			const dateStr = currentDate.toISOString();
-			const [analyticsRes, transRes] = await Promise.all([
+			const [analyticsRes, transRes] = await Promise.allSettled([
 				api.get<typeof analytics>(
 					`/finances/analytics?period=${period}&date=${encodeURIComponent(dateStr)}`,
 				),
 				api.get<TransactionItem[]>(`/finances?limit=100`),
 			]);
 
-			if (analyticsRes.success && analyticsRes.data) {
-				setAnalytics(analyticsRes.data);
+			if (
+				analyticsRes.status === "fulfilled" &&
+				analyticsRes.value.success &&
+				analyticsRes.value.data
+			) {
+				setAnalytics(analyticsRes.value.data);
 			}
 
-			if (transRes.success && transRes.data) {
-				setTransactions(transRes.data);
+			if (
+				transRes.status === "fulfilled" &&
+				transRes.value.success &&
+				transRes.value.data
+			) {
+				setTransactions(transRes.value.data);
 			}
 		} catch {
 			// ignore
@@ -150,6 +158,14 @@ export default function FinancesPage() {
 		setEditingTransaction(null);
 		setModalOpen(true);
 	};
+
+	if (loading) {
+		return (
+			<div className="py-20 text-center text-slate-400 text-xs">
+				Loading financial ledger & analytics...
+			</div>
+		);
+	}
 
 	return (
 		<div className="space-y-6">

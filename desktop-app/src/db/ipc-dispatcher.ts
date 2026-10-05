@@ -4,6 +4,14 @@ import {
 	previewBackupArchive,
 	restoreBackupArchive,
 } from "./archive-extractor.js";
+import { calculateFinanceAnalytics } from "./finance-analytics.js";
+import {
+	executeGoogleSyncRestore,
+	executeGoogleSyncUpload,
+	getGoogleAuthUrl,
+	isGoogleConfigured,
+	startGoogleOAuthLoopbackServer,
+} from "./google-sync.js";
 import {
 	getCurrentUserId,
 	getPrismaClient,
@@ -95,10 +103,25 @@ export async function handleIpcApiDispatch(
 					}
 				}
 			}
+
+			if (!user) {
+				return {
+					statusCode: 401,
+					success: false,
+					message: "User not found",
+					data: null,
+				};
+			}
+
+			const { passwordHash: _, ...safeUser } = user;
 			return {
 				statusCode: 200,
 				success: true,
-				data: user,
+				data: {
+					...safeUser,
+					createdAt: user.createdAt.toISOString(),
+					updatedAt: user.updatedAt.toISOString(),
+				},
 			};
 		}
 
@@ -216,6 +239,12 @@ export async function handleIpcApiDispatch(
 			};
 		}
 
+const toIsoString = (val: unknown): string | null => {
+	if (!val) return null;
+	if (val instanceof Date) return val.toISOString();
+	return String(val);
+};
+
 		// ================= TASK ROUTES =================
 		if (pathname === "/tasks" && method === "GET") {
 			const where: Record<string, unknown> = { userId };
@@ -238,7 +267,18 @@ export async function handleIpcApiDispatch(
 				where,
 				orderBy: [{ status: "asc" }, { dueDate: "asc" }, { createdAt: "desc" }],
 			});
-			return { statusCode: 200, success: true, data: tasks };
+
+			const formatted = tasks.map((t) => ({
+				...t,
+				startDate: toIsoString(t.startDate),
+				dueDate: toIsoString(t.dueDate),
+				repeatUntil: toIsoString(t.repeatUntil),
+				completedAt: toIsoString(t.completedAt),
+				createdAt: toIsoString(t.createdAt) || new Date().toISOString(),
+				updatedAt: toIsoString(t.updatedAt) || new Date().toISOString(),
+			}));
+
+			return { statusCode: 200, success: true, data: formatted };
 		}
 
 		if (pathname === "/tasks" && method === "POST") {
@@ -279,7 +319,20 @@ export async function handleIpcApiDispatch(
 						: null,
 				},
 			});
-			return { statusCode: 201, success: true, data: task };
+
+			return {
+				statusCode: 201,
+				success: true,
+				data: {
+					...task,
+					startDate: toIsoString(task.startDate),
+					dueDate: toIsoString(task.dueDate),
+					repeatUntil: toIsoString(task.repeatUntil),
+					completedAt: toIsoString(task.completedAt),
+					createdAt: toIsoString(task.createdAt) || new Date().toISOString(),
+					updatedAt: toIsoString(task.updatedAt) || new Date().toISOString(),
+				},
+			};
 		}
 
 		const taskMatch = pathname.match(/^\/tasks\/([^/]+)$/);
@@ -307,9 +360,108 @@ export async function handleIpcApiDispatch(
 							: body.status
 								? null
 								: undefined,
+					remindBeforeMinutes:
+						body.remindBeforeMinutes !== undefined
+							? Number(body.remindBeforeMinutes)
+							: undefined,
+					isRecurring:
+						body.isRecurring !== undefined
+							? Boolean(body.isRecurring)
+							: undefined,
+					repeatFrequency:
+						body.repeatFrequency !== undefined
+							? body.repeatFrequency
+								? String(body.repeatFrequency)
+								: null
+							: undefined,
+					repeatInterval:
+						body.repeatInterval !== undefined
+							? Number(body.repeatInterval)
+							: undefined,
+					repeatDaysOfWeek:
+						body.repeatDaysOfWeek !== undefined
+							? body.repeatDaysOfWeek
+								? String(body.repeatDaysOfWeek)
+								: null
+							: undefined,
+					repeatTime:
+						body.repeatTime !== undefined
+							? body.repeatTime
+								? String(body.repeatTime)
+								: null
+							: undefined,
+					repeatDayOfMonth:
+						body.repeatDayOfMonth !== undefined
+							? body.repeatDayOfMonth
+								? Number(body.repeatDayOfMonth)
+								: null
+							: undefined,
+					repeatMonthOfYear:
+						body.repeatMonthOfYear !== undefined
+							? body.repeatMonthOfYear
+								? Number(body.repeatMonthOfYear)
+								: null
+							: undefined,
+					repeatEndType:
+						body.repeatEndType !== undefined
+							? body.repeatEndType
+								? String(body.repeatEndType)
+								: null
+							: undefined,
+					repeatCount:
+						body.repeatCount !== undefined
+							? body.repeatCount
+								? Number(body.repeatCount)
+								: null
+							: undefined,
+					repeatUntil:
+						body.repeatUntil !== undefined
+							? body.repeatUntil
+								? new Date(String(body.repeatUntil))
+								: null
+							: undefined,
+					lastCompletedDate:
+						body.lastCompletedDate !== undefined
+							? body.lastCompletedDate
+								? String(body.lastCompletedDate)
+								: null
+							: undefined,
+					lastTriggeredDate:
+						body.lastTriggeredDate !== undefined
+							? body.lastTriggeredDate
+								? String(body.lastTriggeredDate)
+								: null
+							: undefined,
+					completedOccurrences:
+						body.completedOccurrences !== undefined
+							? Number(body.completedOccurrences)
+							: undefined,
 				},
 			});
-			return { statusCode: 200, success: true, data: updated };
+
+			return {
+				statusCode: 200,
+				success: true,
+				data: {
+					...updated,
+					startDate: toIsoString(updated.startDate),
+					dueDate: toIsoString(updated.dueDate),
+					repeatUntil: toIsoString(updated.repeatUntil),
+					completedAt: toIsoString(updated.completedAt),
+					createdAt: toIsoString(updated.createdAt) || new Date().toISOString(),
+					updatedAt: toIsoString(updated.updatedAt) || new Date().toISOString(),
+				},
+			};
+		}
+
+		if (pathname === "/tasks" && method === "DELETE") {
+			await prisma.task.deleteMany({ where: { userId } });
+			return {
+				statusCode: 200,
+				success: true,
+				message: "All tasks deleted",
+				data: null,
+			};
 		}
 
 		if (taskMatch && method === "DELETE") {
@@ -333,6 +485,8 @@ export async function handleIpcApiDispatch(
 
 			const formatted = routines.map((r) => ({
 				...r,
+				createdAt: toIsoString(r.createdAt) || new Date().toISOString(),
+				updatedAt: toIsoString(r.updatedAt) || new Date().toISOString(),
 				isCompletedToday: r.logs.length > 0 && r.logs[0].completed,
 			}));
 
@@ -357,7 +511,15 @@ export async function handleIpcApiDispatch(
 					reminderMinutes: Number(body.reminderMinutes) || 0,
 				},
 			});
-			return { statusCode: 201, success: true, data: routine };
+			return {
+				statusCode: 201,
+				success: true,
+				data: {
+					...routine,
+					createdAt: toIsoString(routine.createdAt) || new Date().toISOString(),
+					updatedAt: toIsoString(routine.updatedAt) || new Date().toISOString(),
+				},
+			};
 		}
 
 		const routineToggleMatch = pathname.match(/^\/routines\/([^/]+)\/toggle$/);
@@ -420,23 +582,75 @@ export async function handleIpcApiDispatch(
 			};
 		}
 
+		if (pathname === "/routines" && method === "DELETE") {
+			await prisma.routineLog.deleteMany({ where: { userId } });
+			await prisma.routine.deleteMany({ where: { userId } });
+			return {
+				statusCode: 200,
+				success: true,
+				message: "All routines deleted",
+				data: null,
+			};
+		}
+
 		const routineMatch = pathname.match(/^\/routines\/([^/]+)$/);
+		if (routineMatch && method === "PATCH") {
+			const routineId = routineMatch[1];
+			const updated = await prisma.routine.update({
+				where: { id: routineId },
+				data: {
+					title: typeof body.title === "string" ? body.title : undefined,
+					description:
+						typeof body.description === "string" ? body.description : undefined,
+					timeSlot:
+						typeof body.timeSlot === "string" ? body.timeSlot : undefined,
+					targetTime:
+						typeof body.targetTime === "string" ? body.targetTime : undefined,
+					daysOfWeek:
+						typeof body.daysOfWeek === "string" ? body.daysOfWeek : undefined,
+					reminderMinutes:
+						body.reminderMinutes !== undefined
+							? Number(body.reminderMinutes)
+							: undefined,
+					streakCount:
+						body.streakCount !== undefined
+							? Number(body.streakCount)
+							: undefined,
+					lastCompletedDate:
+						body.lastCompletedDate !== undefined
+							? body.lastCompletedDate
+								? String(body.lastCompletedDate)
+								: null
+							: undefined,
+				},
+			});
+			return {
+				statusCode: 200,
+				success: true,
+				data: {
+					...updated,
+					createdAt: toIsoString(updated.createdAt) || new Date().toISOString(),
+					updatedAt: toIsoString(updated.updatedAt) || new Date().toISOString(),
+				},
+			};
+		}
+
 		if (routineMatch && method === "DELETE") {
 			const routineId = routineMatch[1];
+			await prisma.routineLog.deleteMany({ where: { routineId } });
 			await prisma.routine.delete({ where: { id: routineId } });
 			return { statusCode: 200, success: true, data: null };
 		}
 
 		// ================= FINANCES ROUTES =================
-		if (
-			(pathname === "/finances/transactions" || pathname === "/finances") &&
-			method === "GET"
-		) {
-			const transactions = await prisma.transaction.findMany({
-				where: { userId },
-				orderBy: { date: "desc" },
-			});
-			return { statusCode: 200, success: true, data: transactions };
+		if (pathname === "/finances/analytics" && method === "GET") {
+			const analytics = await calculateFinanceAnalytics(
+				prisma,
+				userId,
+				query.period || "month",
+				query.date,
+			);
+			return { statusCode: 200, success: true, data: analytics };
 		}
 
 		if (pathname === "/finances/summary" && method === "GET") {
@@ -472,6 +686,50 @@ export async function handleIpcApiDispatch(
 
 		if (
 			(pathname === "/finances/transactions" || pathname === "/finances") &&
+			method === "GET"
+		) {
+			const where: Record<string, unknown> = { userId };
+			if (
+				query.type &&
+				["EXPENSE", "INCOME"].includes(query.type.toUpperCase())
+			) {
+				where.type = query.type.toUpperCase();
+			}
+			if (query.category) {
+				where.category = query.category;
+			}
+			if (query.startDate || query.endDate) {
+				const dateFilter: Record<string, Date> = {};
+				if (query.startDate) dateFilter.gte = new Date(query.startDate);
+				if (query.endDate) dateFilter.lte = new Date(query.endDate);
+				where.date = dateFilter;
+			}
+
+			const limit = query.limit ? Number(query.limit) : undefined;
+			const transactions = await prisma.transaction.findMany({
+				where,
+				orderBy: { date: "desc" },
+				...(limit ? { take: limit } : {}),
+			});
+
+			const formatted = transactions.map((t) => ({
+				...t,
+				date: t.date instanceof Date ? t.date.toISOString() : String(t.date),
+				createdAt:
+					t.createdAt instanceof Date
+						? t.createdAt.toISOString()
+						: String(t.createdAt),
+				updatedAt:
+					t.updatedAt instanceof Date
+						? t.updatedAt.toISOString()
+						: String(t.updatedAt),
+			}));
+
+			return { statusCode: 200, success: true, data: formatted };
+		}
+
+		if (
+			(pathname === "/finances/transactions" || pathname === "/finances") &&
 			method === "POST"
 		) {
 			const tx = await prisma.transaction.create({
@@ -489,14 +747,164 @@ export async function handleIpcApiDispatch(
 					date: body.date ? new Date(String(body.date)) : new Date(),
 				},
 			});
-			return { statusCode: 201, success: true, data: tx };
+
+			return {
+				statusCode: 201,
+				success: true,
+				message: `${tx.type === "INCOME" ? "Income" : "Expense"} recorded`,
+				data: {
+					...tx,
+					date:
+						tx.date instanceof Date ? tx.date.toISOString() : String(tx.date),
+					createdAt:
+						tx.createdAt instanceof Date
+							? tx.createdAt.toISOString()
+							: String(tx.createdAt),
+					updatedAt:
+						tx.updatedAt instanceof Date
+							? tx.updatedAt.toISOString()
+							: String(tx.updatedAt),
+				},
+			};
 		}
 
-		const txMatch = pathname.match(/^\/finances\/transactions\/([^/]+)$/);
-		if (txMatch && method === "DELETE") {
-			const txId = txMatch[1];
-			await prisma.transaction.delete({ where: { id: txId } });
-			return { statusCode: 200, success: true, data: null };
+		if (
+			(pathname === "/finances" || pathname === "/finances/transactions") &&
+			method === "DELETE"
+		) {
+			await prisma.transaction.deleteMany({ where: { userId } });
+			return {
+				statusCode: 200,
+				success: true,
+				message: "All transactions deleted",
+				data: null,
+			};
+		}
+
+		const txSingleMatch = pathname.match(
+			/^\/finances(?:\/transactions)?\/([^/]+)$/,
+		);
+		if (
+			txSingleMatch &&
+			txSingleMatch[1] !== "analytics" &&
+			txSingleMatch[1] !== "summary" &&
+			txSingleMatch[1] !== "transactions"
+		) {
+			const txId = txSingleMatch[1];
+
+			if (method === "GET") {
+				const tx = await prisma.transaction.findFirst({
+					where: { id: txId, userId },
+				});
+				if (!tx) {
+					return {
+						statusCode: 404,
+						success: false,
+						message: "Transaction not found",
+						data: null,
+					};
+				}
+				return {
+					statusCode: 200,
+					success: true,
+					data: {
+						...tx,
+						date:
+							tx.date instanceof Date ? tx.date.toISOString() : String(tx.date),
+						createdAt:
+							tx.createdAt instanceof Date
+								? tx.createdAt.toISOString()
+								: String(tx.createdAt),
+						updatedAt:
+							tx.updatedAt instanceof Date
+								? tx.updatedAt.toISOString()
+								: String(tx.updatedAt),
+					},
+				};
+			}
+
+			if (method === "PATCH") {
+				const existing = await prisma.transaction.findFirst({
+					where: { id: txId, userId },
+				});
+				if (!existing) {
+					return {
+						statusCode: 404,
+						success: false,
+						message: "Transaction not found",
+						data: null,
+					};
+				}
+
+				const updateData: Record<string, unknown> = {};
+				if (typeof body.type === "string") {
+					updateData.type = body.type.toUpperCase();
+				}
+				if (body.amount !== undefined) {
+					updateData.amount = Number(body.amount);
+				}
+				if (typeof body.category === "string") {
+					updateData.category = body.category;
+				}
+				if (body.description !== undefined) {
+					updateData.description =
+						typeof body.description === "string" ? body.description : null;
+				}
+				if (typeof body.paymentMethod === "string") {
+					updateData.paymentMethod = body.paymentMethod;
+				}
+				if (body.date) {
+					updateData.date = new Date(String(body.date));
+				}
+
+				const updated = await prisma.transaction.update({
+					where: { id: txId },
+					data: updateData,
+				});
+
+				return {
+					statusCode: 200,
+					success: true,
+					message: "Transaction updated",
+					data: {
+						...updated,
+						date:
+							updated.date instanceof Date
+								? updated.date.toISOString()
+								: String(updated.date),
+						createdAt:
+							updated.createdAt instanceof Date
+								? updated.createdAt.toISOString()
+								: String(updated.createdAt),
+						updatedAt:
+							updated.updatedAt instanceof Date
+								? updated.updatedAt.toISOString()
+								: String(updated.updatedAt),
+					},
+				};
+			}
+
+			if (method === "DELETE") {
+				const existing = await prisma.transaction.findFirst({
+					where: { id: txId, userId },
+				});
+				if (!existing) {
+					return {
+						statusCode: 404,
+						success: false,
+						message: "Transaction not found",
+						data: null,
+					};
+				}
+
+				await prisma.transaction.delete({ where: { id: txId } });
+				return {
+					statusCode: 200,
+					success: true,
+					message: "Transaction deleted",
+					data: null,
+				};
+			}
 		}
 
 		// ================= TRACKERS ROUTES =================
@@ -553,6 +961,8 @@ export async function handleIpcApiDispatch(
 
 				return {
 					...tracker,
+					createdAt: toIsoString(tracker.createdAt) || new Date().toISOString(),
+					updatedAt: toIsoString(tracker.updatedAt) || new Date().toISOString(),
 					todayLog: todayLog
 						? {
 								id: todayLog.id,
@@ -562,7 +972,7 @@ export async function handleIpcApiDispatch(
 								unitPrice: todayLog.unitPrice,
 								notes: todayLog.notes,
 								isSettled: todayLog.isSettled,
-								settledAt: todayLog.settledAt,
+								settledAt: toIsoString(todayLog.settledAt),
 							}
 						: null,
 					todayValue: todayLog ? todayLog.value : 0,
@@ -599,7 +1009,15 @@ export async function handleIpcApiDispatch(
 					color: typeof body.color === "string" ? body.color : "emerald",
 				},
 			});
-			return { statusCode: 201, success: true, data: tracker };
+			return {
+				statusCode: 201,
+				success: true,
+				data: {
+					...tracker,
+					createdAt: toIsoString(tracker.createdAt) || new Date().toISOString(),
+					updatedAt: toIsoString(tracker.updatedAt) || new Date().toISOString(),
+				},
+			};
 		}
 
 		const trackerLogMatch = pathname.match(/^\/trackers\/([^/]+)\/log$/);
@@ -882,11 +1300,31 @@ export async function handleIpcApiDispatch(
 					color: typeof body.color === "string" ? body.color : undefined,
 				},
 			});
-			return { statusCode: 200, success: true, data: updated };
+			return {
+				statusCode: 200,
+				success: true,
+				data: {
+					...updated,
+					createdAt: toIsoString(updated.createdAt) || new Date().toISOString(),
+					updatedAt: toIsoString(updated.updatedAt) || new Date().toISOString(),
+				},
+			};
+		}
+
+		if (pathname === "/trackers" && method === "DELETE") {
+			await prisma.dailyTrackerLog.deleteMany({ where: { userId } });
+			await prisma.dailyTracker.deleteMany({ where: { userId } });
+			return {
+				statusCode: 200,
+				success: true,
+				message: "All trackers deleted",
+				data: null,
+			};
 		}
 
 		if (trackerMatch && method === "DELETE") {
 			const trackerId = trackerMatch[1];
+			await prisma.dailyTrackerLog.deleteMany({ where: { trackerId } });
 			await prisma.dailyTracker.delete({ where: { id: trackerId } });
 			return { statusCode: 200, success: true, data: null };
 		}
@@ -914,7 +1352,33 @@ export async function handleIpcApiDispatch(
 			return { statusCode: 201, success: true, data: category };
 		}
 
+		if (pathname === "/categories" && method === "DELETE") {
+			await prisma.categoryOption.deleteMany({ where: { userId } });
+			return {
+				statusCode: 200,
+				success: true,
+				message: "All custom categories deleted",
+				data: null,
+			};
+		}
+
 		const catMatch = pathname.match(/^\/categories\/([^/]+)$/);
+		if (catMatch && method === "PATCH") {
+			const catId = catMatch[1];
+			const updated = await prisma.categoryOption.update({
+				where: { id: catId },
+				data: {
+					name: typeof body.name === "string" ? body.name : undefined,
+					color: typeof body.color === "string" ? body.color : undefined,
+					group:
+						typeof body.group === "string"
+							? body.group.toUpperCase()
+							: undefined,
+				},
+			});
+			return { statusCode: 200, success: true, data: updated };
+		}
+
 		if (catMatch && method === "DELETE") {
 			const catId = catMatch[1];
 			await prisma.categoryOption.delete({ where: { id: catId } });
@@ -1256,32 +1720,6 @@ export async function handleIpcApiDispatch(
 			};
 		}
 
-		if (pathname === "/sync/status" && method === "GET") {
-			const [taskCount, routineCount, txCount, trackerCount] =
-				await Promise.all([
-					prisma.task.count({ where: { userId } }),
-					prisma.routine.count({ where: { userId } }),
-					prisma.transaction.count({ where: { userId } }),
-					prisma.dailyTracker.count({ where: { userId } }),
-				]);
-
-			return {
-				statusCode: 200,
-				success: true,
-				data: {
-					connected: false,
-					lastSyncAt: null,
-					userId,
-					stats: {
-						tasks: taskCount,
-						routines: routineCount,
-						transactions: txCount,
-						trackers: trackerCount,
-					},
-				},
-			};
-		}
-
 		// ================= MULTI-COLLECTION ZIP ARCHIVE ROUTES =================
 		if (
 			(pathname === "/sync/archive/export" ||
@@ -1388,14 +1826,94 @@ export async function handleIpcApiDispatch(
 			}
 		}
 
-		if (pathname.startsWith("/sync")) {
+		// ================= SYNC & GOOGLE CLOUD ROUTES =================
+		if (pathname === "/sync/status" && method === "GET") {
+			const [conn, taskCount, routineCount, txCount, trackerCount] =
+				await Promise.all([
+					prisma.googleConnection.findUnique({ where: { userId } }),
+					prisma.task.count({ where: { userId } }),
+					prisma.routine.count({ where: { userId } }),
+					prisma.transaction.count({ where: { userId } }),
+					prisma.dailyTracker.count({ where: { userId } }),
+				]);
+			const configured = isGoogleConfigured();
 			return {
 				statusCode: 200,
 				success: true,
 				data: {
-					message: "Local-first standalone mode: sync bridge active",
-					connected: false,
+					isConfigured: configured,
+					configured,
+					isConnected: Boolean(conn),
+					connected: Boolean(conn),
+					email: conn?.googleEmail || null,
+					googleEmail: conn?.googleEmail || null,
+					lastSyncAt: conn?.lastSyncAt ? conn.lastSyncAt.toISOString() : null,
+					lastGoogleSyncAt: conn?.lastSyncAt
+						? conn.lastSyncAt.toISOString()
+						: null,
+					driveFileId: conn?.driveFileId || null,
+					userId,
+					stats: {
+						tasks: taskCount,
+						routines: routineCount,
+						transactions: txCount,
+						trackers: trackerCount,
+					},
 				},
+			};
+		}
+
+		if (pathname === "/sync/auth-url" && method === "GET") {
+			startGoogleOAuthLoopbackServer(prisma);
+			const url = getGoogleAuthUrl(userId);
+			return {
+				statusCode: 200,
+				success: true,
+				data: { url, authUrl: url },
+			};
+		}
+
+		if (pathname === "/sync/upload" && method === "POST") {
+			const result = await executeGoogleSyncUpload(prisma, userId);
+			return {
+				statusCode: 200,
+				success: true,
+				message: result.message,
+				data: { lastSyncAt: result.lastSyncAt },
+			};
+		}
+
+		if (pathname === "/sync/restore" && method === "POST") {
+			const result = await executeGoogleSyncRestore(prisma, userId);
+			return {
+				statusCode: 200,
+				success: true,
+				message: result.message,
+				data: null,
+			};
+		}
+
+		if (pathname === "/sync/disconnect" && method === "POST") {
+			await prisma.googleConnection.deleteMany({ where: { userId } });
+			return {
+				statusCode: 200,
+				success: true,
+				message: "Google account disconnected successfully",
+				data: null,
+			};
+		}
+
+		if (pathname === "/sync/simulate" && method === "POST") {
+			const now = new Date();
+			await prisma.googleConnection.updateMany({
+				where: { userId },
+				data: { lastSyncAt: now },
+			});
+			return {
+				statusCode: 200,
+				success: true,
+				message: "Sync simulated successfully",
+				data: { lastSyncAt: now.toISOString() },
 			};
 		}
 

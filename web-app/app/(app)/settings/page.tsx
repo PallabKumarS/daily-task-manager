@@ -281,7 +281,25 @@ function SettingsContent() {
 		try {
 			const res = await api.get<{ url: string }>("/sync/auth-url");
 			if (res.success && res.data.url) {
-				window.location.href = res.data.url;
+				const electronApi =
+					typeof window !== "undefined"
+						? (
+								window as unknown as {
+									electronAPI?: {
+										openExternal?: (u: string) => Promise<boolean>;
+									};
+								}
+							).electronAPI
+						: undefined;
+
+				if (electronApi?.openExternal) {
+					await electronApi.openExternal(res.data.url);
+					toast.info(
+						"Opened Google Sign-In in your browser. Return here once authorized.",
+					);
+				} else {
+					window.location.href = res.data.url;
+				}
 			}
 		} catch (error) {
 			const message =

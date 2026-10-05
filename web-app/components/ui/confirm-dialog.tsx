@@ -100,7 +100,7 @@ export function ConfirmDialog({
 		<div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
 			{/* Backdrop */}
 			<div
-				className="fixed inset-0 bg-slate-950/80 backdrop-blur-md transition-opacity animate-in fade-in duration-150"
+				className="fixed inset-0 bg-slate-950/70 transition-opacity animate-in fade-in duration-150"
 				onClick={onCancel}
 				aria-hidden="true"
 			/>
@@ -114,7 +114,7 @@ export function ConfirmDialog({
 					description ? "confirm-dialog-description" : undefined
 				}
 				className={cn(
-					"relative w-full max-w-md rounded-3xl border border-slate-700/80 bg-slate-900/95 p-6 sm:p-7 shadow-2xl shadow-black/90 z-10 flex flex-col backdrop-blur-2xl animate-in zoom-in-95 duration-200",
+					"relative w-full max-w-lg rounded-3xl border border-slate-700/80 bg-slate-900 p-6 sm:p-7 shadow-2xl shadow-black/90 z-10 flex flex-col animate-in zoom-in-95 duration-200",
 				)}
 			>
 				<button

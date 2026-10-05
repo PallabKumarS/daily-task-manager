@@ -45,17 +45,18 @@ export function Modal({
 	if (!isOpen) return null;
 
 	const maxWidthClasses = {
-		sm: "max-w-sm sm:max-w-md",
-		md: "max-w-md sm:max-w-lg md:max-w-xl",
-		lg: "max-w-lg sm:max-w-xl md:max-w-2xl lg:max-w-3xl",
-		xl: "max-w-xl sm:max-w-2xl md:max-w-3xl lg:max-w-4xl",
-		"2xl": "max-w-2xl sm:max-w-3xl md:max-w-4xl lg:max-w-5xl",
+		sm: "max-w-md sm:max-w-lg w-full",
+		md: "max-w-lg sm:max-w-xl md:max-w-2xl w-full",
+		lg: "max-w-xl sm:max-w-2xl md:max-w-3xl lg:max-w-4xl w-full",
+		xl: "max-w-2xl sm:max-w-3xl md:max-w-4xl lg:max-w-5xl w-full",
+		"2xl": "max-w-3xl sm:max-w-4xl md:max-w-5xl lg:max-w-6xl w-full",
 	};
 
 	return (
-		<div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 md:p-8">
+		<div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 md:p-8">
+			{/* Non-blurring dark overlay to keep background window visible */}
 			<div
-				className="fixed inset-0 bg-slate-950/80 backdrop-blur-md transition-opacity animate-in fade-in"
+				className="fixed inset-0 bg-slate-950/70 transition-opacity animate-in fade-in duration-150"
 				onClick={onClose}
 				aria-hidden="true"
 			/>
@@ -65,7 +66,7 @@ export function Modal({
 				aria-modal="true"
 				aria-labelledby="modal-title"
 				className={cn(
-					"relative w-full rounded-3xl border border-slate-700/80 bg-slate-900/95 p-6 sm:p-7 md:p-8 shadow-2xl shadow-black/80 z-10 max-h-[94vh] sm:max-h-[90vh] md:max-h-[86vh] flex flex-col backdrop-blur-2xl animate-in zoom-in-95 duration-200",
+					"relative w-full rounded-3xl border border-slate-700/80 bg-slate-900 p-6 sm:p-7 md:p-8 shadow-2xl shadow-black/90 z-10 max-h-[92vh] sm:max-h-[90vh] md:max-h-[88vh] flex flex-col animate-in zoom-in-95 duration-200",
 					maxWidthClasses[maxWidth],
 					className,
 				)}
