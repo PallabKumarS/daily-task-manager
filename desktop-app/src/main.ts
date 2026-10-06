@@ -20,15 +20,12 @@ import {
 	navigateMainWindow,
 	setupTray,
 	setupWindowsBranding,
-	showSplashWindow,
-	updateSplashStatus,
 } from "./windows/index.js";
 
 loadDesktopEnv();
 
 app.name = "DayPulse";
 app.setName("DayPulse");
-
 setupWindowsBranding();
 
 let mainWindow: BrowserWindow | null = null;
@@ -103,14 +100,8 @@ async function cleanupAndQuit(): Promise<void> {
 }
 
 app.whenReady().then(async () => {
-	showSplashWindow();
-	updateSplashStatus("Initializing local database...");
-
 	initAudioPlayer();
 	registerIpcHandlers(() => mainWindow);
-
-	await initPrismaDatabase();
-	updateSplashStatus("Loading workspace...");
 
 	mainWindow = createMainWindow(() => {
 		if (!isQuitting) {
@@ -132,6 +123,8 @@ app.whenReady().then(async () => {
 			cleanupAndQuit();
 		},
 	);
+
+	await initPrismaDatabase();
 
 	startLocalScheduler(mainWindow);
 	startDailySyncScheduler(mainWindow);

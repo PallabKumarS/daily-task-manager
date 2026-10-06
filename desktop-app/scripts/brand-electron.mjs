@@ -29,6 +29,35 @@ if (process.platform === "win32") {
 	const iconPath = iconCandidates.find((p) => fs.existsSync(p));
 
 	if (electronExe && rceditExe && iconPath) {
+		const electronDir = path.dirname(electronExe);
+		const daypulseExe = path.join(electronDir, "DayPulse.exe");
+
+		try {
+			if (!fs.existsSync(daypulseExe)) {
+				fs.copyFileSync(electronExe, daypulseExe);
+			}
+			execFileSync(
+				rceditExe,
+				[
+					daypulseExe,
+					"--set-icon",
+					iconPath,
+					"--set-version-string",
+					"FileDescription",
+					"DayPulse",
+					"--set-version-string",
+					"ProductName",
+					"DayPulse",
+					"--set-version-string",
+					"CompanyName",
+					"DayPulse",
+				],
+				{ stdio: "ignore" },
+			);
+		} catch {
+			// Continue
+		}
+
 		try {
 			execFileSync(
 				rceditExe,
@@ -41,6 +70,9 @@ if (process.platform === "win32") {
 					"DayPulse",
 					"--set-version-string",
 					"ProductName",
+					"DayPulse",
+					"--set-version-string",
+					"CompanyName",
 					"DayPulse",
 				],
 				{ stdio: "ignore" },

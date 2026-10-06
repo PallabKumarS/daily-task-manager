@@ -1,69 +1,47 @@
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { app, type NativeImage, nativeImage, shell } from "electron";
 
-export function getIcoIconPath(): string {
+export function getAssetPath(filename: string): string {
 	const candidates = [
-		path.join(__dirname, "../assets/daypulse.ico"),
-		path.join(__dirname, "assets/daypulse.ico"),
-		path.resolve(process.cwd(), "desktop-app/dist/assets/daypulse.ico"),
-		path.resolve(process.cwd(), "dist/assets/daypulse.ico"),
-		path.resolve(process.cwd(), "desktop-app/assets/daypulse.ico"),
-		path.resolve(process.cwd(), "assets/daypulse.ico"),
-		path.join(__dirname, "../assets/favicon.ico"),
-		path.join(__dirname, "assets/favicon.ico"),
+		path.resolve(__dirname, "../assets", filename),
+		path.resolve(__dirname, "../../assets", filename),
+		path.resolve(process.cwd(), "desktop-app/assets", filename),
+		path.resolve(process.cwd(), "assets", filename),
 	];
 
 	for (const candidate of candidates) {
 		if (fs.existsSync(candidate)) return candidate;
 	}
 	return "";
+}
+
+export function getIcoIconPath(): string {
+	return getAssetPath("daypulse.ico") || getAssetPath("favicon.ico");
 }
 
 export function getPngIconPath(): string {
-	const candidates = [
-		path.join(__dirname, "../assets/logo.png"),
-		path.join(__dirname, "assets/logo.png"),
-		path.resolve(process.cwd(), "desktop-app/dist/assets/logo.png"),
-		path.resolve(process.cwd(), "dist/assets/logo.png"),
-		path.resolve(process.cwd(), "desktop-app/assets/logo.png"),
-		path.resolve(process.cwd(), "assets/logo.png"),
-	];
-
-	for (const candidate of candidates) {
-		if (fs.existsSync(candidate)) return candidate;
-	}
-	return "";
+	return getAssetPath("logo.png") || getAssetPath("google-app-logo.png");
 }
 
 export function getWindowIconPath(): string {
-	const ico = getIcoIconPath();
-	if (ico) return ico;
-	return getPngIconPath();
+	if (process.platform === "win32") {
+		return getIcoIconPath() || getPngIconPath();
+	}
+	return getPngIconPath() || getIcoIconPath();
 }
 
 export function getWindowIcon(): NativeImage {
-	const icoPath = getIcoIconPath();
-	if (icoPath) {
+	const iconPath = getWindowIconPath();
+	if (iconPath) {
 		try {
-			const img = nativeImage.createFromPath(icoPath);
+			const img = nativeImage.createFromPath(iconPath);
 			if (!img.isEmpty()) return img;
 		} catch {
-			// Fallback to PNG
+			// Ignore
 		}
 	}
-
-	const pngPath = getPngIconPath();
-	if (pngPath) {
-		try {
-			const img = nativeImage.createFromPath(pngPath);
-			if (!img.isEmpty()) return img;
-		} catch {
-			// Fallback
-		}
-	}
-
 	return nativeImage.createEmpty();
 }
 
@@ -73,45 +51,10 @@ export function setupWindowsBranding(): void {
 	const appId = "com.daypulse.tracker";
 	app.setAppUserModelId(appId);
 
-	const icoIcon = getIcoIconPath();
-	const windowIcon = getWindowIconPath();
-	const effectiveIcon = icoIcon || windowIcon;
-
 	try {
-		const classesAumidKey = `HKCU\\Software\\Classes\\AppUserModelId\\${appId}`;
-		execSync(`reg add "${classesAumidKey}" /v DisplayName /t REG_SZ /d "DayPulse" /f`, {
-			stdio: "ignore",
-		});
-		if (effectiveIcon) {
-			execSync(`reg add "${classesAumidKey}" /v IconUri /t REG_SZ /d "${effectiveIcon}" /f`, {
-				stdio: "ignore",
-			});
-			execSync(`reg add "${classesAumidKey}" /v IconBackgroundColor /t REG_SZ /d "FF09090B" /f`, {
-				stdio: "ignore",
-			});
-		}
-	} catch {
-		// Classes registry key registration fallback
-	}
+		const icoPath = getIcoIconPath();
+		const iconForUri = icoPath || getPngIconPath();
 
-	try {
-		const regKey = `HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Notifications\\Settings\\${appId}`;
-		execSync(`reg add "${regKey}" /v DisplayName /t REG_SZ /d "DayPulse" /f`, {
-			stdio: "ignore",
-		});
-		if (effectiveIcon) {
-			execSync(`reg add "${regKey}" /v IconUri /t REG_SZ /d "${effectiveIcon}" /f`, {
-				stdio: "ignore",
-			});
-		}
-		execSync(`reg add "${regKey}" /v ShowInActionCenter /t REG_DWORD /d 1 /f`, {
-			stdio: "ignore",
-		});
-	} catch {
-		// Notification settings registry key fallback
-	}
-
-	try {
 		const programsDir = path.join(
 			app.getPath("appData"),
 			"Microsoft",
@@ -121,35 +64,47 @@ export function setupWindowsBranding(): void {
 		);
 		const shortcutPath = path.join(programsDir, "DayPulse.lnk");
 
-		if (fs.existsSync(shortcutPath)) {
-			try {
-				execSync(`attrib -R "${shortcutPath}"`, { stdio: "ignore" });
-			} catch {
-				// Unlock shortcut
-			}
-		}
-
-		// Windows shortcut links strictly require .ico or .exe for shortcut icon
 		const shortcutOptions = {
 			target: process.execPath,
-			args: app.isPackaged ? "" : `"${path.resolve(process.cwd(), "desktop-app")}"`,
+			args: app.isPackaged ? "" : `"${path.resolve(__dirname, "..")}"`,
 			appUserModelId: appId,
-			icon: icoIcon || effectiveIcon,
+			icon: icoPath,
 			iconIndex: 0,
-			description: "DayPulse - Standalone Workspace",
-			toastActivatorClsid: "{0796B928-7EA1-4E7A-AF15-FCF1640FE3F5}",
+			description: "DayPulse",
 		};
 
 		const op = fs.existsSync(shortcutPath) ? "replace" : "create";
-		const shortcutWritten = shell.writeShortcutLink(shortcutPath, op, shortcutOptions);
-		if (!shortcutWritten && op === "replace") {
-			shell.writeShortcutLink(shortcutPath, "create", shortcutOptions);
-		}
+		shell.writeShortcutLink(shortcutPath, op, shortcutOptions);
 
-		try {
-			execSync(`attrib +R "${shortcutPath}"`, { stdio: "ignore" });
-		} catch {
-			// Lock shortcut
+		if (iconForUri) {
+			const classesKey = `HKCU\\Software\\Classes\\AppUserModelId\\${appId}`;
+			execFileSync(
+				"reg",
+				["add", classesKey, "/v", "DisplayName", "/t", "REG_SZ", "/d", "DayPulse", "/f"],
+				{ stdio: "ignore" },
+			);
+			execFileSync(
+				"reg",
+				["add", classesKey, "/v", "IconUri", "/t", "REG_SZ", "/d", iconForUri, "/f"],
+				{ stdio: "ignore" },
+			);
+
+			const notifKey = `HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Notifications\\Settings\\${appId}`;
+			execFileSync(
+				"reg",
+				["add", notifKey, "/v", "DisplayName", "/t", "REG_SZ", "/d", "DayPulse", "/f"],
+				{ stdio: "ignore" },
+			);
+			execFileSync(
+				"reg",
+				["add", notifKey, "/v", "IconUri", "/t", "REG_SZ", "/d", iconForUri, "/f"],
+				{ stdio: "ignore" },
+			);
+			execFileSync(
+				"reg",
+				["add", notifKey, "/v", "ShowInActionCenter", "/t", "REG_DWORD", "/d", "1", "/f"],
+				{ stdio: "ignore" },
+			);
 		}
 	} catch (err) {
 		console.warn("[DayPulse Desktop] Shortcut registration notice:", err);
