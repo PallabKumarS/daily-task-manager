@@ -39,6 +39,13 @@ const api: ElectronBridgeApi = {
 	},
 };
 
+ipcRenderer.on("daypulse:sync-updated", (_event, payload) => {
+	window.dispatchEvent(
+		new CustomEvent("daypulse:sync-updated", { detail: payload }),
+	);
+	window.dispatchEvent(new CustomEvent("daypulse:refresh"));
+});
+
 contextBridge.exposeInMainWorld("electronAPI", api);
 
 try {
