@@ -1,6 +1,6 @@
 import type { BrowserWindow } from "electron";
-import { triggerDesktopAlarm } from "../alarm-manager.js";
-import { getCurrentUserId, getPrismaClient } from "../db/prisma-client.js";
+import { triggerDesktopAlarm } from "../audio/index.js";
+import { getCurrentUserId, getPrismaClient } from "../db/index.js";
 
 const sentRemindersToday = new Set<string>();
 let lastCleanedDate = "";

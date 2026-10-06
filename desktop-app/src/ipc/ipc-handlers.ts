@@ -1,11 +1,10 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { type BrowserWindow, dialog, ipcMain, shell } from "electron";
-import { triggerDesktopAlarm } from "./alarm-manager.js";
-import { executeGoogleSyncUpload } from "./db/google-sync.js";
-import { handleIpcApiDispatch, type IpcApiRequest } from "./db/ipc-dispatcher.js";
-import { getCurrentUserId, getPrismaClient } from "./db/prisma-client.js";
-import type { AlarmNotificationPayload } from "./types.js";
+import { triggerDesktopAlarm } from "../audio/index.js";
+import type { AlarmNotificationPayload } from "../config/index.js";
+import { handleIpcApiDispatch, type IpcApiRequest } from "../db/index.js";
+import { triggerDailyAutoSync } from "../scheduler/index.js";
 
 export function registerIpcHandlers(getMainWindow: () => BrowserWindow | null): void {
 	ipcMain.on("window:minimize-to-tray", () => {
@@ -25,20 +24,8 @@ export function registerIpcHandlers(getMainWindow: () => BrowserWindow | null): 
 	});
 
 	ipcMain.handle("sync:now", async () => {
-		const userId = getCurrentUserId();
-		if (!userId) {
-			return { success: false, message: "No active user session" };
-		}
-		try {
-			const prisma = getPrismaClient();
-			const result = await executeGoogleSyncUpload(prisma, userId);
-			const win = getMainWindow();
-			win?.webContents.send("daypulse:sync-updated", result);
-			return result;
-		} catch (err) {
-			const msg = err instanceof Error ? err.message : "Failed to sync with Google Drive";
-			return { success: false, message: msg };
-		}
+		const win = getMainWindow();
+		return triggerDailyAutoSync(win);
 	});
 
 	ipcMain.handle("shell:open-external", async (_event, url: string) => {

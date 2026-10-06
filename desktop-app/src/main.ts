@@ -1,20 +1,28 @@
 import { app, type BrowserWindow } from "electron";
-import { destroyAudioPlayer, initAudioPlayer } from "./audio-player.js";
-import { executeGoogleSyncUpload, stopGoogleOAuthLoopbackServer } from "./db/google-sync.js";
+import { destroyAudioPlayer, initAudioPlayer } from "./audio/index.js";
+import { ensureDevServerReady, loadDesktopEnv, stopDevServer } from "./config/index.js";
 import {
 	closePrismaDatabase,
-	getCurrentUserId,
-	getPrismaClient,
 	initPrismaDatabase,
-} from "./db/prisma-client.js";
-import { ensureDevServerReady, stopDevServer } from "./dev-server-helper.js";
-import { loadDesktopEnv } from "./env-loader.js";
-import { registerIpcHandlers } from "./ipc-handlers.js";
-import { createMainWindow, navigateWithSplashTransition } from "./main-window.js";
-import { startLocalScheduler, stopLocalScheduler } from "./scheduler/local-scheduler.js";
-import { createSplashWindow, updateSplashStatus } from "./splash-window.js";
-import { destroyTray, setupTray } from "./tray-manager.js";
-import { getWindowIconPath, setupWindowsBranding } from "./windows-branding.js";
+	stopGoogleOAuthLoopbackServer,
+} from "./db/index.js";
+import { registerIpcHandlers } from "./ipc/index.js";
+import {
+	startDailySyncScheduler,
+	startLocalScheduler,
+	stopDailySyncScheduler,
+	stopLocalScheduler,
+	triggerDailyAutoSync,
+} from "./scheduler/index.js";
+import {
+	createMainWindow,
+	destroyTray,
+	navigateMainWindow,
+	setupTray,
+	setupWindowsBranding,
+	showSplashWindow,
+	updateSplashStatus,
+} from "./windows/index.js";
 
 loadDesktopEnv();
 
@@ -54,6 +62,7 @@ async function cleanupAndQuit(): Promise<void> {
 
 	try {
 		stopLocalScheduler();
+		stopDailySyncScheduler();
 	} catch (err) {
 		console.warn("[DayPulse Desktop] Scheduler shutdown notice:", err);
 	}
@@ -94,7 +103,7 @@ async function cleanupAndQuit(): Promise<void> {
 }
 
 app.whenReady().then(async () => {
-	createSplashWindow(getWindowIconPath());
+	showSplashWindow();
 	updateSplashStatus("Initializing local database...");
 
 	initAudioPlayer();
@@ -116,17 +125,8 @@ app.whenReady().then(async () => {
 	setupTray(
 		mainWindow,
 		async () => {
-			const userId = getCurrentUserId();
-			if (!userId || !mainWindow) return;
-			try {
-				const prisma = getPrismaClient();
-				const result = await executeGoogleSyncUpload(prisma, userId);
-				mainWindow.webContents.send("daypulse:sync-updated", result);
-			} catch (err) {
-				console.warn("[DayPulse Desktop] Tray sync notice:", err);
-				mainWindow.show();
-				mainWindow.focus();
-			}
+			if (!mainWindow) return;
+			await triggerDailyAutoSync(mainWindow);
 		},
 		() => {
 			cleanupAndQuit();
@@ -134,13 +134,14 @@ app.whenReady().then(async () => {
 	);
 
 	startLocalScheduler(mainWindow);
+	startDailySyncScheduler(mainWindow);
 
 	const targetUrl = process.env.APP_URL || "http://localhost:3000/dashboard";
 	if (process.env.NODE_ENV !== "production") {
 		await ensureDevServerReady();
 	}
 
-	await navigateWithSplashTransition(mainWindow, targetUrl);
+	await navigateMainWindow(mainWindow, targetUrl);
 });
 
 app.on("before-quit", (event) => {

@@ -2,7 +2,7 @@ import { type ChildProcess, execSync, spawn } from "node:child_process";
 import * as fs from "node:fs";
 import * as http from "node:http";
 import * as path from "node:path";
-import { updateSplashStatus } from "./splash-window.js";
+import { updateSplashStatus } from "../windows/splash-window.js";
 
 let nextDevProcess: ChildProcess | null = null;
 
@@ -71,14 +71,13 @@ export async function ensureDevServerReady(): Promise<void> {
 		return;
 	}
 
-	// Clean any zombie process that holds the port without responding to HTTP
 	cleanStalePortProcesses(3000);
 
 	const webDirCandidates = [
 		path.resolve(process.cwd(), "web-app"),
 		path.resolve(process.cwd(), "..", "web-app"),
+		path.resolve(__dirname, "../../../web-app"),
 		path.resolve(__dirname, "../../web-app"),
-		path.resolve(__dirname, "../web-app"),
 	];
 
 	let webDir = "";

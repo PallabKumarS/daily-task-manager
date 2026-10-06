@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer, webFrame } from "electron";
-import type { AlarmNotificationPayload, ElectronBridgeApi } from "./types.js";
+import type { AlarmNotificationPayload, ElectronBridgeApi } from "./config/index.js";
 
 const api: ElectronBridgeApi = {
 	isElectron: true,

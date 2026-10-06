@@ -5,14 +5,14 @@ import { app, type NativeImage, nativeImage, shell } from "electron";
 
 export function getIcoIconPath(): string {
 	const candidates = [
-		path.join(__dirname, "assets", "daypulse.ico"),
-		path.join(__dirname, "assets", "favicon.ico"),
-		path.resolve(__dirname, "../assets/daypulse.ico"),
-		path.resolve(__dirname, "../assets/favicon.ico"),
-		path.resolve(__dirname, "../../assets/favicon.ico"),
-		path.resolve(process.cwd(), "desktop-app", "assets", "daypulse.ico"),
-		path.resolve(process.cwd(), "desktop-app", "assets", "favicon.ico"),
-		path.resolve(process.cwd(), "assets", "favicon.ico"),
+		path.join(__dirname, "../assets/daypulse.ico"),
+		path.join(__dirname, "assets/daypulse.ico"),
+		path.resolve(process.cwd(), "desktop-app/dist/assets/daypulse.ico"),
+		path.resolve(process.cwd(), "dist/assets/daypulse.ico"),
+		path.resolve(process.cwd(), "desktop-app/assets/daypulse.ico"),
+		path.resolve(process.cwd(), "assets/daypulse.ico"),
+		path.join(__dirname, "../assets/favicon.ico"),
+		path.join(__dirname, "assets/favicon.ico"),
 	];
 
 	for (const candidate of candidates) {
@@ -23,11 +23,12 @@ export function getIcoIconPath(): string {
 
 export function getPngIconPath(): string {
 	const candidates = [
-		path.join(__dirname, "assets", "logo.png"),
-		path.resolve(__dirname, "../assets/logo.png"),
-		path.resolve(__dirname, "../../assets/logo.png"),
-		path.resolve(process.cwd(), "desktop-app", "assets", "logo.png"),
-		path.resolve(process.cwd(), "assets", "logo.png"),
+		path.join(__dirname, "../assets/logo.png"),
+		path.join(__dirname, "assets/logo.png"),
+		path.resolve(process.cwd(), "desktop-app/dist/assets/logo.png"),
+		path.resolve(process.cwd(), "dist/assets/logo.png"),
+		path.resolve(process.cwd(), "desktop-app/assets/logo.png"),
+		path.resolve(process.cwd(), "assets/logo.png"),
 	];
 
 	for (const candidate of candidates) {
@@ -37,12 +38,22 @@ export function getPngIconPath(): string {
 }
 
 export function getWindowIconPath(): string {
-	const png = getPngIconPath();
-	if (png) return png;
-	return getIcoIconPath();
+	const ico = getIcoIconPath();
+	if (ico) return ico;
+	return getPngIconPath();
 }
 
 export function getWindowIcon(): NativeImage {
+	const icoPath = getIcoIconPath();
+	if (icoPath) {
+		try {
+			const img = nativeImage.createFromPath(icoPath);
+			if (!img.isEmpty()) return img;
+		} catch {
+			// Fallback to PNG
+		}
+	}
+
 	const pngPath = getPngIconPath();
 	if (pngPath) {
 		try {
@@ -52,15 +63,7 @@ export function getWindowIcon(): NativeImage {
 			// Fallback
 		}
 	}
-	const icoPath = getIcoIconPath();
-	if (icoPath) {
-		try {
-			const img = nativeImage.createFromPath(icoPath);
-			if (!img.isEmpty()) return img;
-		} catch {
-			// Fallback
-		}
-	}
+
 	return nativeImage.createEmpty();
 }
 
@@ -70,15 +73,17 @@ export function setupWindowsBranding(): void {
 	const appId = "com.daypulse.tracker";
 	app.setAppUserModelId(appId);
 
+	const icoIcon = getIcoIconPath();
 	const windowIcon = getWindowIconPath();
+	const effectiveIcon = icoIcon || windowIcon;
 
 	try {
 		const classesAumidKey = `HKCU\\Software\\Classes\\AppUserModelId\\${appId}`;
 		execSync(`reg add "${classesAumidKey}" /v DisplayName /t REG_SZ /d "DayPulse" /f`, {
 			stdio: "ignore",
 		});
-		if (windowIcon) {
-			execSync(`reg add "${classesAumidKey}" /v IconUri /t REG_SZ /d "${windowIcon}" /f`, {
+		if (effectiveIcon) {
+			execSync(`reg add "${classesAumidKey}" /v IconUri /t REG_SZ /d "${effectiveIcon}" /f`, {
 				stdio: "ignore",
 			});
 			execSync(`reg add "${classesAumidKey}" /v IconBackgroundColor /t REG_SZ /d "FF09090B" /f`, {
@@ -94,8 +99,8 @@ export function setupWindowsBranding(): void {
 		execSync(`reg add "${regKey}" /v DisplayName /t REG_SZ /d "DayPulse" /f`, {
 			stdio: "ignore",
 		});
-		if (windowIcon) {
-			execSync(`reg add "${regKey}" /v IconUri /t REG_SZ /d "${windowIcon}" /f`, {
+		if (effectiveIcon) {
+			execSync(`reg add "${regKey}" /v IconUri /t REG_SZ /d "${effectiveIcon}" /f`, {
 				stdio: "ignore",
 			});
 		}
@@ -120,15 +125,16 @@ export function setupWindowsBranding(): void {
 			try {
 				execSync(`attrib -R "${shortcutPath}"`, { stdio: "ignore" });
 			} catch {
-				// Unlock shortcut if already read-only
+				// Unlock shortcut
 			}
 		}
 
+		// Windows shortcut links strictly require .ico or .exe for shortcut icon
 		const shortcutOptions = {
 			target: process.execPath,
-			args: app.isPackaged ? "" : `"${path.resolve(__dirname, "..")}"`,
+			args: app.isPackaged ? "" : `"${path.resolve(process.cwd(), "desktop-app")}"`,
 			appUserModelId: appId,
-			icon: windowIcon,
+			icon: icoIcon || effectiveIcon,
 			iconIndex: 0,
 			description: "DayPulse - Standalone Workspace",
 			toastActivatorClsid: "{0796B928-7EA1-4E7A-AF15-FCF1640FE3F5}",
@@ -143,7 +149,7 @@ export function setupWindowsBranding(): void {
 		try {
 			execSync(`attrib +R "${shortcutPath}"`, { stdio: "ignore" });
 		} catch {
-			// Lock shortcut to prevent Electron from wiping icon
+			// Lock shortcut
 		}
 	} catch (err) {
 		console.warn("[DayPulse Desktop] Shortcut registration notice:", err);
