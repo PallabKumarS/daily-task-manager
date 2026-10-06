@@ -1,12 +1,21 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Activity, ArrowRight, Lock, Mail } from "lucide-react";
+import {
+	Activity,
+	ArrowRight,
+	Cloud,
+	FileArchive,
+	Lock,
+	Mail,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
+import { GoogleRestoreModal } from "@/components/auth/google-restore-modal";
+import { RestoreBackupModal } from "@/components/auth/restore-backup-modal";
 import { useAuth } from "@/components/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +31,9 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 export default function LoginPage() {
 	const { login, user, loading } = useAuth();
 	const router = useRouter();
+
+	const [isRestoreModalOpen, setIsRestoreModalOpen] = React.useState(false);
+	const [isGoogleModalOpen, setIsGoogleModalOpen] = React.useState(false);
 
 	const {
 		register,
@@ -109,6 +121,38 @@ export default function LoginPage() {
 						</Button>
 					</form>
 
+					<div className="relative my-6">
+						<div className="absolute inset-0 flex items-center">
+							<div className="w-full border-t border-slate-800" />
+						</div>
+						<div className="relative flex justify-center text-xs">
+							<span className="bg-slate-900/90 px-3 text-slate-400 font-medium rounded-full">
+								Or restore existing workspace
+							</span>
+						</div>
+					</div>
+
+					<div className="grid grid-cols-2 gap-3">
+						<Button
+							type="button"
+							variant="outline"
+							onClick={() => setIsRestoreModalOpen(true)}
+							className="gap-2 text-xs h-10 border-slate-800 bg-slate-950/40 hover:bg-slate-800 hover:text-white"
+						>
+							<FileArchive className="w-4 h-4 text-emerald-400" />
+							<span>File Backup</span>
+						</Button>
+						<Button
+							type="button"
+							variant="outline"
+							onClick={() => setIsGoogleModalOpen(true)}
+							className="gap-2 text-xs h-10 border-slate-800 bg-slate-950/40 hover:bg-slate-800 hover:text-white"
+						>
+							<Cloud className="w-4 h-4 text-teal-400" />
+							<span>Google Drive</span>
+						</Button>
+					</div>
+
 					<div className="mt-6 text-center text-xs text-slate-400">
 						Don&apos;t have an account?{" "}
 						<Link
@@ -120,6 +164,16 @@ export default function LoginPage() {
 					</div>
 				</div>
 			</div>
+
+			<RestoreBackupModal
+				isOpen={isRestoreModalOpen}
+				onClose={() => setIsRestoreModalOpen(false)}
+			/>
+
+			<GoogleRestoreModal
+				isOpen={isGoogleModalOpen}
+				onClose={() => setIsGoogleModalOpen(false)}
+			/>
 		</div>
 	);
 }

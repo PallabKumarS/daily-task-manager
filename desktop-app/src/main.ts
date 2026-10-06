@@ -17,6 +17,7 @@ import {
 } from "./db/ipc-dispatcher.js";
 import { closePrismaDatabase, initPrismaDatabase } from "./db/prisma-client.js";
 import { ensureDevServerReady, stopDevServer } from "./dev-server-helper.js";
+import { loadDesktopEnv } from "./env-loader.js";
 import {
 	startLocalScheduler,
 	stopLocalScheduler,
@@ -28,6 +29,8 @@ import {
 } from "./splash-window.js";
 import { destroyTray, setupTray } from "./tray-manager.js";
 import type { AlarmNotificationPayload } from "./types.js";
+
+loadDesktopEnv();
 
 app.name = "DayPulse";
 app.setName("DayPulse");

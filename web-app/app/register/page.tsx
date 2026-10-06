@@ -161,6 +161,16 @@ export default function RegisterPage() {
 							Sign In
 						</Link>
 					</div>
+
+					<div className="mt-2 text-center text-xs text-slate-500">
+						Setting up a new device?{" "}
+						<Link
+							href="/login"
+							className="text-teal-400 font-medium hover:underline"
+						>
+							Restore existing workspace
+						</Link>
+					</div>
 				</div>
 			</div>
 		</div>
