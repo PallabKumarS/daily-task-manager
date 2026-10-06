@@ -1,0 +1,78 @@
+{
+	"$schema": "https://biomejs.dev/schemas/2.5.15/schema.json",
+	"vcs": {
+		"enabled": true,
+		"clientKind": "git",
+		"useIgnoreFile": true
+	},
+	"files": {
+		"ignoreUnknown": true,
+		"includes": [
+			"server/src/**/*",
+			"web-app/app/**/*",
+			"web-app/components/**/*",
+			"web-app/lib/**/*",
+			"desktop-app/src/**/*",
+			"desktop-app/scripts/**/*",
+			"android-app/src/**/*",
+			"scripts/**/*",
+			"*.json",
+			"*.js",
+			"*.ts",
+			"*.mjs"
+		]
+	},
+	"formatter": {
+		"enabled": true,
+		"indentStyle": "tab",
+		"lineWidth": 100
+	},
+	"javascript": {
+		"formatter": {
+			"quoteStyle": "double",
+			"trailingCommas": "all",
+			"semicolons": "always"
+		}
+	},
+	"css": {
+		"parser": {
+			"tailwindDirectives": true
+		},
+		"formatter": {
+			"enabled": true
+		}
+	},
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"preset": "recommended",
+			"style": {
+				"noNonNullAssertion": "off"
+			},
+			"a11y": {
+				"noSvgWithoutTitle": "off",
+				"noLabelWithoutControl": "off",
+				"noStaticElementInteractions": "off",
+				"useKeyWithClickEvents": "off"
+			},
+			"suspicious": {
+				"noExplicitAny": "warn",
+				"noDocumentCookie": "off",
+				"noArrayIndexKey": "off"
+			},
+			"correctness": {
+				"noUnusedVariables": "warn",
+				"noUnusedFunctionParameters": "off",
+				"noUnusedImports": "warn"
+			}
+		}
+	},
+	"assist": {
+		"enabled": true,
+		"actions": {
+			"source": {
+				"organizeImports": "on"
+			}
+		}
+	}
+}

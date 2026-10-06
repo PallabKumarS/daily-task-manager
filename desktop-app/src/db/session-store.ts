@@ -19,9 +19,7 @@ export function readPersistedSessionUserId(): string | null {
 		const parsed = JSON.parse(
 			fs.readFileSync(sessionFilePath, "utf8"),
 		) as Partial<PersistedSession>;
-		return typeof parsed.userId === "string" && parsed.userId
-			? parsed.userId
-			: null;
+		return typeof parsed.userId === "string" && parsed.userId ? parsed.userId : null;
 	} catch {
 		return null;
 	}

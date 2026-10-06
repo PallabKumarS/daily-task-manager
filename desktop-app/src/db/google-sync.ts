@@ -10,12 +10,9 @@ import { startSession } from "./session-store.js";
 const getGoogleClientId = (): string =>
 	process.env.GOOGLE_CLIENT_ID_DESKTOP || process.env.GOOGLE_CLIENT_ID || "";
 const getGoogleClientSecret = (): string =>
-	process.env.GOOGLE_CLIENT_SECRET_DESKTOP ||
-	process.env.GOOGLE_CLIENT_SECRET ||
-	"";
+	process.env.GOOGLE_CLIENT_SECRET_DESKTOP || process.env.GOOGLE_CLIENT_SECRET || "";
 const getGoogleRedirectUri = (): string =>
-	process.env.GOOGLE_REDIRECT_URI ||
-	"http://localhost:5000/api/v1/sync/google/callback";
+	process.env.GOOGLE_REDIRECT_URI || "http://localhost:5000/api/v1/sync/google/callback";
 
 let loopbackServer: http.Server | null = null;
 
@@ -68,9 +65,7 @@ export function getGoogleAuthUrl(userId: string): string {
 	return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
 }
 
-export async function exchangeCodeForTokens(
-	code: string,
-): Promise<GoogleTokens> {
+export async function exchangeCodeForTokens(code: string): Promise<GoogleTokens> {
 	const response = await fetch("https://oauth2.googleapis.com/token", {
 		method: "POST",
 		headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -101,15 +96,10 @@ export async function exchangeCodeForTokens(
 	};
 }
 
-export async function getGoogleProfile(
-	accessToken: string,
-): Promise<GoogleProfile> {
-	const response = await fetch(
-		"https://www.googleapis.com/oauth2/v2/userinfo",
-		{
-			headers: { Authorization: `Bearer ${accessToken}` },
-		},
-	);
+export async function getGoogleProfile(accessToken: string): Promise<GoogleProfile> {
+	const response = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
+		headers: { Authorization: `Bearer ${accessToken}` },
+	});
 
 	if (!response.ok) {
 		throw new Error("Failed to fetch Google profile");
@@ -147,10 +137,7 @@ export async function refreshGoogleAccessToken(
 	};
 }
 
-export async function getValidAccessToken(
-	prisma: PrismaClient,
-	userId: string,
-): Promise<string> {
+export async function getValidAccessToken(prisma: PrismaClient, userId: string): Promise<string> {
 	const connection = await prisma.googleConnection.findUnique({
 		where: { userId },
 	});
@@ -160,17 +147,11 @@ export async function getValidAccessToken(
 	}
 
 	const rawAccess = decryptToken(connection.encryptedAccess);
-	const rawRefresh = connection.encryptedRefresh
-		? decryptToken(connection.encryptedRefresh)
-		: "";
+	const rawRefresh = connection.encryptedRefresh ? decryptToken(connection.encryptedRefresh) : "";
 
 	const now = new Date();
-	const expiry = connection.tokenExpiry
-		? new Date(connection.tokenExpiry)
-		: null;
-	const isExpiringSoon = expiry
-		? expiry.getTime() - now.getTime() < 5 * 60 * 1000
-		: true;
+	const expiry = connection.tokenExpiry ? new Date(connection.tokenExpiry) : null;
+	const isExpiringSoon = expiry ? expiry.getTime() - now.getTime() < 5 * 60 * 1000 : true;
 
 	if ((isExpiringSoon || !rawAccess) && rawRefresh) {
 		try {
@@ -187,10 +168,7 @@ export async function getValidAccessToken(
 
 			return refreshed.accessToken;
 		} catch (refreshErr) {
-			console.warn(
-				"[DayPulse Google Sync] Refresh token attempt notice:",
-				refreshErr,
-			);
+			console.warn("[DayPulse Google Sync] Refresh token attempt notice:", refreshErr);
 			if (rawAccess && !isExpiringSoon) {
 				return rawAccess;
 			}
@@ -440,10 +418,7 @@ export function startGoogleOAuthLoopbackServer(
 
 					if (!targetUser) {
 						const salt = await bcrypt.genSalt(10);
-						const defaultPass = await bcrypt.hash(
-							`DayPulse@${profile.id.slice(-6)}`,
-							salt,
-						);
+						const defaultPass = await bcrypt.hash(`DayPulse@${profile.id.slice(-6)}`, salt);
 						targetUser = await prisma.user.create({
 							data: {
 								email: profile.email,
@@ -463,9 +438,7 @@ export function startGoogleOAuthLoopbackServer(
 						googleId: profile.id,
 						googleEmail: profile.email,
 						encryptedAccess: encryptToken(tokens.accessToken),
-						encryptedRefresh: tokens.refreshToken
-							? encryptToken(tokens.refreshToken)
-							: undefined,
+						encryptedRefresh: tokens.refreshToken ? encryptToken(tokens.refreshToken) : undefined,
 						tokenExpiry,
 					},
 					create: {
@@ -473,9 +446,7 @@ export function startGoogleOAuthLoopbackServer(
 						googleId: profile.id,
 						googleEmail: profile.email,
 						encryptedAccess: encryptToken(tokens.accessToken),
-						encryptedRefresh: tokens.refreshToken
-							? encryptToken(tokens.refreshToken)
-							: null,
+						encryptedRefresh: tokens.refreshToken ? encryptToken(tokens.refreshToken) : null,
 						tokenExpiry,
 					},
 				});
@@ -483,9 +454,7 @@ export function startGoogleOAuthLoopbackServer(
 				let restoreSummary = "";
 				if (isOnboardingRestore) {
 					try {
-						const backupData = (await downloadLatestBackupFromGoogleDrive(
-							tokens.accessToken,
-						)) as {
+						const backupData = (await downloadLatestBackupFromGoogleDrive(tokens.accessToken)) as {
 							archiveBase64?: string;
 							tasks?: Array<Record<string, unknown>>;
 							routines?: Array<Record<string, unknown>>;
@@ -508,23 +477,21 @@ export function startGoogleOAuthLoopbackServer(
 							Array.isArray(backupData.trackers) ||
 							Array.isArray(backupData.categories)
 						) {
-							const mergeReport = await mergeBackupIntoUser(
-								prisma,
-								activeUserId,
-								{
-									tasks: backupData.tasks || [],
-									routines: backupData.routines || [],
-									routineLogs:
-										((backupData as Record<string, unknown>)
-											.routineLogs as Array<Record<string, unknown>>) || [],
-									transactions: backupData.transactions || [],
-									trackers: backupData.trackers || [],
-									trackerLogs:
-										((backupData as Record<string, unknown>)
-											.trackerLogs as Array<Record<string, unknown>>) || [],
-									categories: backupData.categories || [],
-								},
-							);
+							const mergeReport = await mergeBackupIntoUser(prisma, activeUserId, {
+								tasks: backupData.tasks || [],
+								routines: backupData.routines || [],
+								routineLogs:
+									((backupData as Record<string, unknown>).routineLogs as Array<
+										Record<string, unknown>
+									>) || [],
+								transactions: backupData.transactions || [],
+								trackers: backupData.trackers || [],
+								trackerLogs:
+									((backupData as Record<string, unknown>).trackerLogs as Array<
+										Record<string, unknown>
+									>) || [],
+								categories: backupData.categories || [],
+							});
 							restoreSummary = summarizeMergeReport(mergeReport);
 						}
 					} catch (restoreErr) {
@@ -596,9 +563,7 @@ export function startGoogleOAuthLoopbackServer(
 	});
 
 	loopbackServer.listen(5000, "127.0.0.1", () => {
-		console.log(
-			"[DayPulse Desktop] Google OAuth loopback listener active on port 5000",
-		);
+		console.log("[DayPulse Desktop] Google OAuth loopback listener active on port 5000");
 	});
 
 	loopbackServer.on("error", (err) => {

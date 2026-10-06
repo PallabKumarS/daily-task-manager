@@ -1,58 +1,59 @@
 {
-  "name": "desktop-app",
-  "productName": "DayPulse",
-  "version": "1.0.0",
-  "description": "DayPulse Standalone Desktop App",
-  "main": "dist/main.js",
-  "scripts": {
-    "build": "tsc",
-    "watch": "tsc -w",
-    "start": "node scripts/brand-electron.mjs && tsc && electron .",
-    "dev": "node scripts/brand-electron.mjs && tsc && electron .",
-    "pack:exe": "tsc && electron-builder --win"
-  },
-  "build": {
-    "appId": "com.daypulse.tracker",
-    "productName": "DayPulse",
-    "directories": {
-      "output": "release"
-    },
-    "files": [
-      "dist/**/*",
-      "package.json"
-    ],
-    "win": {
-      "target": [
-        {
-          "target": "nsis",
-          "arch": [
-            "x64"
-          ]
-        }
-      ],
-      "icon": "../assets/favicon.ico"
-    },
-    "nsis": {
-      "oneClick": true,
-      "perMachine": false,
-      "allowToChangeInstallationDirectory": false,
-      "createDesktopShortcut": true,
-      "createStartMenuShortcut": true,
-      "shortcutName": "DayPulse"
-    }
-  },
-  "dependencies": {
-    "@prisma/client": "^6.4.0",
-    "@types/jszip": "^3.4.0",
-    "bcryptjs": "^3.0.3",
-    "jszip": "^3.10.2"
-  },
-  "devDependencies": {
-    "@types/bcryptjs": "^2.4.6",
-    "@types/node": "^20.19.43",
-    "electron": "^44.5.1",
-    "electron-builder": "^26.4.0",
-    "socket.io-client": "^4.8.4",
-    "typescript": "^5.9.3"
-  }
+	"name": "desktop-app",
+	"productName": "DayPulse",
+	"version": "1.0.0",
+	"description": "DayPulse Standalone Desktop App",
+	"main": "dist/main.js",
+	"scripts": {
+		"build": "tsc && node scripts/copy-assets.mjs",
+		"watch": "tsc -w",
+		"start": "node scripts/brand-electron.mjs && tsc && node scripts/copy-assets.mjs && electron .",
+		"dev": "node scripts/brand-electron.mjs && tsc && node scripts/copy-assets.mjs && electron .",
+		"pack:exe": "tsc && node scripts/copy-assets.mjs && electron-builder --win"
+	},
+	"build": {
+		"appId": "com.daypulse.tracker",
+		"productName": "DayPulse",
+		"directories": {
+			"output": "release"
+		},
+		"files": [
+			"dist/**/*",
+			"assets/**/*",
+			"package.json"
+		],
+		"win": {
+			"target": [
+				{
+					"target": "nsis",
+					"arch": [
+						"x64"
+					]
+				}
+			],
+			"icon": "dist/assets/daypulse.ico"
+		},
+		"nsis": {
+			"oneClick": true,
+			"perMachine": false,
+			"allowToChangeInstallationDirectory": false,
+			"createDesktopShortcut": true,
+			"createStartMenuShortcut": true,
+			"shortcutName": "DayPulse"
+		}
+	},
+	"dependencies": {
+		"@prisma/client": "^6.4.0",
+		"@types/jszip": "^3.4.0",
+		"bcryptjs": "^3.0.3",
+		"jszip": "^3.10.2"
+	},
+	"devDependencies": {
+		"@types/bcryptjs": "^2.4.6",
+		"@types/node": "^20.19.43",
+		"electron": "^44.5.1",
+		"electron-builder": "^26.4.0",
+		"socket.io-client": "^4.8.4",
+		"typescript": "^5.9.3"
+	}
 }

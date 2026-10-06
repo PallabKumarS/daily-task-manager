@@ -38,27 +38,24 @@ export default function TrackersPage() {
 	const confirm = useConfirm();
 	const [trackers, setTrackers] = React.useState<DailyTrackerItem[]>([]);
 	const [loading, setLoading] = React.useState(true);
-	const [selectedDate, setSelectedDate] = React.useState<string>(
-		getTodayDateString(),
-	);
+	const [selectedDate, setSelectedDate] = React.useState<string>(getTodayDateString());
 
 	const [formModalOpen, setFormModalOpen] = React.useState(false);
-	const [editingTracker, setEditingTracker] =
-		React.useState<DailyTrackerItem | null>(null);
+	const [editingTracker, setEditingTracker] = React.useState<DailyTrackerItem | null>(null);
 
 	const [detailModalOpen, setDetailModalOpen] = React.useState(false);
-	const [activeDetailTracker, setActiveDetailTracker] =
-		React.useState<DailyTrackerItem | null>(null);
+	const [activeDetailTracker, setActiveDetailTracker] = React.useState<DailyTrackerItem | null>(
+		null,
+	);
 
 	const [settlementModalOpen, setSettlementModalOpen] = React.useState(false);
-	const [activeSettleTracker, setActiveSettleTracker] =
-		React.useState<DailyTrackerItem | null>(null);
+	const [activeSettleTracker, setActiveSettleTracker] = React.useState<DailyTrackerItem | null>(
+		null,
+	);
 
 	const fetchTrackers = React.useCallback(async () => {
 		try {
-			const res = await api.get<DailyTrackerItem[]>(
-				`/trackers?date=${selectedDate}`,
-			);
+			const res = await api.get<DailyTrackerItem[]>(`/trackers?date=${selectedDate}`);
 			if (res.success && res.data) {
 				setTrackers(res.data);
 			}
@@ -169,10 +166,7 @@ export default function TrackersPage() {
 		return sum;
 	}, 0);
 
-	const totalTodayUnits = trackers.reduce(
-		(sum, t) => sum + (t.todayValue || 0),
-		0,
-	);
+	const totalTodayUnits = trackers.reduce((sum, t) => sum + (t.todayValue || 0), 0);
 
 	return (
 		<div className="space-y-6">
@@ -183,8 +177,8 @@ export default function TrackersPage() {
 						<span>Daily Trackers & Counters</span>
 					</h1>
 					<p className="text-xs text-slate-400 mt-1">
-						Log daily variable meals, metered deliveries, and habits. Automatic
-						monthly billing calculation and ledger settlement.
+						Log daily variable meals, metered deliveries, and habits. Automatic monthly billing
+						calculation and ledger settlement.
 					</p>
 				</div>
 
@@ -265,37 +259,26 @@ export default function TrackersPage() {
 			{/* KPI Overview Summary Ribbon */}
 			<div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
 				<div className="rounded-2xl border border-slate-800/80 bg-slate-900/60 p-4">
-					<span className="text-[11px] font-medium text-slate-400">
-						Active Trackers
-					</span>
-					<p className="mt-1 text-2xl font-extrabold text-white">
-						{trackers.length}
-					</p>
+					<span className="text-[11px] font-medium text-slate-400">Active Trackers</span>
+					<p className="mt-1 text-2xl font-extrabold text-white">{trackers.length}</p>
 				</div>
 
 				<div className="rounded-2xl border border-slate-800/80 bg-slate-900/60 p-4">
-					<span className="text-[11px] font-medium text-slate-400">
-						Logged Today
-					</span>
+					<span className="text-[11px] font-medium text-slate-400">Logged Today</span>
 					<p className="mt-1 text-2xl font-extrabold text-slate-200">
-						{totalTodayUnits}{" "}
-						<span className="text-xs font-normal text-slate-400">units</span>
+						{totalTodayUnits} <span className="text-xs font-normal text-slate-400">units</span>
 					</p>
 				</div>
 
 				<div className="rounded-2xl border border-slate-800/80 bg-slate-900/60 p-4">
-					<span className="text-[11px] font-medium text-slate-400">
-						Today&apos;s Spend
-					</span>
+					<span className="text-[11px] font-medium text-slate-400">Today&apos;s Spend</span>
 					<p className="mt-1 text-2xl font-extrabold text-slate-200">
 						{formatCurrency(totalTodayCost, user?.currency || "USD")}
 					</p>
 				</div>
 
 				<div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4">
-					<span className="text-[11px] font-medium text-amber-400">
-						Total Unpaid Due
-					</span>
+					<span className="text-[11px] font-medium text-amber-400">Total Unpaid Due</span>
 					<p className="mt-1 text-2xl font-extrabold text-amber-300">
 						{formatCurrency(totalUnsettledCost, user?.currency || "USD")}
 					</p>
@@ -304,9 +287,7 @@ export default function TrackersPage() {
 
 			{/* Trackers List */}
 			{loading ? (
-				<div className="py-20 text-center text-xs text-slate-400">
-					Loading daily trackers...
-				</div>
+				<div className="py-20 text-center text-xs text-slate-400">Loading daily trackers...</div>
 			) : trackers.length > 0 ? (
 				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
 					{trackers.map((tracker) => (
@@ -336,12 +317,10 @@ export default function TrackersPage() {
 					<div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-400">
 						<Calculator className="w-7 h-7" />
 					</div>
-					<h2 className="mt-4 text-lg font-bold text-white">
-						No Trackers Set Up Yet
-					</h2>
+					<h2 className="mt-4 text-lg font-bold text-white">No Trackers Set Up Yet</h2>
 					<p className="mt-1.5 text-xs text-slate-400 max-w-md mx-auto">
-						Track daily variable meals, milk delivery, water supplies, or daily
-						habits with 1-click counters and monthly billing calculation.
+						Track daily variable meals, milk delivery, water supplies, or daily habits with 1-click
+						counters and monthly billing calculation.
 					</p>
 
 					<div className="mt-8 max-w-xl mx-auto">
@@ -367,12 +346,8 @@ export default function TrackersPage() {
 									<Utensils className="w-5 h-5" />
 								</div>
 								<div>
-									<p className="text-xs font-bold text-white">
-										Daily Meals (Tiffin)
-									</p>
-									<p className="text-[11px] text-slate-400">
-										2 meals/day · $4.00 each
-									</p>
+									<p className="text-xs font-bold text-white">Daily Meals (Tiffin)</p>
+									<p className="text-[11px] text-slate-400">2 meals/day · $4.00 each</p>
 								</div>
 							</button>
 
@@ -395,9 +370,7 @@ export default function TrackersPage() {
 								</div>
 								<div>
 									<p className="text-xs font-bold text-white">Milk Delivery</p>
-									<p className="text-[11px] text-slate-400">
-										1 liter/day · $2.00 each
-									</p>
+									<p className="text-[11px] text-slate-400">1 liter/day · $2.00 each</p>
 								</div>
 							</button>
 
@@ -420,9 +393,7 @@ export default function TrackersPage() {
 								</div>
 								<div>
 									<p className="text-xs font-bold text-white">Water Glasses</p>
-									<p className="text-[11px] text-slate-400">
-										8 glasses/day · Habit
-									</p>
+									<p className="text-[11px] text-slate-400">8 glasses/day · Habit</p>
 								</div>
 							</button>
 
@@ -445,9 +416,7 @@ export default function TrackersPage() {
 								</div>
 								<div>
 									<p className="text-xs font-bold text-white">Study Sessions</p>
-									<p className="text-[11px] text-slate-400">
-										4 sessions/day · Habit
-									</p>
+									<p className="text-[11px] text-slate-400">4 sessions/day · Habit</p>
 								</div>
 							</button>
 						</div>

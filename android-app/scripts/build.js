@@ -30,7 +30,5 @@ if (fs.existsSync(androidDir)) {
 		console.warn("[DayPulse Android] Capacitor sync notice:", err);
 	}
 } else {
-	console.log(
-		"[DayPulse Android] Capacitor workspace ready for native platform initialization.",
-	);
+	console.log("[DayPulse Android] Capacitor workspace ready for native platform initialization.");
 }

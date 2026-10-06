@@ -11,10 +11,7 @@ const api: ElectronBridgeApi = {
 		ipcRenderer.send("alarm:trigger", payload);
 	},
 	onAlarmReceived: (callback: (payload: AlarmNotificationPayload) => void) => {
-		const listener = (
-			_event: Electron.IpcRendererEvent,
-			payload: AlarmNotificationPayload,
-		) => {
+		const listener = (_event: Electron.IpcRendererEvent, payload: AlarmNotificationPayload) => {
 			callback(payload);
 		};
 		ipcRenderer.on("alarm:received", listener);
@@ -40,9 +37,7 @@ const api: ElectronBridgeApi = {
 };
 
 ipcRenderer.on("daypulse:sync-updated", (_event, payload) => {
-	window.dispatchEvent(
-		new CustomEvent("daypulse:sync-updated", { detail: payload }),
-	);
+	window.dispatchEvent(new CustomEvent("daypulse:sync-updated", { detail: payload }));
 	window.dispatchEvent(new CustomEvent("daypulse:refresh"));
 });
 

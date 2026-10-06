@@ -1,10 +1,5 @@
 import * as path from "node:path";
-import {
-	type BrowserWindow,
-	type NativeImage,
-	Notification,
-	nativeImage,
-} from "electron";
+import { type BrowserWindow, type NativeImage, Notification, nativeImage } from "electron";
 import { playAlarmSound } from "./audio-player.js";
 import type { AlarmNotificationPayload } from "./types.js";
 
@@ -14,11 +9,12 @@ function getNotificationIcon(): NativeImage {
 	if (appIcon && !appIcon.isEmpty()) return appIcon;
 
 	const iconCandidates = [
+		path.join(__dirname, "assets/logo.png"),
 		path.resolve(__dirname, "../assets/logo.png"),
 		path.resolve(__dirname, "../../assets/logo.png"),
+		path.join(__dirname, "assets/daypulse.ico"),
 		path.resolve(process.cwd(), "desktop-app", "assets", "logo.png"),
 		path.resolve(process.cwd(), "assets", "logo.png"),
-		path.resolve(process.cwd(), "..", "assets", "logo.png"),
 	];
 
 	for (const candidate of iconCandidates) {

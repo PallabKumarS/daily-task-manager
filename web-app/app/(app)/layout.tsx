@@ -26,9 +26,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 		}
 	}, [user, loading, router]);
 
-	const handleQuickAdd = (
-		type: "routine" | "task" | "transaction" | "tracker",
-	) => {
+	const handleQuickAdd = (type: "routine" | "task" | "transaction" | "tracker") => {
 		if (type === "routine") setRoutineModalOpen(true);
 		if (type === "task") setTaskModalOpen(true);
 		if (type === "transaction") setTransactionModalOpen(true);

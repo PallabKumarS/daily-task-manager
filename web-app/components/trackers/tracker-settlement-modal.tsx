@@ -101,16 +101,14 @@ export function TrackerSettlementModal({
 				onClose();
 			}
 		} catch (err: unknown) {
-			const msg =
-				err instanceof Error ? err.message : "Failed to record settlement";
+			const msg = err instanceof Error ? err.message : "Failed to record settlement";
 			toast.error(msg);
 		} finally {
 			setIsSubmitting(false);
 		}
 	};
 
-	const hasUnitPrice =
-		typeof tracker.unitPrice === "number" && tracker.unitPrice > 0;
+	const hasUnitPrice = typeof tracker.unitPrice === "number" && tracker.unitPrice > 0;
 	const estimatedAmount = hasUnitPrice
 		? tracker.monthStats.unsettledUnits * (tracker.unitPrice || 0)
 		: 0;
@@ -127,9 +125,7 @@ export function TrackerSettlementModal({
 				{/* Payable Summary Card */}
 				<div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4">
 					<div className="flex items-center justify-between">
-						<span className="text-xs font-medium text-emerald-300">
-							Unsettled Units:
-						</span>
+						<span className="text-xs font-medium text-emerald-300">Unsettled Units:</span>
 						<span className="text-sm font-bold text-white">
 							{tracker.monthStats.unsettledUnits} {tracker.unitName}
 						</span>
@@ -137,14 +133,11 @@ export function TrackerSettlementModal({
 					<div className="mt-1 flex items-center justify-between">
 						<span className="text-xs font-medium text-emerald-300">Rate:</span>
 						<span className="text-sm font-bold text-white">
-							{formatCurrency(tracker.unitPrice || 0, tracker.currency)} /{" "}
-							{tracker.unitName}
+							{formatCurrency(tracker.unitPrice || 0, tracker.currency)} / {tracker.unitName}
 						</span>
 					</div>
 					<div className="mt-3 pt-2.5 border-t border-emerald-500/20 flex items-center justify-between">
-						<span className="text-xs font-bold text-emerald-300">
-							Total Payable Amount:
-						</span>
+						<span className="text-xs font-bold text-emerald-300">Total Payable Amount:</span>
 						<span className="text-xl font-extrabold text-emerald-400">
 							{formatCurrency(estimatedAmount, tracker.currency)}
 						</span>
@@ -208,12 +201,7 @@ export function TrackerSettlementModal({
 
 				{/* Actions */}
 				<div className="pt-2 flex items-center justify-end gap-3">
-					<Button
-						type="button"
-						variant="outline"
-						onClick={onClose}
-						disabled={isSubmitting}
-					>
+					<Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
 						Cancel
 					</Button>
 					<Button

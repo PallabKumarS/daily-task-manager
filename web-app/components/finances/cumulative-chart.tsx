@@ -38,18 +38,14 @@ export function CumulativeChart({ timeline, currency }: CumulativeChartProps) {
 	const range = maxVal - minVal || 1;
 
 	const points = timeline.map((point, i) => {
-		const x =
-			paddingX +
-			(i / Math.max(1, timeline.length - 1)) * (width - 2 * paddingX);
+		const x = paddingX + (i / Math.max(1, timeline.length - 1)) * (width - 2 * paddingX);
 		const normalizedY = (point.cumulativeBalance - minVal) / range;
 		const y = height - paddingY - normalizedY * (height - 2 * paddingY);
 		return { x, y, point };
 	});
 
 	const pathD = points.reduce((acc, curr, index) => {
-		return index === 0
-			? `M ${curr.x} ${curr.y}`
-			: `${acc} L ${curr.x} ${curr.y}`;
+		return index === 0 ? `M ${curr.x} ${curr.y}` : `${acc} L ${curr.x} ${curr.y}`;
 	}, "");
 
 	const zeroNormalized = (0 - minVal) / range;
@@ -67,9 +63,7 @@ export function CumulativeChart({ timeline, currency }: CumulativeChartProps) {
 					<h4 className="text-sm font-bold text-slate-100">
 						Cumulative Wealth & Cashflow Trajectory
 					</h4>
-					<p className="text-xs text-slate-400">
-						Progression of running net balance over time
-					</p>
+					<p className="text-xs text-slate-400">Progression of running net balance over time</p>
 				</div>
 				<div className="flex items-center gap-4 text-xs">
 					<div className="flex items-center gap-1.5">
@@ -115,13 +109,8 @@ export function CumulativeChart({ timeline, currency }: CumulativeChartProps) {
 
 					{/* Bar indicators for income & expense */}
 					{points.map((p, idx) => {
-						const barWidth = Math.max(
-							3,
-							(width - 2 * paddingX) / timeline.length / 3,
-						);
-						const maxBarVal = Math.max(
-							...timeline.map((t) => Math.max(t.income, t.expense, 10)),
-						);
+						const barWidth = Math.max(3, (width - 2 * paddingX) / timeline.length / 3);
+						const maxBarVal = Math.max(...timeline.map((t) => Math.max(t.income, t.expense, 10)));
 						const incomeH = (p.point.income / maxBarVal) * 40;
 						const expenseH = (p.point.expense / maxBarVal) * 40;
 
@@ -178,19 +167,11 @@ export function CumulativeChart({ timeline, currency }: CumulativeChartProps) {
 								cy={p.y}
 								r={hoveredIndex === idx ? 6 : 3.5}
 								className={
-									hoveredIndex === idx
-										? "fill-emerald-300 stroke-slate-900"
-										: "fill-emerald-400"
+									hoveredIndex === idx ? "fill-emerald-300 stroke-slate-900" : "fill-emerald-400"
 								}
 								strokeWidth={hoveredIndex === idx ? 2 : 1}
 							/>
-							<rect
-								x={p.x - 12}
-								y={0}
-								width={24}
-								height={height}
-								fill="transparent"
-							/>
+							<rect x={p.x - 12} y={0} width={24} height={height} fill="transparent" />
 						</g>
 					))}
 				</svg>
@@ -205,24 +186,16 @@ export function CumulativeChart({ timeline, currency }: CumulativeChartProps) {
 							transform: "translateX(-50%)",
 						}}
 					>
-						<p className="font-bold text-slate-200">
-							{points[hoveredIndex].point.label}
-						</p>
+						<p className="font-bold text-slate-200">{points[hoveredIndex].point.label}</p>
 						<div className="mt-1 space-y-0.5">
 							<p className="text-emerald-400">
-								+ Income:{" "}
-								{formatCurrency(points[hoveredIndex].point.income, currency)}
+								+ Income: {formatCurrency(points[hoveredIndex].point.income, currency)}
 							</p>
 							<p className="text-red-400">
-								- Expense:{" "}
-								{formatCurrency(points[hoveredIndex].point.expense, currency)}
+								- Expense: {formatCurrency(points[hoveredIndex].point.expense, currency)}
 							</p>
 							<p className="font-semibold text-slate-100 pt-1 border-t border-slate-800">
-								Cumulative:{" "}
-								{formatCurrency(
-									points[hoveredIndex].point.cumulativeBalance,
-									currency,
-								)}
+								Cumulative: {formatCurrency(points[hoveredIndex].point.cumulativeBalance, currency)}
 							</p>
 						</div>
 					</div>
@@ -235,9 +208,7 @@ export function CumulativeChart({ timeline, currency }: CumulativeChartProps) {
 					? timeline.map((t, i) => <span key={i}>{t.label}</span>)
 					: timeline
 							.filter(
-								(_, i) =>
-									i % Math.ceil(timeline.length / 8) === 0 ||
-									i === timeline.length - 1,
+								(_, i) => i % Math.ceil(timeline.length / 8) === 0 || i === timeline.length - 1,
 							)
 							.map((t, i) => <span key={i}>{t.label}</span>)}
 			</div>

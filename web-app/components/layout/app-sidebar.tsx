@@ -51,14 +51,10 @@ export function AppSidebar() {
 				</div>
 				<div className="min-w-0">
 					<div className="flex items-center gap-1.5">
-						<span className="text-base font-extrabold tracking-tight text-white">
-							DayPulse
-						</span>
+						<span className="text-base font-extrabold tracking-tight text-white">DayPulse</span>
 						<span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
 					</div>
-					<p className="text-[11px] text-slate-400 font-medium truncate">
-						Routines & Wealth Flow
-					</p>
+					<p className="text-[11px] text-slate-400 font-medium truncate">Routines & Wealth Flow</p>
 				</div>
 			</div>
 
@@ -66,8 +62,7 @@ export function AppSidebar() {
 			<nav className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-1 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent">
 				{NAV_ITEMS.map((item) => {
 					const Icon = item.icon;
-					const isActive =
-						pathname === item.href || pathname.startsWith(`${item.href}/`);
+					const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
 					return (
 						<Link
 							key={item.href}
@@ -80,10 +75,7 @@ export function AppSidebar() {
 							)}
 						>
 							<Icon
-								className={cn(
-									"w-4 h-4 shrink-0",
-									isActive ? "text-emerald-400" : "text-slate-400",
-								)}
+								className={cn("w-4 h-4 shrink-0", isActive ? "text-emerald-400" : "text-slate-400")}
 							/>
 							<span className="truncate">{item.label}</span>
 						</Link>
@@ -96,12 +88,8 @@ export function AppSidebar() {
 				{user && (
 					<div className="flex items-center justify-between px-2.5 py-2 rounded-xl bg-slate-900/60 border border-slate-800/60">
 						<div className="min-w-0 pr-2">
-							<p className="text-xs font-semibold text-slate-200 truncate">
-								{user.name}
-							</p>
-							<p className="text-[10px] text-slate-400 truncate">
-								{user.email}
-							</p>
+							<p className="text-xs font-semibold text-slate-200 truncate">{user.name}</p>
+							<p className="text-[10px] text-slate-400 truncate">{user.email}</p>
 						</div>
 						<button
 							type="button"

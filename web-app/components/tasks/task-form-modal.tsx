@@ -178,9 +178,7 @@ export function TaskFormModal({
 	);
 
 	const activeDays = React.useMemo(() => {
-		return (repeatDaysOfWeek || "0,1,2,3,4,5,6")
-			.split(",")
-			.map((s) => s.trim());
+		return (repeatDaysOfWeek || "0,1,2,3,4,5,6").split(",").map((s) => s.trim());
 	}, [repeatDaysOfWeek]);
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: reset form on modal open
@@ -225,9 +223,7 @@ export function TaskFormModal({
 				description: initialData.description || "",
 				type: (initialData.type as "TASK" | "EVENT") || "TASK",
 				category: initialData.category || "General",
-				priority:
-					(initialData.priority as "LOW" | "MEDIUM" | "HIGH" | "URGENT") ||
-					"MEDIUM",
+				priority: (initialData.priority as "LOW" | "MEDIUM" | "HIGH" | "URGENT") || "MEDIUM",
 				startDate: formattedStart,
 				dueDate: formattedDue,
 				remindBeforeMinutes: initialData.remindBeforeMinutes ?? 0,
@@ -325,8 +321,7 @@ export function TaskFormModal({
 
 			if (res.success) {
 				toast.success(
-					res.message ||
-						`${data.type === "EVENT" ? "Event" : "Task"} saved successfully`,
+					res.message || `${data.type === "EVENT" ? "Event" : "Task"} saved successfully`,
 				);
 				onSuccess();
 				onClose();
@@ -334,8 +329,7 @@ export function TaskFormModal({
 				toast.error(res.message || "Failed to save");
 			}
 		} catch (error) {
-			const message =
-				error instanceof Error ? error.message : "Network error while saving";
+			const message = error instanceof Error ? error.message : "Network error while saving";
 			toast.error(message);
 		}
 	};
@@ -365,9 +359,7 @@ export function TaskFormModal({
 						}
 						{...register("title")}
 					/>
-					{errors.title && (
-						<p className="text-xs text-red-400">{errors.title.message}</p>
-					)}
+					{errors.title && <p className="text-xs text-red-400">{errors.title.message}</p>}
 				</div>
 
 				{/* Type & Priority */}
@@ -389,11 +381,9 @@ export function TaskFormModal({
 						value={selectedPriority}
 						group="TASK_PRIORITY"
 						onChange={(val) =>
-							setValue(
-								"priority",
-								val as "LOW" | "MEDIUM" | "HIGH" | "URGENT",
-								{ shouldValidate: true },
-							)
+							setValue("priority", val as "LOW" | "MEDIUM" | "HIGH" | "URGENT", {
+								shouldValidate: true,
+							})
 						}
 						options={PRIORITY_OPTIONS}
 					/>
@@ -405,9 +395,7 @@ export function TaskFormModal({
 						label="Category"
 						value={selectedCategory}
 						group="TASK_CATEGORY"
-						onChange={(val) =>
-							setValue("category", val, { shouldValidate: true })
-						}
+						onChange={(val) => setValue("category", val, { shouldValidate: true })}
 						options={categoryOptions}
 					/>
 
@@ -471,8 +459,7 @@ export function TaskFormModal({
 									)}
 								</div>
 								<p className="text-[11px] text-slate-400 mt-0.5">
-									Trigger repeated reminders on specific times of the day, week,
-									month, or year
+									Trigger repeated reminders on specific times of the day, week, month, or year
 								</p>
 							</div>
 						</div>
@@ -501,28 +488,26 @@ export function TaskFormModal({
 							<div className="space-y-1.5">
 								<Label>Recurrence Frequency</Label>
 								<div className="grid grid-cols-4 gap-1.5 p-1 rounded-xl bg-slate-950 border border-slate-800">
-									{(["DAILY", "WEEKLY", "MONTHLY", "YEARLY"] as const).map(
-										(freq) => (
-											<button
-												key={freq}
-												type="button"
-												onClick={() => setValue("repeatFrequency", freq)}
-												className={`py-2 rounded-lg text-xs font-bold transition cursor-pointer ${
-													repeatFrequency === freq
-														? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40"
-														: "text-slate-400 hover:text-white"
-												}`}
-											>
-												{freq === "DAILY"
-													? "Per Day"
-													: freq === "WEEKLY"
-														? "Per Week"
-														: freq === "MONTHLY"
-															? "Per Month"
-															: "Per Year"}
-											</button>
-										),
-									)}
+									{(["DAILY", "WEEKLY", "MONTHLY", "YEARLY"] as const).map((freq) => (
+										<button
+											key={freq}
+											type="button"
+											onClick={() => setValue("repeatFrequency", freq)}
+											className={`py-2 rounded-lg text-xs font-bold transition cursor-pointer ${
+												repeatFrequency === freq
+													? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40"
+													: "text-slate-400 hover:text-white"
+											}`}
+										>
+											{freq === "DAILY"
+												? "Per Day"
+												: freq === "WEEKLY"
+													? "Per Week"
+													: freq === "MONTHLY"
+														? "Per Month"
+														: "Per Year"}
+										</button>
+									))}
 								</div>
 							</div>
 
@@ -563,9 +548,7 @@ export function TaskFormModal({
 								{/* Primary Trigger Time of Day */}
 								<div className="space-y-1.5">
 									<div className="flex items-center justify-between">
-										<Label htmlFor="repeatTime">
-											Alert Trigger Time of Day
-										</Label>
+										<Label htmlFor="repeatTime">Alert Trigger Time of Day</Label>
 										<span className="text-[11px] text-emerald-400 font-medium flex items-center gap-1">
 											<Clock className="w-3 h-3" />
 											<span>Click box to pick</span>
@@ -630,12 +613,7 @@ export function TaskFormModal({
 											onChange={(e) => setNewTimeInput(e.target.value)}
 											className="h-9 w-36"
 										/>
-										<Button
-											type="button"
-											size="sm"
-											variant="emerald"
-											onClick={handleAddExtraTime}
-										>
+										<Button type="button" size="sm" variant="emerald" onClick={handleAddExtraTime}>
 											Add Time
 										</Button>
 										<Button
@@ -654,8 +632,7 @@ export function TaskFormModal({
 							</div>
 
 							{/* Days of Week Selection (for Daily & Weekly) */}
-							{(repeatFrequency === "DAILY" ||
-								repeatFrequency === "WEEKLY") && (
+							{(repeatFrequency === "DAILY" || repeatFrequency === "WEEKLY") && (
 								<div className="space-y-2">
 									<div className="flex items-center justify-between">
 										<Label>Active Days of the Week</Label>
@@ -712,9 +689,7 @@ export function TaskFormModal({
 							{/* Monthly Day Selection */}
 							{repeatFrequency === "MONTHLY" && (
 								<div className="space-y-1.5">
-									<Label htmlFor="repeatDayOfMonth">
-										Day of Month (1 - 31)
-									</Label>
+									<Label htmlFor="repeatDayOfMonth">Day of Month (1 - 31)</Label>
 									<Input
 										id="repeatDayOfMonth"
 										type="number"
@@ -864,12 +839,7 @@ export function TaskFormModal({
 
 				{/* Action Buttons */}
 				<div className="flex justify-end gap-3 pt-3">
-					<Button
-						type="button"
-						variant="outline"
-						onClick={onClose}
-						disabled={isSubmitting}
-					>
+					<Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
 						Cancel
 					</Button>
 					<Button type="submit" variant="emerald" disabled={isSubmitting}>

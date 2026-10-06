@@ -12,14 +12,8 @@ import {
 } from "electron";
 import { triggerDesktopAlarm } from "./alarm-manager.js";
 import { destroyAudioPlayer, initAudioPlayer } from "./audio-player.js";
-import {
-	executeGoogleSyncUpload,
-	stopGoogleOAuthLoopbackServer,
-} from "./db/google-sync.js";
-import {
-	handleIpcApiDispatch,
-	type IpcApiRequest,
-} from "./db/ipc-dispatcher.js";
+import { executeGoogleSyncUpload, stopGoogleOAuthLoopbackServer } from "./db/google-sync.js";
+import { handleIpcApiDispatch, type IpcApiRequest } from "./db/ipc-dispatcher.js";
 import {
 	closePrismaDatabase,
 	getCurrentUserId,
@@ -28,15 +22,8 @@ import {
 } from "./db/prisma-client.js";
 import { ensureDevServerReady, stopDevServer } from "./dev-server-helper.js";
 import { loadDesktopEnv } from "./env-loader.js";
-import {
-	startLocalScheduler,
-	stopLocalScheduler,
-} from "./scheduler/local-scheduler.js";
-import {
-	closeSplashWindow,
-	createSplashWindow,
-	updateSplashStatus,
-} from "./splash-window.js";
+import { startLocalScheduler, stopLocalScheduler } from "./scheduler/local-scheduler.js";
+import { closeSplashWindow, createSplashWindow, updateSplashStatus } from "./splash-window.js";
 import { destroyTray, setupTray } from "./tray-manager.js";
 import type { AlarmNotificationPayload } from "./types.js";
 
@@ -47,33 +34,12 @@ app.setName("DayPulse");
 
 function getWindowIconPath(): string {
 	const candidates = [
+		path.join(__dirname, "assets", "daypulse.ico"),
+		path.join(__dirname, "assets", "favicon.ico"),
+		path.resolve(__dirname, "../assets/daypulse.ico"),
 		path.resolve(__dirname, "../assets/favicon.ico"),
 		path.resolve(__dirname, "../../assets/favicon.ico"),
-		path.resolve(process.cwd(), "desktop-app", "assets", "favicon.ico"),
-		path.resolve(process.cwd(), "assets", "favicon.ico"),
-		path.resolve(process.cwd(), "..", "assets", "favicon.ico"),
-		path.resolve(__dirname, "../assets/logo.png"),
-		path.resolve(__dirname, "../../assets/logo.png"),
-		path.resolve(process.cwd(), "desktop-app", "assets", "logo.png"),
-		path.resolve(process.cwd(), "assets", "logo.png"),
-		path.resolve(process.cwd(), "..", "assets", "logo.png"),
-	];
-
-	for (const candidate of candidates) {
-		if (fs.existsSync(candidate)) return candidate;
-	}
-	return "";
-}
-
-function getNotificationIconPath(): string {
-	const candidates = [
-		path.resolve(__dirname, "../assets/logo.png"),
-		path.resolve(__dirname, "../../assets/logo.png"),
-		path.resolve(process.cwd(), "desktop-app", "assets", "logo.png"),
-		path.resolve(process.cwd(), "assets", "logo.png"),
-		path.resolve(process.cwd(), "..", "assets", "logo.png"),
-		path.resolve(__dirname, "../assets/favicon.ico"),
-		path.resolve(__dirname, "../../assets/favicon.ico"),
+		path.resolve(process.cwd(), "desktop-app", "assets", "daypulse.ico"),
 		path.resolve(process.cwd(), "desktop-app", "assets", "favicon.ico"),
 		path.resolve(process.cwd(), "assets", "favicon.ico"),
 	];
@@ -102,18 +68,20 @@ if (process.platform === "win32") {
 	const appId = "com.daypulse.tracker";
 	app.setAppUserModelId(appId);
 
+	const windowIcon = getWindowIconPath();
+
 	try {
 		const classesAumidKey = `HKCU\\Software\\Classes\\AppUserModelId\\${appId}`;
-		const notifIcon = getNotificationIconPath();
-		execSync(
-			`reg add "${classesAumidKey}" /v DisplayName /t REG_SZ /d "DayPulse" /f`,
-			{ stdio: "ignore" },
-		);
-		if (notifIcon) {
-			execSync(
-				`reg add "${classesAumidKey}" /v IconUri /t REG_SZ /d "${notifIcon}" /f`,
-				{ stdio: "ignore" },
-			);
+		execSync(`reg add "${classesAumidKey}" /v DisplayName /t REG_SZ /d "DayPulse" /f`, {
+			stdio: "ignore",
+		});
+		if (windowIcon) {
+			execSync(`reg add "${classesAumidKey}" /v IconUri /t REG_SZ /d "${windowIcon}" /f`, {
+				stdio: "ignore",
+			});
+			execSync(`reg add "${classesAumidKey}" /v IconBackgroundColor /t REG_SZ /d "FF09090B" /f`, {
+				stdio: "ignore",
+			});
 		}
 	} catch {
 		// Silent fallback if classes registry edit fails
@@ -121,15 +89,13 @@ if (process.platform === "win32") {
 
 	try {
 		const regKey = `HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Notifications\\Settings\\${appId}`;
-		const notifIcon = getNotificationIconPath();
 		execSync(`reg add "${regKey}" /v DisplayName /t REG_SZ /d "DayPulse" /f`, {
 			stdio: "ignore",
 		});
-		if (notifIcon) {
-			execSync(
-				`reg add "${regKey}" /v IconUri /t REG_SZ /d "${notifIcon}" /f`,
-				{ stdio: "ignore" },
-			);
+		if (windowIcon) {
+			execSync(`reg add "${regKey}" /v IconUri /t REG_SZ /d "${windowIcon}" /f`, {
+				stdio: "ignore",
+			});
 		}
 		execSync(`reg add "${regKey}" /v ShowInActionCenter /t REG_DWORD /d 1 /f`, {
 			stdio: "ignore",
@@ -148,14 +114,36 @@ if (process.platform === "win32") {
 		);
 		const shortcutPath = path.join(programsDir, "DayPulse.lnk");
 		const iconPath = getWindowIconPath();
-		shell.writeShortcutLink(shortcutPath, "replace", {
+
+		if (fs.existsSync(shortcutPath)) {
+			try {
+				execSync(`attrib -R "${shortcutPath}"`, { stdio: "ignore" });
+			} catch {
+				// Ignore if already writable
+			}
+		}
+
+		const shortcutOptions = {
 			target: process.execPath,
-			args: `"${path.resolve(__dirname, "..")}"`,
+			args: app.isPackaged ? "" : `"${path.resolve(__dirname, "..")}"`,
 			appUserModelId: appId,
 			icon: iconPath,
 			iconIndex: 0,
 			description: "DayPulse - Standalone Workspace",
-		});
+			toastActivatorClsid: "{0796B928-7EA1-4E7A-AF15-FCF1640FE3F5}",
+		};
+
+		const op = fs.existsSync(shortcutPath) ? "replace" : "create";
+		const shortcutWritten = shell.writeShortcutLink(shortcutPath, op, shortcutOptions);
+		if (!shortcutWritten && op === "replace") {
+			shell.writeShortcutLink(shortcutPath, "create", shortcutOptions);
+		}
+
+		try {
+			execSync(`attrib +R "${shortcutPath}"`, { stdio: "ignore" });
+		} catch {
+			// Ignore if locking is not supported
+		}
 	} catch (err) {
 		console.warn("[DayPulse Desktop] Shortcut registration notice:", err);
 	}
@@ -181,9 +169,7 @@ app.on("second-instance", () => {
 
 async function createMainWindow(): Promise<BrowserWindow> {
 	const iconPath = getWindowIconPath();
-	const windowIcon = iconPath
-		? nativeImage.createFromPath(iconPath)
-		: getWindowIcon();
+	const windowIcon = iconPath ? nativeImage.createFromPath(iconPath) : getWindowIcon();
 
 	mainWindow = new BrowserWindow({
 		width: 1280,
@@ -244,51 +230,44 @@ async function createMainWindow(): Promise<BrowserWindow> {
 		mainWindow.webContents.on("before-input-event", (event, input) => {
 			if (
 				input.type === "keyDown" &&
-				(input.key === "F12" ||
-					(input.control && input.shift && input.key.toLowerCase() === "i"))
+				(input.key === "F12" || (input.control && input.shift && input.key.toLowerCase() === "i"))
 			) {
 				mainWindow?.webContents.toggleDevTools();
 				event.preventDefault();
 			}
 		});
 
-		mainWindow.webContents.on(
-			"console-message",
-			(event: unknown, ...args: unknown[]) => {
-				let level = 0;
-				let message = "";
-				let line = 0;
-				let sourceId = "";
+		mainWindow.webContents.on("console-message", (event: unknown, ...args: unknown[]) => {
+			let level = 0;
+			let message = "";
+			let line = 0;
+			let sourceId = "";
 
-				if (
-					typeof event === "object" &&
-					event !== null &&
-					"message" in (event as Record<string, unknown>)
-				) {
-					const ev = event as {
-						level?: number;
-						message?: string;
-						line?: number;
-						sourceId?: string;
-					};
-					level = ev.level ?? 0;
-					message = ev.message ?? "";
-					line = ev.line ?? 0;
-					sourceId = ev.sourceId ?? "";
-				} else {
-					level = typeof args[0] === "number" ? args[0] : 0;
-					message =
-						typeof args[1] === "string" ? args[1] : String(args[1] || "");
-					line = typeof args[2] === "number" ? args[2] : 0;
-					sourceId = typeof args[3] === "string" ? args[3] : "";
-				}
+			if (
+				typeof event === "object" &&
+				event !== null &&
+				"message" in (event as Record<string, unknown>)
+			) {
+				const ev = event as {
+					level?: number;
+					message?: string;
+					line?: number;
+					sourceId?: string;
+				};
+				level = ev.level ?? 0;
+				message = ev.message ?? "";
+				line = ev.line ?? 0;
+				sourceId = ev.sourceId ?? "";
+			} else {
+				level = typeof args[0] === "number" ? args[0] : 0;
+				message = typeof args[1] === "string" ? args[1] : String(args[1] || "");
+				line = typeof args[2] === "number" ? args[2] : 0;
+				sourceId = typeof args[3] === "string" ? args[3] : "";
+			}
 
-				const tags = ["LOG", "INFO", "WARN", "ERROR"];
-				console.log(
-					`[Renderer ${tags[level] || "LOG"}] ${message} (${sourceId}:${line})`,
-				);
-			},
-		);
+			const tags = ["LOG", "INFO", "WARN", "ERROR"];
+			console.log(`[Renderer ${tags[level] || "LOG"}] ${message} (${sourceId}:${line})`);
+		});
 
 		mainWindow.webContents.on(
 			"did-fail-load",
@@ -383,8 +362,7 @@ function registerIpcHandlers(): void {
 			mainWindow?.webContents.send("daypulse:sync-updated", result);
 			return result;
 		} catch (err) {
-			const msg =
-				err instanceof Error ? err.message : "Failed to sync with Google Drive";
+			const msg = err instanceof Error ? err.message : "Failed to sync with Google Drive";
 			return { success: false, message: msg };
 		}
 	});
@@ -397,37 +375,34 @@ function registerIpcHandlers(): void {
 		return false;
 	});
 
-	ipcMain.handle(
-		"backup:save-dialog",
-		async (_event, defaultName: string, base64Data: string) => {
-			if (!mainWindow) return { success: false, canceled: true };
-			const result = await dialog.showSaveDialog(mainWindow, {
-				title: "Save DayPulse Backup Archive",
-				defaultPath: defaultName || "DayPulse_Backup.zip",
-				filters: [
-					{
-						name: "DayPulse Archive (*.zip, *.daypulse)",
-						extensions: ["zip", "daypulse"],
-					},
-					{ name: "All Files (*.*)", extensions: ["*"] },
-				],
-			});
+	ipcMain.handle("backup:save-dialog", async (_event, defaultName: string, base64Data: string) => {
+		if (!mainWindow) return { success: false, canceled: true };
+		const result = await dialog.showSaveDialog(mainWindow, {
+			title: "Save DayPulse Backup Archive",
+			defaultPath: defaultName || "DayPulse_Backup.zip",
+			filters: [
+				{
+					name: "DayPulse Archive (*.zip, *.daypulse)",
+					extensions: ["zip", "daypulse"],
+				},
+				{ name: "All Files (*.*)", extensions: ["*"] },
+			],
+		});
 
-			if (result.canceled || !result.filePath) {
-				return { success: false, canceled: true };
-			}
+		if (result.canceled || !result.filePath) {
+			return { success: false, canceled: true };
+		}
 
-			try {
-				const cleanBase64 = base64Data.replace(/^data:.*?;base64,/, "").trim();
-				const buffer = Buffer.from(cleanBase64, "base64");
-				fs.writeFileSync(result.filePath, buffer);
-				return { success: true, filePath: result.filePath, canceled: false };
-			} catch (err) {
-				console.error("[DayPulse Desktop] Failed to write backup file:", err);
-				return { success: false, canceled: false };
-			}
-		},
-	);
+		try {
+			const cleanBase64 = base64Data.replace(/^data:.*?;base64,/, "").trim();
+			const buffer = Buffer.from(cleanBase64, "base64");
+			fs.writeFileSync(result.filePath, buffer);
+			return { success: true, filePath: result.filePath, canceled: false };
+		} catch (err) {
+			console.error("[DayPulse Desktop] Failed to write backup file:", err);
+			return { success: false, canceled: false };
+		}
+	});
 
 	ipcMain.handle("backup:open-dialog", async () => {
 		if (!mainWindow) return null;
@@ -464,7 +439,7 @@ function registerIpcHandlers(): void {
 
 app.whenReady().then(async () => {
 	// 1. Show animated splash screen immediately
-	createSplashWindow();
+	createSplashWindow(getWindowIconPath());
 	updateSplashStatus("Initializing local database...");
 
 	// 2. Initialize hidden audio synthesizer window
@@ -539,9 +514,7 @@ app.whenReady().then(async () => {
 	// Maximum 20-second failsafe: unconditionally reveal main window
 	setTimeout(() => {
 		if (!splashClosed) {
-			console.log(
-				"[DayPulse Desktop] Failsafe timeout reached - revealing window",
-			);
+			console.log("[DayPulse Desktop] Failsafe timeout reached - revealing window");
 			revealWindow();
 		}
 	}, 20000);

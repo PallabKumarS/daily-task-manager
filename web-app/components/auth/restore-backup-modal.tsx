@@ -1,13 +1,6 @@
 "use client";
 
-import {
-	AlertCircle,
-	ArrowRight,
-	CheckCircle2,
-	FileArchive,
-	Lock,
-	RefreshCw,
-} from "lucide-react";
+import { AlertCircle, ArrowRight, CheckCircle2, FileArchive, Lock, RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 import { toast } from "sonner";
@@ -46,10 +39,7 @@ interface BackupPreviewInfo {
 	};
 }
 
-export function RestoreBackupModal({
-	isOpen,
-	onClose,
-}: RestoreBackupModalProps) {
+export function RestoreBackupModal({ isOpen, onClose }: RestoreBackupModalProps) {
 	const router = useRouter();
 	const { refreshUser } = useAuth();
 
@@ -120,15 +110,9 @@ export function RestoreBackupModal({
 					legacyJson: parsed,
 					estimatedCounts: {
 						tasks: Array.isArray(parsed.tasks) ? parsed.tasks.length : 0,
-						routines: Array.isArray(parsed.routines)
-							? parsed.routines.length
-							: 0,
-						transactions: Array.isArray(parsed.transactions)
-							? parsed.transactions.length
-							: 0,
-						trackers: Array.isArray(parsed.trackers)
-							? parsed.trackers.length
-							: 0,
+						routines: Array.isArray(parsed.routines) ? parsed.routines.length : 0,
+						transactions: Array.isArray(parsed.transactions) ? parsed.transactions.length : 0,
+						trackers: Array.isArray(parsed.trackers) ? parsed.trackers.length : 0,
 					},
 					accountInfo: {
 						name: u.name || "User",
@@ -138,8 +122,7 @@ export function RestoreBackupModal({
 				});
 			}
 		} catch (err) {
-			const msg =
-				err instanceof Error ? err.message : "Invalid backup file format";
+			const msg = err instanceof Error ? err.message : "Invalid backup file format";
 			toast.error(msg);
 		} finally {
 			setInspecting(false);
@@ -168,9 +151,7 @@ export function RestoreBackupModal({
 		}
 	};
 
-	const handleFileInputChange = async (
-		e: React.ChangeEvent<HTMLInputElement>,
-	) => {
+	const handleFileInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0];
 		if (!file) return;
 
@@ -207,17 +188,14 @@ export function RestoreBackupModal({
 			if (res.success && res.data?.token) {
 				setAuthToken(res.data.token);
 				await refreshUser();
-				toast.success(
-					res.message || "Account and workspace restored successfully",
-				);
+				toast.success(res.message || "Account and workspace restored successfully");
 				handleModalClose();
 				router.push("/dashboard");
 			} else {
 				toast.error(res.message || "Failed to restore backup archive");
 			}
 		} catch (err) {
-			const msg =
-				err instanceof Error ? err.message : "An error occurred during restore";
+			const msg = err instanceof Error ? err.message : "An error occurred during restore";
 			toast.error(msg);
 		} finally {
 			setRestoring(false);
@@ -261,9 +239,8 @@ export function RestoreBackupModal({
 					<div className="rounded-xl border border-slate-800 bg-slate-950/60 p-3.5 flex items-start gap-2.5 text-xs text-slate-400">
 						<AlertCircle className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
 						<p className="leading-relaxed">
-							When restoring onto a new device, your local account will be
-							automatically recreated with all historical routines, tasks, and
-							finance records.
+							When restoring onto a new device, your local account will be automatically recreated
+							with all historical routines, tasks, and finance records.
 						</p>
 					</div>
 
@@ -280,9 +257,7 @@ export function RestoreBackupModal({
 						<div className="flex items-center justify-between pb-2 border-b border-slate-800">
 							<div className="flex items-center gap-2">
 								<CheckCircle2 className="w-4 h-4 text-emerald-400" />
-								<span className="text-xs font-bold text-slate-200">
-									Verified Backup Archive
-								</span>
+								<span className="text-xs font-bold text-slate-200">Verified Backup Archive</span>
 							</div>
 							<span className="text-[11px] font-mono text-slate-400 truncate max-w-[180px]">
 								{preview.fileName}
@@ -306,9 +281,7 @@ export function RestoreBackupModal({
 								<span className="text-slate-400 block text-[10px] uppercase font-semibold">
 									Currency
 								</span>
-								<span className="text-slate-200 font-medium">
-									{preview.accountInfo.currency}
-								</span>
+								<span className="text-slate-200 font-medium">{preview.accountInfo.currency}</span>
 							</div>
 						</div>
 
@@ -357,18 +330,13 @@ export function RestoreBackupModal({
 							/>
 						</div>
 						<p className="text-[11px] text-slate-400">
-							If you are setting up this account on a new device, you can set an
-							optional password for future sign-ins.
+							If you are setting up this account on a new device, you can set an optional password
+							for future sign-ins.
 						</p>
 					</div>
 
 					<div className="flex items-center justify-between pt-2">
-						<Button
-							variant="ghost"
-							size="sm"
-							onClick={resetState}
-							disabled={restoring}
-						>
+						<Button variant="ghost" size="sm" onClick={resetState} disabled={restoring}>
 							Choose Different File
 						</Button>
 

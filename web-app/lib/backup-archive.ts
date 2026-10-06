@@ -22,10 +22,7 @@ export interface BackupArchiveManifest {
 	checksums: Record<string, string>;
 }
 
-export function base64ToBlob(
-	base64: string,
-	mimeType = "application/zip",
-): Blob {
+export function base64ToBlob(base64: string, mimeType = "application/zip"): Blob {
 	const clean = base64.replace(/^data:.*?;base64,/, "").trim();
 	const byteCharacters = atob(clean);
 	const byteNumbers = new Array(byteCharacters.length);

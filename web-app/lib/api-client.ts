@@ -1,5 +1,4 @@
-const API_BASE_URL =
-	process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api/v1";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api/v1";
 
 const TOKEN_KEY = "daypulse_auth_token";
 
@@ -49,10 +48,7 @@ export async function apiRequest<T = unknown>(
 		let parsedBody: unknown;
 		if (options.body) {
 			try {
-				parsedBody =
-					typeof options.body === "string"
-						? JSON.parse(options.body)
-						: options.body;
+				parsedBody = typeof options.body === "string" ? JSON.parse(options.body) : options.body;
 			} catch {
 				parsedBody = options.body;
 			}
@@ -79,10 +75,7 @@ export async function apiRequest<T = unknown>(
 		if (!ipcRes.success) {
 			if (ipcRes.statusCode === 401) {
 				clearAuthToken();
-				if (
-					typeof window !== "undefined" &&
-					!window.location.pathname.startsWith("/login")
-				) {
+				if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
 					window.dispatchEvent(new CustomEvent("daypulse:unauthorized"));
 				}
 			}
@@ -90,10 +83,7 @@ export async function apiRequest<T = unknown>(
 		}
 
 		const reqMethod = (options.method || "GET").toUpperCase();
-		if (
-			typeof window !== "undefined" &&
-			["POST", "PATCH", "PUT", "DELETE"].includes(reqMethod)
-		) {
+		if (typeof window !== "undefined" && ["POST", "PATCH", "PUT", "DELETE"].includes(reqMethod)) {
 			window.dispatchEvent(new CustomEvent("daypulse:refresh"));
 		}
 
@@ -130,10 +120,7 @@ export async function apiRequest<T = unknown>(
 	if (!response.ok || !json.success) {
 		if (response.status === 401) {
 			clearAuthToken();
-			if (
-				typeof window !== "undefined" &&
-				!window.location.pathname.startsWith("/login")
-			) {
+			if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
 				window.dispatchEvent(new CustomEvent("daypulse:unauthorized"));
 			}
 		}
@@ -141,10 +128,7 @@ export async function apiRequest<T = unknown>(
 	}
 
 	const reqMethod = (options.method || "GET").toUpperCase();
-	if (
-		typeof window !== "undefined" &&
-		["POST", "PATCH", "PUT", "DELETE"].includes(reqMethod)
-	) {
+	if (typeof window !== "undefined" && ["POST", "PATCH", "PUT", "DELETE"].includes(reqMethod)) {
 		window.dispatchEvent(new CustomEvent("daypulse:refresh"));
 	}
 
@@ -155,22 +139,14 @@ export const api = {
 	get: <T = unknown>(endpoint: string, options?: RequestInit) =>
 		apiRequest<T>(endpoint, { ...options, method: "GET" }),
 
-	post: <T = unknown>(
-		endpoint: string,
-		body?: unknown,
-		options?: RequestInit,
-	) =>
+	post: <T = unknown>(endpoint: string, body?: unknown, options?: RequestInit) =>
 		apiRequest<T>(endpoint, {
 			...options,
 			method: "POST",
 			body: body ? JSON.stringify(body) : undefined,
 		}),
 
-	patch: <T = unknown>(
-		endpoint: string,
-		body?: unknown,
-		options?: RequestInit,
-	) =>
+	patch: <T = unknown>(endpoint: string, body?: unknown, options?: RequestInit) =>
 		apiRequest<T>(endpoint, {
 			...options,
 			method: "PATCH",

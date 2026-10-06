@@ -1,17 +1,7 @@
 "use client";
 
-import {
-	Activity,
-	ArrowRight,
-	Bell,
-	CheckCircle2,
-	ShieldCheck,
-	Smartphone,
-	Sparkles,
-	TrendingUp,
-} from "lucide-react";
+import { Activity, ArrowRight, Bell, CheckCircle2, Smartphone, TrendingUp } from "lucide-react";
 import Link from "next/link";
-import * as React from "react";
 import { useAuth } from "@/components/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 
@@ -28,9 +18,7 @@ export function HeroSection() {
 				{/* Pill Badge */}
 				<div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-1.5 text-xs font-semibold text-emerald-400 mb-6 backdrop-blur-md shadow-sm">
 					<Activity className="w-3.5 h-3.5" />
-					<span>
-						DayPulse • Your All-in-One Daily Rhythm & Financial Ledger
-					</span>
+					<span>DayPulse • Your All-in-One Daily Rhythm & Financial Ledger</span>
 				</div>
 
 				{/* Heading */}
@@ -43,9 +31,9 @@ export function HeroSection() {
 
 				{/* Subtitle */}
 				<p className="mt-6 text-base sm:text-lg text-slate-300 max-w-2xl mx-auto leading-relaxed">
-					The unified productivity system designed to track daily routines,
-					schedule priority tasks and events with advance alerts, and maintain a
-					clear cumulative view of your earnings and spendings.
+					The unified productivity system designed to track daily routines, schedule priority tasks
+					and events with advance alerts, and maintain a clear cumulative view of your earnings and
+					spendings.
 				</p>
 
 				{/* CTA Buttons */}
@@ -74,11 +62,7 @@ export function HeroSection() {
 								</Button>
 							</Link>
 							<Link href="/login">
-								<Button
-									size="lg"
-									variant="secondary"
-									className="px-6 text-base"
-								>
+								<Button size="lg" variant="secondary" className="px-6 text-base">
 									Sign In
 								</Button>
 							</Link>
@@ -127,9 +111,7 @@ export function HeroSection() {
 						{/* Habit loop preview */}
 						<div className="rounded-2xl border border-slate-800/80 bg-slate-900/60 p-4">
 							<div className="flex items-center justify-between text-xs text-slate-400 mb-2">
-								<span className="font-semibold text-white">
-									Daily Habit Loop
-								</span>
+								<span className="font-semibold text-white">Daily Habit Loop</span>
 								<span className="text-emerald-400 font-bold">80% Done</span>
 							</div>
 							<div className="space-y-2">
@@ -137,17 +119,13 @@ export function HeroSection() {
 									<div className="h-4 w-4 rounded-md bg-emerald-500 text-slate-950 flex items-center justify-center text-[10px] font-bold">
 										✓
 									</div>
-									<span className="line-through text-slate-500">
-										Morning Hydration & Core
-									</span>
+									<span className="line-through text-slate-500">Morning Hydration & Core</span>
 								</div>
 								<div className="flex items-center gap-2.5 p-2 rounded-xl bg-slate-800/50 text-xs text-slate-300">
 									<div className="h-4 w-4 rounded-md bg-emerald-500 text-slate-950 flex items-center justify-center text-[10px] font-bold">
 										✓
 									</div>
-									<span className="line-through text-slate-500">
-										Deep Work Sprint (90m)
-									</span>
+									<span className="line-through text-slate-500">Deep Work Sprint (90m)</span>
 								</div>
 								<div className="flex items-center gap-2.5 p-2 rounded-xl bg-emerald-950/30 border border-emerald-500/30 text-xs text-slate-200">
 									<div className="h-4 w-4 rounded-md border border-slate-600" />
@@ -159,17 +137,13 @@ export function HeroSection() {
 						{/* Upcoming Task preview */}
 						<div className="rounded-2xl border border-slate-800/80 bg-slate-900/60 p-4">
 							<div className="flex items-center justify-between text-xs text-slate-400 mb-2">
-								<span className="font-semibold text-white">
-									Upcoming Alerts
-								</span>
+								<span className="font-semibold text-white">Upcoming Alerts</span>
 								<span className="text-amber-400 font-bold">15m lead time</span>
 							</div>
 							<div className="space-y-2">
 								<div className="p-2 rounded-xl bg-slate-800/50 text-xs">
 									<div className="flex items-center justify-between">
-										<span className="font-semibold text-slate-200">
-											Client Sprint Check-in
-										</span>
+										<span className="font-semibold text-slate-200">Client Sprint Check-in</span>
 										<span className="text-[10px] text-amber-400">3:30 PM</span>
 									</div>
 									<p className="text-[10px] text-slate-400 mt-0.5">
@@ -178,12 +152,8 @@ export function HeroSection() {
 								</div>
 								<div className="p-2 rounded-xl bg-slate-800/50 text-xs">
 									<div className="flex items-center justify-between">
-										<span className="font-semibold text-slate-200">
-											Review Monthly Ledger
-										</span>
-										<span className="text-[10px] text-emerald-400">
-											6:00 PM
-										</span>
+										<span className="font-semibold text-slate-200">Review Monthly Ledger</span>
+										<span className="text-[10px] text-emerald-400">6:00 PM</span>
 									</div>
 									<p className="text-[10px] text-slate-400 mt-0.5">
 										Finance reconciliation routine
@@ -195,17 +165,11 @@ export function HeroSection() {
 						{/* Cumulative Cashflow preview */}
 						<div className="rounded-2xl border border-slate-800/80 bg-slate-900/60 p-4">
 							<div className="flex items-center justify-between text-xs text-slate-400 mb-2">
-								<span className="font-semibold text-white">
-									Cumulative Flow
-								</span>
+								<span className="font-semibold text-white">Cumulative Flow</span>
 								<span className="text-emerald-400 font-bold">+52% Savings</span>
 							</div>
-							<div className="mt-2 text-xl font-black text-emerald-400">
-								+$4,820.00
-							</div>
-							<p className="text-[10px] text-slate-400 mt-0.5">
-								Cumulative net surplus this month
-							</p>
+							<div className="mt-2 text-xl font-black text-emerald-400">+$4,820.00</div>
+							<p className="text-[10px] text-slate-400 mt-0.5">Cumulative net surplus this month</p>
 							<div className="mt-3 flex items-center justify-between text-[11px] pt-2 border-t border-slate-800/60">
 								<span className="text-emerald-400">+$6,400 Earnings</span>
 								<span className="text-red-400">-$1,580 Spendings</span>

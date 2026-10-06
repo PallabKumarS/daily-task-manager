@@ -160,9 +160,7 @@ export function RoutineFormModal({
 
 	const onSubmit = async (data: FormValues) => {
 		try {
-			const endpoint = initialData
-				? `/routines/${initialData.id}`
-				: "/routines";
+			const endpoint = initialData ? `/routines/${initialData.id}` : "/routines";
 			const payload = {
 				...data,
 				daysOfWeek: selectedDays.join(","),
@@ -180,10 +178,7 @@ export function RoutineFormModal({
 				toast.error(res.message || "Failed to save routine");
 			}
 		} catch (error) {
-			const message =
-				error instanceof Error
-					? error.message
-					: "Network error while saving routine";
+			const message = error instanceof Error ? error.message : "Network error while saving routine";
 			toast.error(message);
 		}
 	};
@@ -198,23 +193,15 @@ export function RoutineFormModal({
 			<form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
 				<div className="space-y-1.5">
 					<Label htmlFor="title">Routine Title</Label>
-					<Input
-						id="title"
-						placeholder="e.g. Morning Workout & Hydration"
-						{...register("title")}
-					/>
-					{errors.title && (
-						<p className="text-xs text-red-400">{errors.title.message}</p>
-					)}
+					<Input id="title" placeholder="e.g. Morning Workout & Hydration" {...register("title")} />
+					{errors.title && <p className="text-xs text-red-400">{errors.title.message}</p>}
 				</div>
 
 				<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 					<CustomSelect
 						label="Time Slot"
 						value={selectedTimeSlot}
-						onChange={(val) =>
-							setValue("timeSlot", val, { shouldValidate: true })
-						}
+						onChange={(val) => setValue("timeSlot", val, { shouldValidate: true })}
 						options={TIME_SLOT_OPTIONS}
 						group="ROUTINE_SLOT"
 						placeholder="Select time slot..."
@@ -222,12 +209,7 @@ export function RoutineFormModal({
 
 					<div className="space-y-1.5">
 						<Label htmlFor="targetTime">Target Time</Label>
-						<Input
-							id="targetTime"
-							type="time"
-							className="h-11"
-							{...register("targetTime")}
-						/>
+						<Input id="targetTime" type="time" className="h-11" {...register("targetTime")} />
 					</div>
 				</div>
 
@@ -279,20 +261,11 @@ export function RoutineFormModal({
 				</div>
 
 				<div className="flex justify-end gap-3 pt-3">
-					<Button
-						type="button"
-						variant="outline"
-						onClick={onClose}
-						disabled={isSubmitting}
-					>
+					<Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
 						Cancel
 					</Button>
 					<Button type="submit" variant="emerald" disabled={isSubmitting}>
-						{isSubmitting
-							? "Saving..."
-							: initialData
-								? "Save Changes"
-								: "Create Routine"}
+						{isSubmitting ? "Saving..." : initialData ? "Save Changes" : "Create Routine"}
 					</Button>
 				</div>
 			</form>

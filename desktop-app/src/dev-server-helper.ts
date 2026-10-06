@@ -6,17 +6,13 @@ import { updateSplashStatus } from "./splash-window.js";
 
 let nextDevProcess: ChildProcess | null = null;
 
-export async function isUrlResponding(
-	url: string,
-	timeoutMs = 3000,
-): Promise<boolean> {
+export async function isUrlResponding(url: string, timeoutMs = 3000): Promise<boolean> {
 	return new Promise((resolve) => {
 		try {
 			const parsed = new URL(url);
 			const req = http.get(
 				{
-					hostname:
-						parsed.hostname === "localhost" ? "127.0.0.1" : parsed.hostname,
+					hostname: parsed.hostname === "localhost" ? "127.0.0.1" : parsed.hostname,
 					port: parsed.port || 80,
 					path: parsed.pathname || "/",
 					timeout: timeoutMs,
@@ -49,15 +45,8 @@ function cleanStalePortProcesses(port = 3000): void {
 			const parts = line.trim().split(/\s+/);
 			const state = parts[3];
 			const pid = parts[parts.length - 1];
-			if (
-				state === "LISTENING" &&
-				pid &&
-				pid !== "0" &&
-				pid !== String(process.pid)
-			) {
-				console.log(
-					`[DayPulse Desktop] Cleaning stale process (PID ${pid}) on port ${port}...`,
-				);
+			if (state === "LISTENING" && pid && pid !== "0" && pid !== String(process.pid)) {
+				console.log(`[DayPulse Desktop] Cleaning stale process (PID ${pid}) on port ${port}...`);
 				try {
 					execSync(`taskkill /pid ${pid} /T /F`, { stdio: "ignore" });
 				} catch {
@@ -94,25 +83,18 @@ export async function ensureDevServerReady(): Promise<void> {
 
 	let webDir = "";
 	for (const candidate of webDirCandidates) {
-		if (
-			fs.existsSync(candidate) &&
-			fs.existsSync(path.join(candidate, "package.json"))
-		) {
+		if (fs.existsSync(candidate) && fs.existsSync(path.join(candidate, "package.json"))) {
 			webDir = candidate;
 			break;
 		}
 	}
 
 	if (!webDir) {
-		console.warn(
-			"[DayPulse Desktop] web-app directory not found for auto-launch.",
-		);
+		console.warn("[DayPulse Desktop] web-app directory not found for auto-launch.");
 		return;
 	}
 
-	console.log(
-		`[DayPulse Desktop] Auto-spawning Next.js dev server in: ${webDir}`,
-	);
+	console.log(`[DayPulse Desktop] Auto-spawning Next.js dev server in: ${webDir}`);
 	updateSplashStatus("Starting Next.js UI development server...");
 
 	const isWin = process.platform === "win32";
@@ -143,9 +125,7 @@ export async function ensureDevServerReady(): Promise<void> {
 
 	nextDevProcess.on("exit", (code) => {
 		if (code !== null && code !== 0) {
-			console.warn(
-				`[DayPulse Desktop] Next.js dev server exited with code ${code}`,
-			);
+			console.warn(`[DayPulse Desktop] Next.js dev server exited with code ${code}`);
 		}
 	});
 
@@ -160,9 +140,7 @@ export async function ensureDevServerReady(): Promise<void> {
 		}
 	}
 
-	console.warn(
-		"[DayPulse Desktop] Next.js startup timed out; proceeding to connect.",
-	);
+	console.warn("[DayPulse Desktop] Next.js startup timed out; proceeding to connect.");
 }
 
 export function stopDevServer(): void {

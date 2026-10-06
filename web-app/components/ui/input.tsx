@@ -5,8 +5,7 @@ export const Input = React.forwardRef<
 	HTMLInputElement,
 	React.InputHTMLAttributes<HTMLInputElement>
 >(({ className, type, onClick, ...props }, ref) => {
-	const isPickerType =
-		type === "date" || type === "time" || type === "datetime-local";
+	const isPickerType = type === "date" || type === "time" || type === "datetime-local";
 
 	const handleClick = (e: React.MouseEvent<HTMLInputElement>) => {
 		if (isPickerType) {

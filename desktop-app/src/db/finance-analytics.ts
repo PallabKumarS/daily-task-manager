@@ -48,10 +48,7 @@ const getWeekRange = (date: Date): { start: Date; end: Date } => {
 	return { start, end };
 };
 
-const getMonthRange = (
-	year: number,
-	month: number,
-): { start: Date; end: Date } => {
+const getMonthRange = (year: number, month: number): { start: Date; end: Date } => {
 	const start = new Date(year, month - 1, 1, 0, 0, 0, 0);
 	const end = new Date(year, month, 0, 23, 59, 59, 999);
 	return { start, end };
@@ -83,10 +80,7 @@ export async function calculateFinanceAnalytics(
 		startDate = range.start;
 		endDate = range.end;
 	} else {
-		const range = getMonthRange(
-			baseDate.getFullYear(),
-			baseDate.getMonth() + 1,
-		);
+		const range = getMonthRange(baseDate.getFullYear(), baseDate.getMonth() + 1);
 		startDate = range.start;
 		endDate = range.end;
 	}
@@ -108,20 +102,16 @@ export async function calculateFinanceAnalytics(
 		const type = t.type.toUpperCase();
 		if (type === "INCOME") {
 			totalIncome += t.amount;
-			incomeCategories[t.category] =
-				(incomeCategories[t.category] || 0) + t.amount;
+			incomeCategories[t.category] = (incomeCategories[t.category] || 0) + t.amount;
 		} else {
 			totalExpense += t.amount;
-			expenseCategories[t.category] =
-				(expenseCategories[t.category] || 0) + t.amount;
+			expenseCategories[t.category] = (expenseCategories[t.category] || 0) + t.amount;
 		}
 	}
 
 	const netBalance = totalIncome - totalExpense;
 	const savingsRate =
-		totalIncome > 0
-			? Math.max(0, Math.round((netBalance / totalIncome) * 100))
-			: 0;
+		totalIncome > 0 ? Math.max(0, Math.round((netBalance / totalIncome) * 100)) : 0;
 
 	const timeline: Array<{
 		label: string;
@@ -190,10 +180,10 @@ export async function calculateFinanceAnalytics(
 			"Nov",
 			"Dec",
 		];
-		const monthMap: Array<{ income: number; expense: number }> = Array.from(
-			{ length: 12 },
-			() => ({ income: 0, expense: 0 }),
-		);
+		const monthMap: Array<{ income: number; expense: number }> = Array.from({ length: 12 }, () => ({
+			income: 0,
+			expense: 0,
+		}));
 
 		for (const t of transactions) {
 			const d = t.date instanceof Date ? t.date : new Date(t.date);
@@ -223,8 +213,7 @@ export async function calculateFinanceAnalytics(
 		.map(([category, amount]) => ({
 			category,
 			amount,
-			percentage:
-				totalExpense > 0 ? Math.round((amount / totalExpense) * 100) : 0,
+			percentage: totalExpense > 0 ? Math.round((amount / totalExpense) * 100) : 0,
 		}))
 		.sort((a, b) => b.amount - a.amount);
 
@@ -232,8 +221,7 @@ export async function calculateFinanceAnalytics(
 		.map(([category, amount]) => ({
 			category,
 			amount,
-			percentage:
-				totalIncome > 0 ? Math.round((amount / totalIncome) * 100) : 0,
+			percentage: totalIncome > 0 ? Math.round((amount / totalIncome) * 100) : 0,
 		}))
 		.sort((a, b) => b.amount - a.amount);
 

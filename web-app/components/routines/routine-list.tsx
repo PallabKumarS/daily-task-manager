@@ -1,16 +1,7 @@
 "use client";
 
 import confetti from "canvas-confetti";
-import {
-	Bell,
-	Check,
-	Clock,
-	Edit2,
-	Flame,
-	Plus,
-	Sparkles,
-	Trash2,
-} from "lucide-react";
+import { Bell, Check, Clock, Edit2, Flame, Plus, Sparkles, Trash2 } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -47,20 +38,13 @@ const SLOT_LABELS: Record<string, string> = {
 	anytime: "Anytime Habits",
 };
 
-export function RoutineList({
-	routines,
-	onToggle,
-	onEdit,
-	onRefresh,
-	onAddNew,
-}: RoutineListProps) {
+export function RoutineList({ routines, onToggle, onEdit, onRefresh, onAddNew }: RoutineListProps) {
 	const confirm = useConfirm();
 
 	const handleDelete = async (id: string) => {
 		const ok = await confirm({
 			title: "Delete Routine",
-			description:
-				"Are you sure you want to delete this routine? This action cannot be undone.",
+			description: "Are you sure you want to delete this routine? This action cannot be undone.",
 			confirmText: "Delete",
 			variant: "destructive",
 		});
@@ -97,9 +81,7 @@ export function RoutineList({
 
 	const completedCount = routines.filter((r) => r.isCompletedToday).length;
 	const progressPercent =
-		routines.length > 0
-			? Math.round((completedCount / routines.length) * 100)
-			: 0;
+		routines.length > 0 ? Math.round((completedCount / routines.length) * 100) : 0;
 
 	// Group routines by timeSlot
 	const grouped = React.useMemo(() => {
@@ -152,13 +134,10 @@ export function RoutineList({
 					<div>
 						<div className="flex items-center gap-2">
 							<Sparkles className="w-4 h-4 text-emerald-400" />
-							<h3 className="text-base font-bold text-white">
-								Daily Habit Loop Completion
-							</h3>
+							<h3 className="text-base font-bold text-white">Daily Habit Loop Completion</h3>
 						</div>
 						<p className="text-xs text-slate-400 mt-1">
-							{completedCount} of {routines.length} routines completed today (
-							{progressPercent}%)
+							{completedCount} of {routines.length} routines completed today ({progressPercent}%)
 						</p>
 					</div>
 
@@ -174,12 +153,7 @@ export function RoutineList({
 								<span>Clear All</span>
 							</Button>
 						)}
-						<Button
-							variant="emerald"
-							size="sm"
-							onClick={onAddNew}
-							className="gap-1.5"
-						>
+						<Button variant="emerald" size="sm" onClick={onAddNew} className="gap-1.5">
 							<Plus className="w-4 h-4" />
 							<span>Add Routine</span>
 						</Button>
@@ -198,19 +172,12 @@ export function RoutineList({
 			{routines.length === 0 ? (
 				<div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-12 text-center">
 					<Clock className="w-10 h-10 text-slate-600 mx-auto mb-3" />
-					<h4 className="text-sm font-bold text-slate-200">
-						No daily routines established yet
-					</h4>
+					<h4 className="text-sm font-bold text-slate-200">No daily routines established yet</h4>
 					<p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
-						Design daily routines with target time slots, advance alerts, and
-						streak tracking to build compound momentum.
+						Design daily routines with target time slots, advance alerts, and streak tracking to
+						build compound momentum.
 					</p>
-					<Button
-						variant="emerald"
-						size="sm"
-						onClick={onAddNew}
-						className="mt-4 gap-1.5"
-					>
+					<Button variant="emerald" size="sm" onClick={onAddNew} className="mt-4 gap-1.5">
 						<Plus className="w-4 h-4" />
 						<span>Create First Routine</span>
 					</Button>
@@ -224,8 +191,7 @@ export function RoutineList({
 						<div key={slot} className="space-y-3">
 							<div className="flex items-center gap-2 px-1">
 								<span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-									{SLOT_LABELS[slot] ||
-										slot.charAt(0).toUpperCase() + slot.slice(1)}
+									{SLOT_LABELS[slot] || slot.charAt(0).toUpperCase() + slot.slice(1)}
 								</span>
 								<span className="rounded-full bg-slate-800 px-2 py-0.2 text-[10px] text-slate-400">
 									{items.length}
@@ -247,9 +213,7 @@ export function RoutineList({
 												{/* Checkbox button */}
 												<button
 													type="button"
-													onClick={() =>
-														handleCheck(routine.id, routine.isCompletedToday)
-													}
+													onClick={() => handleCheck(routine.id, routine.isCompletedToday)}
 													className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border transition cursor-pointer ${
 														routine.isCompletedToday
 															? "bg-emerald-500 border-emerald-400 text-slate-950"

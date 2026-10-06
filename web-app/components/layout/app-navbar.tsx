@@ -13,7 +13,6 @@ import {
 import Link from "next/link";
 import * as React from "react";
 import { NotificationCenter } from "@/components/layout/notification-center";
-import { useAuth } from "@/components/providers/auth-provider";
 import { formatReadableDate } from "@/lib/date-helpers";
 
 interface AppNavbarProps {
@@ -21,7 +20,6 @@ interface AppNavbarProps {
 }
 
 export function AppNavbar({ onQuickAdd }: AppNavbarProps) {
-	const { user } = useAuth();
 	const [currentDateText, setCurrentDateText] = React.useState("");
 	const [isQuickLogOpen, setIsQuickLogOpen] = React.useState(false);
 	const menuRef = React.useRef<HTMLDivElement>(null);

@@ -42,37 +42,29 @@ export async function createBackupArchive(
 ): Promise<ArchiveExportResult> {
 	const db = prisma || getPrismaClient();
 
-	const [
-		user,
-		tasks,
-		routines,
-		routineLogs,
-		transactions,
-		trackers,
-		trackerLogs,
-		categories,
-	] = await Promise.all([
-		db.user.findUnique({ where: { id: userId } }),
-		db.task.findMany({ where: { userId }, orderBy: { createdAt: "asc" } }),
-		db.routine.findMany({ where: { userId }, orderBy: { createdAt: "asc" } }),
-		db.routineLog.findMany({ where: { userId }, orderBy: { date: "asc" } }),
-		db.transaction.findMany({
-			where: { userId },
-			orderBy: { date: "asc" },
-		}),
-		db.dailyTracker.findMany({
-			where: { userId },
-			orderBy: { createdAt: "asc" },
-		}),
-		db.dailyTrackerLog.findMany({
-			where: { userId },
-			orderBy: { date: "asc" },
-		}),
-		db.categoryOption.findMany({
-			where: { userId },
-			orderBy: { name: "asc" },
-		}),
-	]);
+	const [user, tasks, routines, routineLogs, transactions, trackers, trackerLogs, categories] =
+		await Promise.all([
+			db.user.findUnique({ where: { id: userId } }),
+			db.task.findMany({ where: { userId }, orderBy: { createdAt: "asc" } }),
+			db.routine.findMany({ where: { userId }, orderBy: { createdAt: "asc" } }),
+			db.routineLog.findMany({ where: { userId }, orderBy: { date: "asc" } }),
+			db.transaction.findMany({
+				where: { userId },
+				orderBy: { date: "asc" },
+			}),
+			db.dailyTracker.findMany({
+				where: { userId },
+				orderBy: { createdAt: "asc" },
+			}),
+			db.dailyTrackerLog.findMany({
+				where: { userId },
+				orderBy: { date: "asc" },
+			}),
+			db.categoryOption.findMany({
+				where: { userId },
+				orderBy: { name: "asc" },
+			}),
+		]);
 
 	const files: Record<string, string> = {
 		"user.json": JSON.stringify(

@@ -7,19 +7,14 @@ import { CategoryBreakdown } from "@/components/finances/category-breakdown";
 import { CumulativeChart } from "@/components/finances/cumulative-chart";
 import { FinanceSummaryCards } from "@/components/finances/finance-summary-cards";
 import { TransactionFormModal } from "@/components/finances/transaction-form-modal";
-import {
-	type TransactionItem,
-	TransactionList,
-} from "@/components/finances/transaction-list";
+import { type TransactionItem, TransactionList } from "@/components/finances/transaction-list";
 import { useAuth } from "@/components/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api-client";
 
 export default function FinancesPage() {
 	const { user } = useAuth();
-	const [period, setPeriod] = React.useState<"week" | "month" | "year">(
-		"month",
-	);
+	const [period, setPeriod] = React.useState<"week" | "month" | "year">("month");
 	const [currentDate, setCurrentDate] = React.useState(new Date());
 
 	const [analytics, setAnalytics] = React.useState<{
@@ -57,8 +52,7 @@ export default function FinancesPage() {
 	const [transactions, setTransactions] = React.useState<TransactionItem[]>([]);
 	const [loading, setLoading] = React.useState(true);
 	const [modalOpen, setModalOpen] = React.useState(false);
-	const [editingTransaction, setEditingTransaction] =
-		React.useState<TransactionItem | null>(null);
+	const [editingTransaction, setEditingTransaction] = React.useState<TransactionItem | null>(null);
 	const [categoryManagerOpen, setCategoryManagerOpen] = React.useState(false);
 
 	const fetchData = React.useCallback(async () => {
@@ -79,11 +73,7 @@ export default function FinancesPage() {
 				setAnalytics(analyticsRes.value.data);
 			}
 
-			if (
-				transRes.status === "fulfilled" &&
-				transRes.value.success &&
-				transRes.value.data
-			) {
+			if (transRes.status === "fulfilled" && transRes.value.success && transRes.value.data) {
 				setTransactions(transRes.value.data);
 			}
 		} catch {
@@ -101,10 +91,7 @@ export default function FinancesPage() {
 		window.addEventListener("daypulse:categories-updated", onGlobalRefresh);
 		return () => {
 			window.removeEventListener("daypulse:refresh", onGlobalRefresh);
-			window.removeEventListener(
-				"daypulse:categories-updated",
-				onGlobalRefresh,
-			);
+			window.removeEventListener("daypulse:categories-updated", onGlobalRefresh);
 		};
 	}, [fetchData]);
 
@@ -176,8 +163,8 @@ export default function FinancesPage() {
 						Daily Spendings & Earnings
 					</h1>
 					<p className="text-xs text-slate-400 mt-1">
-						Maintain daily ledger records with automated cumulative balances
-						across weeks, months, and years.
+						Maintain daily ledger records with automated cumulative balances across weeks, months,
+						and years.
 					</p>
 				</div>
 
@@ -192,12 +179,7 @@ export default function FinancesPage() {
 						<span>Categories</span>
 					</Button>
 
-					<Button
-						variant="emerald"
-						size="sm"
-						onClick={handleAddNew}
-						className="gap-1.5"
-					>
+					<Button variant="emerald" size="sm" onClick={handleAddNew} className="gap-1.5">
 						<Plus className="w-4 h-4" />
 						<span>Record Transaction</span>
 					</Button>
@@ -285,10 +267,7 @@ export default function FinancesPage() {
 			/>
 
 			{/* Cumulative Trajectory Chart */}
-			<CumulativeChart
-				timeline={analytics.timeline}
-				currency={user?.currency || "USD"}
-			/>
+			<CumulativeChart timeline={analytics.timeline} currency={user?.currency || "USD"} />
 
 			{/* Category Breakdown & Itemized History */}
 			<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

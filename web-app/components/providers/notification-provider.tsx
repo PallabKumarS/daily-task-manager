@@ -40,24 +40,15 @@ interface NotificationContextType {
 	}) => void;
 }
 
-const NotificationContext = React.createContext<
-	NotificationContextType | undefined
->(undefined);
+const NotificationContext = React.createContext<NotificationContextType | undefined>(undefined);
 
 const STORAGE_KEY = "daypulse_notifications_history";
 const SOUND_KEY = "daypulse_sound_enabled";
 
-export function NotificationProvider({
-	children,
-}: {
-	children: React.ReactNode;
-}) {
-	const [notifications, setNotifications] = React.useState<AppNotification[]>(
-		[],
-	);
+export function NotificationProvider({ children }: { children: React.ReactNode }) {
+	const [notifications, setNotifications] = React.useState<AppNotification[]>([]);
 	const [soundEnabled, setSoundEnabled] = React.useState(true);
-	const [permission, setPermission] =
-		React.useState<NotificationPermission>("default");
+	const [permission, setPermission] = React.useState<NotificationPermission>("default");
 	const notifiedIdsRef = React.useRef<Set<string>>(new Set());
 
 	React.useEffect(() => {
@@ -100,9 +91,7 @@ export function NotificationProvider({
 			message: string;
 			type?: "task" | "event" | "routine" | "system";
 		}) => {
-			const alertId =
-				id ||
-				`alert_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+			const alertId = id || `alert_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
 			if (notifiedIdsRef.current.has(alertId)) {
 				return;
@@ -169,14 +158,8 @@ export function NotificationProvider({
 			});
 		};
 
-		const handleSyncUpdate = (data: {
-			entityType: string;
-			action: string;
-			data: unknown;
-		}) => {
-			window.dispatchEvent(
-				new CustomEvent("daypulse:refresh", { detail: data }),
-			);
+		const handleSyncUpdate = (data: { entityType: string; action: string; data: unknown }) => {
+			window.dispatchEvent(new CustomEvent("daypulse:refresh", { detail: data }));
 		};
 
 		socket.on("notification:alarm", handleServerAlarm);
@@ -195,8 +178,7 @@ export function NotificationProvider({
 			toast.success("Desktop notifications enabled");
 			triggerNotification({
 				title: "Notifications Activated",
-				message:
-					"DayPulse will alert you ahead of your routines, tasks, and events.",
+				message: "DayPulse will alert you ahead of your routines, tasks, and events.",
 				type: "system",
 			});
 		} else {
@@ -225,9 +207,7 @@ export function NotificationProvider({
 
 	const markAsRead = React.useCallback(
 		(id: string) => {
-			const updated = notifications.map((n) =>
-				n.id === id ? { ...n, read: true } : n,
-			);
+			const updated = notifications.map((n) => (n.id === id ? { ...n, read: true } : n));
 			saveNotifications(updated);
 		},
 		[notifications, saveNotifications],
@@ -283,11 +263,7 @@ export function NotificationProvider({
 				if (tasksRes?.success && Array.isArray(tasksRes.data)) {
 					const now = Date.now();
 					for (const task of tasksRes.data) {
-						if (
-							task.status === "COMPLETED" ||
-							task.status === "CANCELLED" ||
-							!task.dueDate
-						) {
+						if (task.status === "COMPLETED" || task.status === "CANCELLED" || !task.dueDate) {
 							continue;
 						}
 
@@ -301,9 +277,7 @@ export function NotificationProvider({
 								notifiedIdsRef.current.add(uniqueKey);
 								const isEvent = task.type === "EVENT";
 								const leadDesc =
-									task.remindBeforeMinutes > 0
-										? `in ${task.remindBeforeMinutes} minutes`
-										: "now";
+									task.remindBeforeMinutes > 0 ? `in ${task.remindBeforeMinutes} minutes` : "now";
 
 								triggerNotification({
 									id: uniqueKey,
@@ -402,19 +376,13 @@ export function NotificationProvider({
 		],
 	);
 
-	return (
-		<NotificationContext.Provider value={value}>
-			{children}
-		</NotificationContext.Provider>
-	);
+	return <NotificationContext.Provider value={value}>{children}</NotificationContext.Provider>;
 }
 
 export function useNotifications(): NotificationContextType {
 	const context = React.useContext(NotificationContext);
 	if (!context) {
-		throw new Error(
-			"useNotifications must be used within a NotificationProvider",
-		);
+		throw new Error("useNotifications must be used within a NotificationProvider");
 	}
 	return context;
 }

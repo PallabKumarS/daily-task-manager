@@ -2,7 +2,6 @@
 
 import { Activity } from "lucide-react";
 import Link from "next/link";
-import * as React from "react";
 
 export function LandingFooter() {
 	return (
@@ -14,9 +13,7 @@ export function LandingFooter() {
 					</div>
 					<div>
 						<span className="text-sm font-bold text-white">DayPulse</span>
-						<p className="text-[11px] text-slate-500">
-							Daily Activity Flow & Wealth Mastery
-						</p>
+						<p className="text-[11px] text-slate-500">Daily Activity Flow & Wealth Mastery</p>
 					</div>
 				</div>
 
@@ -39,8 +36,7 @@ export function LandingFooter() {
 				</div>
 
 				<p className="text-xs text-slate-500">
-					© {new Date().getFullYear()} DayPulse. Engineered for cross-device
-					productivity.
+					© {new Date().getFullYear()} DayPulse. Engineered for cross-device productivity.
 				</p>
 			</div>
 		</footer>

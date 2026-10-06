@@ -62,32 +62,16 @@ export function DashboardView({
 				api.get<DailyTrackerItem[]>("/trackers"),
 			]);
 
-			if (
-				rRes.status === "fulfilled" &&
-				rRes.value.success &&
-				rRes.value.data
-			) {
+			if (rRes.status === "fulfilled" && rRes.value.success && rRes.value.data) {
 				setRoutines(rRes.value.data);
 			}
-			if (
-				tRes.status === "fulfilled" &&
-				tRes.value.success &&
-				tRes.value.data
-			) {
+			if (tRes.status === "fulfilled" && tRes.value.success && tRes.value.data) {
 				setTasks(tRes.value.data);
 			}
-			if (
-				trRes.status === "fulfilled" &&
-				trRes.value.success &&
-				trRes.value.data
-			) {
+			if (trRes.status === "fulfilled" && trRes.value.success && trRes.value.data) {
 				setTransactions(trRes.value.data);
 			}
-			if (
-				trkRes.status === "fulfilled" &&
-				trkRes.value.success &&
-				trkRes.value.data
-			) {
+			if (trkRes.status === "fulfilled" && trkRes.value.success && trkRes.value.data) {
 				setTrackers(trkRes.value.data);
 			}
 		} catch {
@@ -214,10 +198,7 @@ export function DashboardView({
 	};
 
 	// Routine handlers
-	const handleToggleRoutine = async (
-		id: string,
-		currentlyCompleted: boolean,
-	) => {
+	const handleToggleRoutine = async (id: string, currentlyCompleted: boolean) => {
 		if (!currentlyCompleted) {
 			try {
 				confetti({
@@ -237,9 +218,7 @@ export function DashboardView({
 					? {
 							...r,
 							isCompletedToday: !currentlyCompleted,
-							streakCount: currentlyCompleted
-								? Math.max(0, r.streakCount - 1)
-								: r.streakCount + 1,
+							streakCount: currentlyCompleted ? Math.max(0, r.streakCount - 1) : r.streakCount + 1,
 						}
 					: r,
 			),
@@ -316,9 +295,7 @@ export function DashboardView({
 		if (task.isRecurring) {
 			setTasks((prev) =>
 				prev.map((t) =>
-					t.id === task.id
-						? { ...t, lastCompletedDate: todayStr, status: "PENDING" }
-						: t,
+					t.id === task.id ? { ...t, lastCompletedDate: todayStr, status: "PENDING" } : t,
 				),
 			);
 
@@ -336,9 +313,7 @@ export function DashboardView({
 
 			setTasks((prev) =>
 				prev.map((t) =>
-					t.id === task.id
-						? { ...t, status: nextStatus as TaskItem["status"] }
-						: t,
+					t.id === task.id ? { ...t, status: nextStatus as TaskItem["status"] } : t,
 				),
 			);
 
@@ -444,9 +419,7 @@ export function DashboardView({
 
 	const completedRoutines = routines.filter((r) => r.isCompletedToday).length;
 	const routinePercent =
-		routines.length > 0
-			? Math.round((completedRoutines / routines.length) * 100)
-			: 0;
+		routines.length > 0 ? Math.round((completedRoutines / routines.length) * 100) : 0;
 
 	const todayIncome = transactions
 		.filter((t) => t.type === "INCOME")
@@ -458,9 +431,7 @@ export function DashboardView({
 
 	const todayStr = new Date().toLocaleDateString("en-CA");
 	const pendingTasks = tasks.filter(
-		(t) =>
-			t.status !== "COMPLETED" &&
-			(!t.isRecurring || t.lastCompletedDate !== todayStr),
+		(t) => t.status !== "COMPLETED" && (!t.isRecurring || t.lastCompletedDate !== todayStr),
 	);
 
 	return (
@@ -476,8 +447,8 @@ export function DashboardView({
 						Welcome back, {user?.name || "Friend"}
 					</h2>
 					<p className="text-xs sm:text-sm text-slate-300 mt-2 leading-relaxed">
-						Track daily activities, sustain habit streaks, and keep a clear
-						cumulative pulse over your daily spendings and earnings.
+						Track daily activities, sustain habit streaks, and keep a clear cumulative pulse over
+						your daily spendings and earnings.
 					</p>
 
 					<div className="flex flex-wrap items-center gap-3 mt-5">
@@ -529,9 +500,7 @@ export function DashboardView({
 				<div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5 backdrop-blur-xl flex flex-col justify-between">
 					<div>
 						<div className="flex items-center justify-between text-slate-400">
-							<span className="text-xs font-bold uppercase tracking-wider">
-								Today Routines
-							</span>
+							<span className="text-xs font-bold uppercase tracking-wider">Today Routines</span>
 							<div className="rounded-xl bg-teal-500/10 p-2 text-teal-400 border border-teal-500/20">
 								<CalendarCheck className="w-4 h-4" />
 							</div>
@@ -540,9 +509,7 @@ export function DashboardView({
 							<span className="text-2xl font-black text-white">
 								{completedRoutines}/{routines.length}
 							</span>
-							<span className="text-xs font-semibold text-emerald-400">
-								({routinePercent}%)
-							</span>
+							<span className="text-xs font-semibold text-emerald-400">({routinePercent}%)</span>
 						</div>
 						<div className="mt-3 h-2 w-full rounded-full bg-slate-800 overflow-hidden">
 							<div
@@ -564,22 +531,17 @@ export function DashboardView({
 				<div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5 backdrop-blur-xl flex flex-col justify-between">
 					<div>
 						<div className="flex items-center justify-between text-slate-400">
-							<span className="text-xs font-bold uppercase tracking-wider">
-								Daily Monitors
-							</span>
+							<span className="text-xs font-bold uppercase tracking-wider">Daily Monitors</span>
 							<div className="rounded-xl bg-purple-500/10 p-2 text-purple-400 border border-purple-500/20">
 								<Calculator className="w-4 h-4" />
 							</div>
 						</div>
 						<div className="mt-3 flex items-baseline gap-2">
-							<span className="text-2xl font-black text-white">
-								{trackers.length}
-							</span>
+							<span className="text-2xl font-black text-white">{trackers.length}</span>
 							<span className="text-xs text-slate-400">active monitors</span>
 						</div>
 						<p className="text-[11px] text-slate-400 mt-2">
-							{trackers.reduce((s, t) => s + (t.todayValue || 0), 0)} units
-							logged today.
+							{trackers.reduce((s, t) => s + (t.todayValue || 0), 0)} units logged today.
 						</p>
 					</div>
 					<Link
@@ -595,17 +557,13 @@ export function DashboardView({
 				<div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5 backdrop-blur-xl flex flex-col justify-between">
 					<div>
 						<div className="flex items-center justify-between text-slate-400">
-							<span className="text-xs font-bold uppercase tracking-wider">
-								Scheduled Tasks
-							</span>
+							<span className="text-xs font-bold uppercase tracking-wider">Scheduled Tasks</span>
 							<div className="rounded-xl bg-blue-500/10 p-2 text-blue-400 border border-blue-500/20">
 								<CheckSquare className="w-4 h-4" />
 							</div>
 						</div>
 						<div className="mt-3 flex items-baseline gap-2">
-							<span className="text-2xl font-black text-white">
-								{pendingTasks.length}
-							</span>
+							<span className="text-2xl font-black text-white">{pendingTasks.length}</span>
 							<span className="text-xs text-slate-400">pending actions</span>
 						</div>
 						<p className="text-[11px] text-slate-400 mt-2">
@@ -625,9 +583,7 @@ export function DashboardView({
 				<div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5 backdrop-blur-xl flex flex-col justify-between">
 					<div>
 						<div className="flex items-center justify-between text-slate-400">
-							<span className="text-xs font-bold uppercase tracking-wider">
-								Recent Cashflow
-							</span>
+							<span className="text-xs font-bold uppercase tracking-wider">Recent Cashflow</span>
 							<div className="rounded-xl bg-emerald-500/10 p-2 text-emerald-400 border border-emerald-500/20">
 								<TrendingUp className="w-4 h-4" />
 							</div>
@@ -716,12 +672,7 @@ export function DashboardView({
 										<div className="flex items-center gap-3 min-w-0">
 											<button
 												type="button"
-												onClick={() =>
-													handleToggleRoutine(
-														routine.id,
-														routine.isCompletedToday,
-													)
-												}
+												onClick={() => handleToggleRoutine(routine.id, routine.isCompletedToday)}
 												className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition cursor-pointer ${
 													routine.isCompletedToday
 														? "bg-emerald-500 border-emerald-400 text-slate-950"
@@ -742,9 +693,7 @@ export function DashboardView({
 												</p>
 												<p className="text-[10px] text-slate-400 flex items-center gap-1.5 mt-0.5">
 													<span className="capitalize">{routine.timeSlot}</span>
-													{routine.targetTime && (
-														<span>• {routine.targetTime}</span>
-													)}
+													{routine.targetTime && <span>• {routine.targetTime}</span>}
 												</p>
 											</div>
 										</div>
@@ -768,9 +717,7 @@ export function DashboardView({
 												</button>
 												<button
 													type="button"
-													onClick={() =>
-														handleDeleteRoutine(routine.id, routine.title)
-													}
+													onClick={() => handleDeleteRoutine(routine.id, routine.title)}
 													className="p-1 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer"
 													title="Delete Routine"
 												>
@@ -843,13 +790,9 @@ export function DashboardView({
 							) : (
 								trackers.map((t) => {
 									const currentVal = t.todayLog ? t.todayLog.value : 0;
-									const isCancelled =
-										t.todayLog?.status === "CANCELLED" && currentVal === 0;
-									const hasUnitPrice =
-										typeof t.unitPrice === "number" && t.unitPrice > 0;
-									const costToday = hasUnitPrice
-										? currentVal * (t.unitPrice || 0)
-										: 0;
+									const isCancelled = t.todayLog?.status === "CANCELLED" && currentVal === 0;
+									const hasUnitPrice = typeof t.unitPrice === "number" && t.unitPrice > 0;
+									const costToday = hasUnitPrice ? currentVal * (t.unitPrice || 0) : 0;
 
 									return (
 										<div
@@ -858,9 +801,7 @@ export function DashboardView({
 										>
 											<div className="min-w-0 pr-2">
 												<div className="flex items-center gap-1.5">
-													<p className="text-xs font-semibold text-slate-100 truncate">
-														{t.name}
-													</p>
+													<p className="text-xs font-semibold text-slate-100 truncate">{t.name}</p>
 													{isCancelled && (
 														<span className="text-[9px] font-bold text-rose-400 bg-rose-500/10 px-1.5 py-0.2 rounded border border-rose-500/20">
 															Cancelled
@@ -911,11 +852,7 @@ export function DashboardView({
 													<button
 														type="button"
 														onClick={() => handleCancelTrackerToday(t.id)}
-														title={
-															isCancelled
-																? "Restore normal count"
-																: "Cancel for today"
-														}
+														title={isCancelled ? "Restore normal count" : "Cancel for today"}
 														className={`h-6 w-6 rounded-lg flex items-center justify-center transition cursor-pointer ${
 															isCancelled
 																? "bg-rose-500/20 text-rose-300 border border-rose-500/40"
@@ -1123,13 +1060,10 @@ export function DashboardView({
 							) : (
 								transactions.slice(0, 8).map((tx) => {
 									const isIncome = tx.type === "INCOME";
-									const dateStr = new Date(tx.date).toLocaleDateString(
-										"en-US",
-										{
-											month: "short",
-											day: "numeric",
-										},
-									);
+									const dateStr = new Date(tx.date).toLocaleDateString("en-US", {
+										month: "short",
+										day: "numeric",
+									});
 
 									return (
 										<div
@@ -1182,10 +1116,7 @@ export function DashboardView({
 													<button
 														type="button"
 														onClick={() =>
-															handleDeleteTransaction(
-																tx.id,
-																tx.description || tx.category,
-															)
+															handleDeleteTransaction(tx.id, tx.description || tx.category)
 														}
 														className="p-1 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer"
 														title="Delete Transaction"

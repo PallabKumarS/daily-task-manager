@@ -81,18 +81,14 @@ export function initAudioPlayer(): void {
 		},
 	});
 
-	audioWindow.loadURL(
-		`data:text/html;charset=utf-8,${encodeURIComponent(audioHtml)}`,
-	);
+	audioWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(audioHtml)}`);
 }
 
 export function playAlarmSound(): void {
 	if (!audioWindow || audioWindow.isDestroyed()) {
 		initAudioPlayer();
 	}
-	audioWindow?.webContents
-		.executeJavaScript("window.playChime();")
-		.catch(() => {});
+	audioWindow?.webContents.executeJavaScript("window.playChime();").catch(() => {});
 }
 
 export function destroyAudioPlayer(): void {

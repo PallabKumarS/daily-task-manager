@@ -30,10 +30,7 @@ interface TrackerCardProps {
 	onOpenSettle: (tracker: DailyTrackerItem) => void;
 }
 
-const COLOR_ACCENTS: Record<
-	string,
-	{ border: string; bg: string; text: string; glow: string }
-> = {
+const COLOR_ACCENTS: Record<string, { border: string; bg: string; text: string; glow: string }> = {
 	emerald: {
 		border: "border-emerald-500/30",
 		bg: "bg-emerald-500/10",
@@ -87,9 +84,7 @@ export function TrackerCard({
 	const [status, setStatus] = React.useState<string>(
 		tracker.todayLog ? tracker.todayLog.status : "UNLOGGED",
 	);
-	const [notes, setNotes] = React.useState<string>(
-		tracker.todayLog?.notes || "",
-	);
+	const [notes, setNotes] = React.useState<string>(tracker.todayLog?.notes || "");
 	const [isEditingNote, setIsEditingNote] = React.useState(false);
 	const [menuOpen, setMenuOpen] = React.useState(false);
 	const [isUpdating, setIsUpdating] = React.useState(false);
@@ -115,8 +110,7 @@ export function TrackerCard({
 		};
 	}, [menuOpen]);
 
-	const colorStyle =
-		COLOR_ACCENTS[tracker.color || "emerald"] || COLOR_ACCENTS.emerald;
+	const colorStyle = COLOR_ACCENTS[tracker.color || "emerald"] || COLOR_ACCENTS.emerald;
 
 	const handleUpdateCount = async (
 		newValue: number,
@@ -156,11 +150,7 @@ export function TrackerCard({
 
 	const handleSaveNote = async () => {
 		setIsEditingNote(false);
-		await handleUpdateCount(
-			currentValue,
-			status as "LOGGED" | "CANCELLED" | "SKIPPED",
-			notes,
-		);
+		await handleUpdateCount(currentValue, status as "LOGGED" | "CANCELLED" | "SKIPPED", notes);
 		toast.success("Note saved");
 	};
 
@@ -181,8 +171,7 @@ export function TrackerCard({
 		}
 	};
 
-	const hasUnitPrice =
-		typeof tracker.unitPrice === "number" && tracker.unitPrice > 0;
+	const hasUnitPrice = typeof tracker.unitPrice === "number" && tracker.unitPrice > 0;
 	const todayCost = hasUnitPrice ? currentValue * (tracker.unitPrice || 0) : 0;
 	const isSettled = tracker.todayLog?.isSettled ?? false;
 
@@ -210,22 +199,17 @@ export function TrackerCard({
 							</span>
 							{hasUnitPrice ? (
 								<span className="text-[11px] font-medium text-slate-400">
-									{formatCurrency(tracker.unitPrice || 0, tracker.currency)} /{" "}
-									{tracker.unitName}
+									{formatCurrency(tracker.unitPrice || 0, tracker.currency)} / {tracker.unitName}
 								</span>
 							) : (
-								<span className="text-[11px] font-medium text-slate-500">
-									Daily Habit
-								</span>
+								<span className="text-[11px] font-medium text-slate-500">Daily Habit</span>
 							)}
 						</div>
 						<h3 className="mt-1.5 text-lg font-bold text-white tracking-tight truncate">
 							{tracker.name}
 						</h3>
 						{tracker.description && (
-							<p className="mt-0.5 text-xs text-slate-400 line-clamp-1">
-								{tracker.description}
-							</p>
+							<p className="mt-0.5 text-xs text-slate-400 line-clamp-1">{tracker.description}</p>
 						)}
 					</div>
 
@@ -295,9 +279,7 @@ export function TrackerCard({
 				{/* Counter Stepper Section */}
 				<div className="mt-5 rounded-xl bg-slate-950/70 border border-slate-800/80 p-4">
 					<div className="flex items-center justify-between">
-						<span className="text-xs font-medium text-slate-400">
-							Count for Selected Day:
-						</span>
+						<span className="text-xs font-medium text-slate-400">Count for Selected Day:</span>
 						{status === "CANCELLED" && (
 							<span className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded-full border border-rose-500/20">
 								<Ban className="w-3 h-3" />
@@ -455,10 +437,7 @@ export function TrackerCard({
 					<div className="flex items-center justify-between text-xs mb-3">
 						<span className="text-amber-400 font-medium">Unsettled Due:</span>
 						<span className="font-bold text-amber-300">
-							{formatCurrency(
-								tracker.monthStats?.unsettledCost ?? 0,
-								tracker.currency,
-							)}
+							{formatCurrency(tracker.monthStats?.unsettledCost ?? 0, tracker.currency)}
 						</span>
 					</div>
 				)}

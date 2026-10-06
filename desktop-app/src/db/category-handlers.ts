@@ -21,8 +21,7 @@ const normalizeGroup = (value: unknown): string =>
 		.trim()
 		.toUpperCase();
 
-const normalizeName = (value: unknown): string =>
-	typeof value === "string" ? value.trim() : "";
+const normalizeName = (value: unknown): string => (typeof value === "string" ? value.trim() : "");
 
 const normalizeColor = (value: unknown): string | null | undefined => {
 	if (value === undefined) return undefined;
@@ -158,13 +157,7 @@ async function updateCategory(
 				...(color !== undefined ? { color } : {}),
 			},
 		});
-		const count = await cascadeCategoryRename(
-			tx,
-			userId,
-			existing.group,
-			existing.name,
-			nextName,
-		);
+		const count = await cascadeCategoryRename(tx, userId, existing.group, existing.name, nextName);
 		return { category: updated, updatedRecords: count };
 	});
 
@@ -233,13 +226,7 @@ async function renameCategoryByName(
 			});
 		}
 
-		const count = await cascadeCategoryRename(
-			tx,
-			userId,
-			group,
-			oldName,
-			newName,
-		);
+		const count = await cascadeCategoryRename(tx, userId, group, oldName, newName);
 		return { category: saved, updatedRecords: count };
 	});
 
@@ -273,10 +260,7 @@ async function deleteCategory(
 	};
 }
 
-async function deleteAllCategories(
-	prisma: PrismaClient,
-	userId: string,
-): Promise<IpcApiResponse> {
+async function deleteAllCategories(prisma: PrismaClient, userId: string): Promise<IpcApiResponse> {
 	const result = await prisma.categoryOption.deleteMany({ where: { userId } });
 	return {
 		statusCode: 200,
@@ -301,10 +285,7 @@ export async function handleCategoryRoute(
 		return null;
 	}
 
-	if (
-		pathname === "/categories/rename" &&
-		(method === "POST" || method === "PATCH")
-	) {
+	if (pathname === "/categories/rename" && (method === "POST" || method === "PATCH")) {
 		return renameCategoryByName(prisma, userId, body);
 	}
 

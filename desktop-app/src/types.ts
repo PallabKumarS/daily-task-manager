@@ -12,9 +12,7 @@ export interface ElectronBridgeApi {
 	platform: string;
 	minimizeToTray: () => void;
 	triggerAlarm: (payload: AlarmNotificationPayload) => void;
-	onAlarmReceived: (
-		callback: (payload: AlarmNotificationPayload) => void,
-	) => () => void;
+	onAlarmReceived: (callback: (payload: AlarmNotificationPayload) => void) => () => void;
 	syncNow: () => Promise<boolean>;
 	saveBackupFile?: (
 		defaultName: string,

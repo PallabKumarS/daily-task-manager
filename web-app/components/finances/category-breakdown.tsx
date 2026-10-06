@@ -20,9 +20,7 @@ export function CategoryBreakdown({
 	incomeCategories,
 	currency,
 }: CategoryBreakdownProps) {
-	const [activeTab, setActiveTab] = React.useState<"EXPENSE" | "INCOME">(
-		"EXPENSE",
-	);
+	const [activeTab, setActiveTab] = React.useState<"EXPENSE" | "INCOME">("EXPENSE");
 
 	const list = activeTab === "EXPENSE" ? expenseCategories : incomeCategories;
 
@@ -30,9 +28,7 @@ export function CategoryBreakdown({
 		<div className="rounded-2xl border border-slate-800/80 bg-slate-900/60 p-5 backdrop-blur-xl">
 			<div className="flex items-center justify-between pb-4 border-b border-slate-800">
 				<div>
-					<h4 className="text-sm font-bold text-slate-100">
-						Category Distribution
-					</h4>
+					<h4 className="text-sm font-bold text-slate-100">Category Distribution</h4>
 					<p className="text-xs text-slate-400">Where your funds flow</p>
 				</div>
 
@@ -71,9 +67,7 @@ export function CategoryBreakdown({
 					list.map((item) => (
 						<div key={item.category} className="space-y-1.5">
 							<div className="flex items-center justify-between text-xs">
-								<span className="font-medium text-slate-300">
-									{item.category}
-								</span>
+								<span className="font-medium text-slate-300">{item.category}</span>
 								<div className="flex items-center gap-2">
 									<span className="font-semibold text-slate-100">
 										{formatCurrency(item.amount, currency)}

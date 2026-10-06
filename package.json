@@ -1,25 +1,25 @@
 {
-  "name": "daily-task-tracker-workspace",
-  "version": "1.0.0",
-  "private": true,
-  "workspaces": [
-    "server",
-    "web-app",
-    "desktop-app",
-    "android-app"
-  ],
-  "scripts": {
-    "dev:server": "npm run dev --workspace=server",
-    "dev:web": "npm run dev --workspace=web-app",
-    "dev:desktop": "npm run dev --workspace=desktop-app",
-    "build:server": "npm run build --workspace=server",
-    "build:web": "npm run build --workspace=web-app",
-    "build:desktop": "npm run build --workspace=desktop-app",
-    "build:android": "npm run build --workspace=android-app",
-    "build": "npm run build --workspaces",
-    "db:push": "npm run db:push --workspace=server",
-    "db:generate": "npm run db:generate --workspace=server",
-    "oracle:check": "npm run check-env --prefix oracle-vm-launcher",
-    "oracle:launch": "npm run start --prefix oracle-vm-launcher"
-  }
+	"name": "daily-task-tracker-workspace",
+	"version": "1.0.0",
+	"private": true,
+	"workspaces": [
+		"server",
+		"web-app",
+		"desktop-app",
+		"android-app"
+	],
+	"scripts": {
+		"dev:server": "npm run dev --workspace=server",
+		"dev:web": "npm run dev --workspace=web-app",
+		"dev:desktop": "npm run dev --workspace=desktop-app",
+		"build:server": "npm run build --workspace=server",
+		"build:web": "npm run build --workspace=web-app",
+		"build:desktop": "npm run build --workspace=desktop-app",
+		"build:android": "npm run build --workspace=android-app",
+		"build": "npm run build --workspaces",
+		"db:push": "npm run db:push --workspace=server",
+		"db:generate": "npm run db:generate --workspace=server",
+		"oracle:check": "npm run check-env --prefix oracle-vm-launcher",
+		"oracle:launch": "npm run start --prefix oracle-vm-launcher"
+	}
 }

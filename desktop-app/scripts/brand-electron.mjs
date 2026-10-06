@@ -13,19 +13,15 @@ if (process.platform === "win32") {
 	];
 
 	const rceditCandidates = [
-		path.resolve(
-			__dirname,
-			"../../node_modules/electron-winstaller/vendor/rcedit.exe",
-		),
-		path.resolve(
-			__dirname,
-			"../node_modules/electron-winstaller/vendor/rcedit.exe",
-		),
+		path.resolve(__dirname, "../../node_modules/electron-winstaller/vendor/rcedit.exe"),
+		path.resolve(__dirname, "../node_modules/electron-winstaller/vendor/rcedit.exe"),
 	];
 
 	const iconCandidates = [
-		path.resolve(__dirname, "../assets/favicon.ico"),
+		path.resolve(__dirname, "../dist/assets/daypulse.ico"),
 		path.resolve(__dirname, "../assets/daypulse.ico"),
+		path.resolve(__dirname, "../dist/assets/favicon.ico"),
+		path.resolve(__dirname, "../assets/favicon.ico"),
 	];
 
 	const electronExe = electronExeCandidates.find((p) => fs.existsSync(p));

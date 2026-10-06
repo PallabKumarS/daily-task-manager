@@ -16,11 +16,7 @@ import { Modal } from "@/components/ui/dialog";
 import { api } from "@/lib/api-client";
 import { formatCurrency } from "@/lib/currency-symbols";
 import { cn } from "@/lib/utils";
-import type {
-	DailyTrackerItem,
-	TrackerDayDetail,
-	TrackerDetailResponse,
-} from "./tracker-types";
+import type { DailyTrackerItem, TrackerDayDetail, TrackerDetailResponse } from "./tracker-types";
 
 interface TrackerDetailModalProps {
 	isOpen: boolean;
@@ -52,18 +48,11 @@ export function TrackerDetailModal({
 	onOpenSettle,
 	onRefreshParent,
 }: TrackerDetailModalProps) {
-	const [selectedYear, setSelectedYear] = React.useState<number>(
-		new Date().getFullYear(),
-	);
-	const [selectedMonth, setSelectedMonth] = React.useState<number>(
-		new Date().getMonth() + 1,
-	);
-	const [detailData, setDetailData] =
-		React.useState<TrackerDetailResponse | null>(null);
+	const [selectedYear, setSelectedYear] = React.useState<number>(new Date().getFullYear());
+	const [selectedMonth, setSelectedMonth] = React.useState<number>(new Date().getMonth() + 1);
+	const [detailData, setDetailData] = React.useState<TrackerDetailResponse | null>(null);
 	const [loading, setLoading] = React.useState(false);
-	const [editingDayDate, setEditingDayDate] = React.useState<string | null>(
-		null,
-	);
+	const [editingDayDate, setEditingDayDate] = React.useState<string | null>(null);
 	const [editingDayNote, setEditingDayNote] = React.useState<string>("");
 
 	const fetchDetails = React.useCallback(async () => {
@@ -133,9 +122,7 @@ export function TrackerDetailModal({
 		const isCurrentlyCancelled = day.status === "CANCELLED" && day.value === 0;
 		const nextVal = isCurrentlyCancelled ? tracker.defaultTarget : 0;
 		const nextStatus = isCurrentlyCancelled ? "LOGGED" : "CANCELLED";
-		const nextNote = isCurrentlyCancelled
-			? ""
-			: day.notes || "Cancelled with provider";
+		const nextNote = isCurrentlyCancelled ? "" : day.notes || "Cancelled with provider";
 
 		try {
 			await api.post(`/trackers/${tracker.id}/log`, {
@@ -168,8 +155,7 @@ export function TrackerDetailModal({
 		}
 	};
 
-	const hasUnitPrice =
-		typeof tracker.unitPrice === "number" && tracker.unitPrice > 0;
+	const hasUnitPrice = typeof tracker.unitPrice === "number" && tracker.unitPrice > 0;
 	const stats = detailData?.stats;
 
 	return (
@@ -213,40 +199,26 @@ export function TrackerDetailModal({
 				{stats && (
 					<div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
 						<div className="rounded-xl border border-slate-800 bg-slate-950/60 p-3 text-center">
-							<span className="text-[11px] font-medium text-slate-400">
-								Total Consumed
-							</span>
+							<span className="text-[11px] font-medium text-slate-400">Total Consumed</span>
 							<p className="mt-1 text-xl font-extrabold text-white">
 								{stats.totalUnits}{" "}
-								<span className="text-xs font-normal text-slate-400">
-									{tracker.unitName}
-								</span>
+								<span className="text-xs font-normal text-slate-400">{tracker.unitName}</span>
 							</p>
 						</div>
 						<div className="rounded-xl border border-slate-800 bg-slate-950/60 p-3 text-center">
-							<span className="text-[11px] font-medium text-slate-400">
-								Total Bill
-							</span>
+							<span className="text-[11px] font-medium text-slate-400">Total Bill</span>
 							<p className="mt-1 text-xl font-extrabold text-slate-200">
-								{hasUnitPrice
-									? formatCurrency(stats.totalCost, tracker.currency)
-									: "—"}
+								{hasUnitPrice ? formatCurrency(stats.totalCost, tracker.currency) : "—"}
 							</p>
 						</div>
 						<div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 text-center">
-							<span className="text-[11px] font-medium text-amber-400">
-								Unsettled Due
-							</span>
+							<span className="text-[11px] font-medium text-amber-400">Unsettled Due</span>
 							<p className="mt-1 text-xl font-extrabold text-amber-300">
-								{hasUnitPrice
-									? formatCurrency(stats.unsettledCost, tracker.currency)
-									: "—"}
+								{hasUnitPrice ? formatCurrency(stats.unsettledCost, tracker.currency) : "—"}
 							</p>
 						</div>
 						<div className="rounded-xl border border-slate-800 bg-slate-950/60 p-3 text-center">
-							<span className="text-[11px] font-medium text-slate-400">
-								Cancelled Days
-							</span>
+							<span className="text-[11px] font-medium text-slate-400">Cancelled Days</span>
 							<p className="mt-1 text-xl font-extrabold text-rose-400">
 								{stats.cancelledDaysCount}{" "}
 								<span className="text-xs font-normal text-slate-400">days</span>
@@ -264,8 +236,7 @@ export function TrackerDetailModal({
 							</div>
 							<div>
 								<p className="text-sm font-bold text-white">
-									Unsettled Balance:{" "}
-									{formatCurrency(stats.unsettledCost, tracker.currency)}
+									Unsettled Balance: {formatCurrency(stats.unsettledCost, tracker.currency)}
 								</p>
 								<p className="text-xs text-slate-300">
 									{stats.unsettledUnits} unpaid {tracker.unitName} logged for{" "}
@@ -287,9 +258,7 @@ export function TrackerDetailModal({
 				<div className="rounded-xl border border-slate-800 bg-slate-950/80 overflow-hidden">
 					<div className="border-b border-slate-800 bg-slate-900/60 px-4 py-3 text-xs font-bold text-slate-300 grid grid-cols-12 gap-2">
 						<div className="col-span-3 sm:col-span-2">Date</div>
-						<div className="col-span-4 sm:col-span-3 text-center">
-							Count ({tracker.unitName})
-						</div>
+						<div className="col-span-4 sm:col-span-3 text-center">Count ({tracker.unitName})</div>
 						<div className="col-span-3 sm:col-span-2 text-right">Cost</div>
 						<div className="col-span-2 sm:col-span-2 text-center">Status</div>
 						<div className="hidden sm:block sm:col-span-3 text-left">Notes</div>
@@ -297,17 +266,14 @@ export function TrackerDetailModal({
 
 					<div className="max-h-[360px] overflow-y-auto divide-y divide-slate-800/60 text-xs">
 						{loading ? (
-							<div className="p-8 text-center text-slate-400">
-								Loading daily logs...
-							</div>
+							<div className="p-8 text-center text-slate-400">Loading daily logs...</div>
 						) : detailData && detailData.days.length > 0 ? (
 							detailData.days.map((day) => {
 								const dateObj = new Date(`${day.date}T00:00:00`);
 								const weekdayName = dateObj.toLocaleDateString("en-US", {
 									weekday: "short",
 								});
-								const isCancelled =
-									day.status === "CANCELLED" && day.value === 0;
+								const isCancelled = day.status === "CANCELLED" && day.value === 0;
 
 								return (
 									<div
@@ -350,11 +316,7 @@ export function TrackerDetailModal({
 											<button
 												type="button"
 												onClick={() => handleQuickToggleCancel(day)}
-												title={
-													isCancelled
-														? "Restore default count"
-														: "Cancel for this day"
-												}
+												title={isCancelled ? "Restore default count" : "Cancel for this day"}
 												className={cn(
 													"ml-1 p-1 rounded transition cursor-pointer",
 													isCancelled
@@ -432,9 +394,7 @@ export function TrackerDetailModal({
 													className="flex items-center gap-1 text-slate-400 hover:text-slate-200 transition cursor-pointer text-[11px] truncate max-w-full"
 												>
 													<FileText className="w-3 h-3 shrink-0" />
-													<span className="truncate">
-														{day.notes || "Add note..."}
-													</span>
+													<span className="truncate">{day.notes || "Add note..."}</span>
 												</button>
 											)}
 										</div>
@@ -442,9 +402,7 @@ export function TrackerDetailModal({
 								);
 							})
 						) : (
-							<div className="p-8 text-center text-slate-400">
-								No days found for this period.
-							</div>
+							<div className="p-8 text-center text-slate-400">No days found for this period.</div>
 						)}
 					</div>
 				</div>

@@ -1,16 +1,7 @@
 "use client";
 
 import confetti from "canvas-confetti";
-import {
-	Bell,
-	Calendar,
-	Check,
-	Clock,
-	Edit2,
-	Plus,
-	Repeat,
-	Trash2,
-} from "lucide-react";
+import { Bell, Calendar, Check, Clock, Edit2, Plus, Repeat, Trash2 } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -56,12 +47,8 @@ const formatRecurrenceSchedule = (item: TaskItem): string => {
 	if (!item.isRecurring) return "";
 	const freq = item.repeatFrequency || "DAILY";
 	const interval =
-		item.repeatInterval && item.repeatInterval > 1
-			? `Every ${item.repeatInterval} `
-			: "";
-	const time = item.repeatTime
-		? ` at ${item.repeatTime.split(",").join(", ")}`
-		: "";
+		item.repeatInterval && item.repeatInterval > 1 ? `Every ${item.repeatInterval} ` : "";
+	const time = item.repeatTime ? ` at ${item.repeatTime.split(",").join(", ")}` : "";
 
 	if (freq === "DAILY") {
 		if (item.repeatDaysOfWeek && item.repeatDaysOfWeek !== "0,1,2,3,4,5,6") {
@@ -111,20 +98,10 @@ const formatRecurrenceSchedule = (item: TaskItem): string => {
 	return "Recurring";
 };
 
-export function TaskList({
-	tasks,
-	onToggleStatus,
-	onEdit,
-	onRefresh,
-	onAddNew,
-}: TaskListProps) {
+export function TaskList({ tasks, onToggleStatus, onEdit, onRefresh, onAddNew }: TaskListProps) {
 	const confirm = useConfirm();
-	const [filterType, setFilterType] = React.useState<
-		"ALL" | "TASK" | "EVENT" | "RECURRING"
-	>("ALL");
-	const [filterStatus, setFilterStatus] = React.useState<
-		"ALL" | "PENDING" | "COMPLETED"
-	>("ALL");
+	const [filterType, setFilterType] = React.useState<"ALL" | "TASK" | "EVENT" | "RECURRING">("ALL");
+	const [filterStatus, setFilterStatus] = React.useState<"ALL" | "PENDING" | "COMPLETED">("ALL");
 
 	const handleDelete = async (id: string) => {
 		const ok = await confirm({
@@ -148,10 +125,7 @@ export function TaskList({
 		}
 	};
 
-	const todayStr = React.useMemo(
-		() => new Date().toLocaleDateString("en-CA"),
-		[],
-	);
+	const todayStr = React.useMemo(() => new Date().toLocaleDateString("en-CA"), []);
 
 	const handleToggle = async (item: TaskItem) => {
 		const isCurrentlyCompleted = item.isRecurring
@@ -175,16 +149,9 @@ export function TaskList({
 
 	const filtered = tasks.filter((t) => {
 		if (filterType === "RECURRING" && !t.isRecurring) return false;
-		if (
-			filterType !== "ALL" &&
-			filterType !== "RECURRING" &&
-			t.type !== filterType
-		)
-			return false;
+		if (filterType !== "ALL" && filterType !== "RECURRING" && t.type !== filterType) return false;
 
-		const isItemDone = t.isRecurring
-			? t.lastCompletedDate === todayStr
-			: t.status === "COMPLETED";
+		const isItemDone = t.isRecurring ? t.lastCompletedDate === todayStr : t.status === "COMPLETED";
 
 		if (filterStatus === "PENDING" && isItemDone) return false;
 		if (filterStatus === "COMPLETED" && !isItemDone) return false;
@@ -255,9 +222,7 @@ export function TaskList({
 							type="button"
 							onClick={() => setFilterType("ALL")}
 							className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
-								filterType === "ALL"
-									? "bg-slate-800 text-white"
-									: "text-slate-400 hover:text-white"
+								filterType === "ALL" ? "bg-slate-800 text-white" : "text-slate-400 hover:text-white"
 							}`}
 						>
 							All Items
@@ -348,12 +313,7 @@ export function TaskList({
 							<span>Clear All</span>
 						</Button>
 					)}
-					<Button
-						variant="emerald"
-						size="sm"
-						onClick={onAddNew}
-						className="gap-1.5"
-					>
+					<Button variant="emerald" size="sm" onClick={onAddNew} className="gap-1.5">
 						<Plus className="w-4 h-4" />
 						<span>New Item</span>
 					</Button>
@@ -365,19 +325,12 @@ export function TaskList({
 				{filtered.length === 0 ? (
 					<div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-12 text-center">
 						<Calendar className="w-10 h-10 text-slate-600 mx-auto mb-3" />
-						<h4 className="text-sm font-bold text-slate-200">
-							No scheduled tasks or events
-						</h4>
+						<h4 className="text-sm font-bold text-slate-200">No scheduled tasks or events</h4>
 						<p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
-							Plan your day with precision. Add due dates to receive audio
-							chimes and native system reminders.
+							Plan your day with precision. Add due dates to receive audio chimes and native system
+							reminders.
 						</p>
-						<Button
-							variant="emerald"
-							size="sm"
-							onClick={onAddNew}
-							className="mt-4 gap-1.5"
-						>
+						<Button variant="emerald" size="sm" onClick={onAddNew} className="mt-4 gap-1.5">
 							<Plus className="w-4 h-4" />
 							<span>Create Task or Event</span>
 						</Button>
@@ -455,9 +408,7 @@ export function TaskList({
 										</div>
 
 										{item.description && (
-											<p className="text-xs text-slate-400 mt-1 line-clamp-2">
-												{item.description}
-											</p>
+											<p className="text-xs text-slate-400 mt-1 line-clamp-2">{item.description}</p>
 										)}
 
 										<div className="flex flex-wrap items-center gap-3 mt-2.5 text-[11px] text-slate-400">
@@ -471,8 +422,7 @@ export function TaskList({
 												>
 													<Clock className="w-3 h-3" />
 													<span>
-														{dueInfo.text}{" "}
-														{!isCompleted && dueInfo.isOverdue && "(Overdue)"}
+														{dueInfo.text} {!isCompleted && dueInfo.isOverdue && "(Overdue)"}
 													</span>
 												</div>
 											)}

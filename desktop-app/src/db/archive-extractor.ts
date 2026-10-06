@@ -145,23 +145,16 @@ export async function extractArchiveCollections(zip: JSZip): Promise<{
 		}
 	}
 
-	const [
-		tasks,
-		routines,
-		routineLogs,
-		transactions,
-		trackers,
-		trackerLogs,
-		categories,
-	] = await Promise.all([
-		readJsonFromZip<BackupRecord>("tasks.json"),
-		readJsonFromZip<BackupRecord>("routines.json"),
-		readJsonFromZip<BackupRecord>("routine-logs.json"),
-		readJsonFromZip<BackupRecord>("transactions.json"),
-		readJsonFromZip<BackupRecord>("trackers.json"),
-		readJsonFromZip<BackupRecord>("tracker-logs.json"),
-		readJsonFromZip<BackupRecord>("categories.json"),
-	]);
+	const [tasks, routines, routineLogs, transactions, trackers, trackerLogs, categories] =
+		await Promise.all([
+			readJsonFromZip<BackupRecord>("tasks.json"),
+			readJsonFromZip<BackupRecord>("routines.json"),
+			readJsonFromZip<BackupRecord>("routine-logs.json"),
+			readJsonFromZip<BackupRecord>("transactions.json"),
+			readJsonFromZip<BackupRecord>("trackers.json"),
+			readJsonFromZip<BackupRecord>("tracker-logs.json"),
+			readJsonFromZip<BackupRecord>("categories.json"),
+		]);
 
 	return {
 		manifest,
@@ -194,10 +187,7 @@ export async function restoreBackupArchive(
 			fs.copyFileSync(currentDbPath, safetyBackupPath);
 		}
 	} catch (backupErr) {
-		console.warn(
-			"[DayPulse Restore] Pre-restore safety backup notice:",
-			backupErr,
-		);
+		console.warn("[DayPulse Restore] Pre-restore safety backup notice:", backupErr);
 	}
 
 	const zip = await JSZip.loadAsync(buffer);
@@ -213,15 +203,11 @@ export async function restoreBackupArchive(
 		restoredCounts: {
 			tasks: mergeReport.tasks.created + mergeReport.tasks.updated,
 			routines: mergeReport.routines.created + mergeReport.routines.updated,
-			routineLogs:
-				mergeReport.routineLogs.created + mergeReport.routineLogs.updated,
-			transactions:
-				mergeReport.transactions.created + mergeReport.transactions.updated,
+			routineLogs: mergeReport.routineLogs.created + mergeReport.routineLogs.updated,
+			transactions: mergeReport.transactions.created + mergeReport.transactions.updated,
 			trackers: mergeReport.trackers.created + mergeReport.trackers.updated,
-			trackerLogs:
-				mergeReport.trackerLogs.created + mergeReport.trackerLogs.updated,
-			categories:
-				mergeReport.categories.created + mergeReport.categories.updated,
+			trackerLogs: mergeReport.trackerLogs.created + mergeReport.trackerLogs.updated,
+			categories: mergeReport.categories.created + mergeReport.categories.updated,
 		},
 		mergeReport,
 		summary,
