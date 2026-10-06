@@ -1681,13 +1681,31 @@ export async function handleIpcApiDispatch(
 					Array.isArray(backup.categories));
 
 			if (!hasBackupPayload || pathname === "/sync/google/restore") {
-				const result = await executeGoogleSyncRestore(prisma, userId);
-				return {
-					statusCode: 200,
-					success: true,
-					message: result.message,
-					data: null,
-				};
+				try {
+					const result = await executeGoogleSyncRestore(prisma, userId);
+					return {
+						statusCode: 200,
+						success: true,
+						message: result.message,
+						data: null,
+					};
+				} catch (err: unknown) {
+					const msg = err instanceof Error ? err.message : String(err);
+					const isAuth =
+						msg.includes("expired") ||
+						msg.includes("401") ||
+						msg.includes("reconnect") ||
+						msg.includes("invalid_client") ||
+						msg.includes("invalid_grant");
+					return {
+						statusCode: isAuth ? 401 : 500,
+						success: false,
+						message: isAuth
+							? "Google Drive session has expired. Please reconnect your Google account in Settings."
+							: msg,
+						data: null,
+					};
+				}
 			}
 
 			if (!backup || typeof backup !== "object") {
@@ -1888,13 +1906,31 @@ export async function handleIpcApiDispatch(
 		}
 
 		if (pathname === "/sync/upload" && method === "POST") {
-			const result = await executeGoogleSyncUpload(prisma, userId);
-			return {
-				statusCode: 200,
-				success: true,
-				message: result.message,
-				data: { lastSyncAt: result.lastSyncAt },
-			};
+			try {
+				const result = await executeGoogleSyncUpload(prisma, userId);
+				return {
+					statusCode: 200,
+					success: true,
+					message: result.message,
+					data: { lastSyncAt: result.lastSyncAt },
+				};
+			} catch (err: unknown) {
+				const msg = err instanceof Error ? err.message : String(err);
+				const isAuth =
+					msg.includes("expired") ||
+					msg.includes("401") ||
+					msg.includes("reconnect") ||
+					msg.includes("invalid_client") ||
+					msg.includes("invalid_grant");
+				return {
+					statusCode: isAuth ? 401 : 500,
+					success: false,
+					message: isAuth
+						? "Google Drive session has expired. Please reconnect your Google account in Settings."
+						: msg,
+					data: null,
+				};
+			}
 		}
 
 		if (pathname === "/sync/disconnect" && method === "POST") {

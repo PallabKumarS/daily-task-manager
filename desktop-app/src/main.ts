@@ -1,3 +1,4 @@
+import { execSync } from "node:child_process";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import {
@@ -11,7 +12,10 @@ import {
 } from "electron";
 import { triggerDesktopAlarm } from "./alarm-manager.js";
 import { destroyAudioPlayer, initAudioPlayer } from "./audio-player.js";
-import { executeGoogleSyncUpload } from "./db/google-sync.js";
+import {
+	executeGoogleSyncUpload,
+	stopGoogleOAuthLoopbackServer,
+} from "./db/google-sync.js";
 import {
 	handleIpcApiDispatch,
 	type IpcApiRequest,
@@ -45,12 +49,33 @@ function getWindowIconPath(): string {
 	const candidates = [
 		path.resolve(__dirname, "../assets/favicon.ico"),
 		path.resolve(__dirname, "../../assets/favicon.ico"),
+		path.resolve(process.cwd(), "desktop-app", "assets", "favicon.ico"),
 		path.resolve(process.cwd(), "assets", "favicon.ico"),
 		path.resolve(process.cwd(), "..", "assets", "favicon.ico"),
 		path.resolve(__dirname, "../assets/logo.png"),
 		path.resolve(__dirname, "../../assets/logo.png"),
+		path.resolve(process.cwd(), "desktop-app", "assets", "logo.png"),
 		path.resolve(process.cwd(), "assets", "logo.png"),
 		path.resolve(process.cwd(), "..", "assets", "logo.png"),
+	];
+
+	for (const candidate of candidates) {
+		if (fs.existsSync(candidate)) return candidate;
+	}
+	return "";
+}
+
+function getNotificationIconPath(): string {
+	const candidates = [
+		path.resolve(__dirname, "../assets/logo.png"),
+		path.resolve(__dirname, "../../assets/logo.png"),
+		path.resolve(process.cwd(), "desktop-app", "assets", "logo.png"),
+		path.resolve(process.cwd(), "assets", "logo.png"),
+		path.resolve(process.cwd(), "..", "assets", "logo.png"),
+		path.resolve(__dirname, "../assets/favicon.ico"),
+		path.resolve(__dirname, "../../assets/favicon.ico"),
+		path.resolve(process.cwd(), "desktop-app", "assets", "favicon.ico"),
+		path.resolve(process.cwd(), "assets", "favicon.ico"),
 	];
 
 	for (const candidate of candidates) {
@@ -76,6 +101,42 @@ function getWindowIcon(): NativeImage {
 if (process.platform === "win32") {
 	const appId = "com.daypulse.tracker";
 	app.setAppUserModelId(appId);
+
+	try {
+		const classesAumidKey = `HKCU\\Software\\Classes\\AppUserModelId\\${appId}`;
+		const notifIcon = getNotificationIconPath();
+		execSync(
+			`reg add "${classesAumidKey}" /v DisplayName /t REG_SZ /d "DayPulse" /f`,
+			{ stdio: "ignore" },
+		);
+		if (notifIcon) {
+			execSync(
+				`reg add "${classesAumidKey}" /v IconUri /t REG_SZ /d "${notifIcon}" /f`,
+				{ stdio: "ignore" },
+			);
+		}
+	} catch {
+		// Silent fallback if classes registry edit fails
+	}
+
+	try {
+		const regKey = `HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Notifications\\Settings\\${appId}`;
+		const notifIcon = getNotificationIconPath();
+		execSync(`reg add "${regKey}" /v DisplayName /t REG_SZ /d "DayPulse" /f`, {
+			stdio: "ignore",
+		});
+		if (notifIcon) {
+			execSync(
+				`reg add "${regKey}" /v IconUri /t REG_SZ /d "${notifIcon}" /f`,
+				{ stdio: "ignore" },
+			);
+		}
+		execSync(`reg add "${regKey}" /v ShowInActionCenter /t REG_DWORD /d 1 /f`, {
+			stdio: "ignore",
+		});
+	} catch {
+		// Silent fallback if registry edit fails
+	}
 
 	try {
 		const programsDir = path.join(
@@ -120,6 +181,10 @@ app.on("second-instance", () => {
 
 async function createMainWindow(): Promise<BrowserWindow> {
 	const iconPath = getWindowIconPath();
+	const windowIcon = iconPath
+		? nativeImage.createFromPath(iconPath)
+		: getWindowIcon();
+
 	mainWindow = new BrowserWindow({
 		width: 1280,
 		height: 850,
@@ -127,7 +192,7 @@ async function createMainWindow(): Promise<BrowserWindow> {
 		minHeight: 640,
 		show: false,
 		title: "DayPulse",
-		icon: iconPath || getWindowIcon(),
+		icon: iconPath || (!windowIcon.isEmpty() ? windowIcon : undefined),
 		backgroundColor: "#09090b",
 		autoHideMenuBar: true,
 		webPreferences: {
@@ -138,11 +203,21 @@ async function createMainWindow(): Promise<BrowserWindow> {
 		},
 	});
 
+	if (iconPath) {
+		mainWindow.setIcon(iconPath);
+	} else if (!windowIcon.isEmpty()) {
+		mainWindow.setIcon(windowIcon);
+	}
+
 	mainWindow.on("close", (event) => {
 		if (!isQuitting) {
 			event.preventDefault();
 			mainWindow?.hide();
 		}
+	});
+
+	mainWindow.on("closed", () => {
+		mainWindow = null;
 	});
 
 	if (process.env.NODE_ENV !== "production") {
@@ -226,6 +301,60 @@ async function createMainWindow(): Promise<BrowserWindow> {
 	}
 
 	return mainWindow;
+}
+
+let cleanupFinished = false;
+
+async function cleanupAndQuit(): Promise<void> {
+	if (cleanupFinished) return;
+	cleanupFinished = true;
+	isQuitting = true;
+
+	try {
+		stopGoogleOAuthLoopbackServer();
+	} catch (err) {
+		console.warn("[DayPulse Desktop] OAuth shutdown notice:", err);
+	}
+
+	try {
+		stopLocalScheduler();
+	} catch (err) {
+		console.warn("[DayPulse Desktop] Scheduler shutdown notice:", err);
+	}
+
+	try {
+		destroyAudioPlayer();
+	} catch (err) {
+		console.warn("[DayPulse Desktop] Audio player shutdown notice:", err);
+	}
+
+	try {
+		destroyTray();
+	} catch (err) {
+		console.warn("[DayPulse Desktop] Tray shutdown notice:", err);
+	}
+
+	try {
+		stopDevServer();
+	} catch (err) {
+		console.warn("[DayPulse Desktop] Dev server shutdown notice:", err);
+	}
+
+	try {
+		await closePrismaDatabase();
+	} catch (err) {
+		console.warn("[DayPulse Desktop] Prisma shutdown notice:", err);
+	}
+
+	if (mainWindow && !mainWindow.isDestroyed()) {
+		mainWindow.destroy();
+		mainWindow = null;
+	}
+
+	app.quit();
+	setTimeout(() => {
+		process.exit(0);
+	}, 1000);
 }
 
 function registerIpcHandlers(): void {
@@ -372,8 +501,7 @@ app.whenReady().then(async () => {
 			}
 		},
 		() => {
-			isQuitting = true;
-			app.quit();
+			cleanupAndQuit();
 		},
 	);
 
@@ -383,7 +511,7 @@ app.whenReady().then(async () => {
 	// 8. Ensure UI development server is running in dev mode
 	const targetUrl = process.env.APP_URL || "http://localhost:3000/dashboard";
 	if (process.env.NODE_ENV !== "production") {
-		await ensureDevServerReady(targetUrl);
+		await ensureDevServerReady();
 	}
 
 	// 9. Load URL with robust retry and splash window transition
@@ -458,26 +586,34 @@ app.whenReady().then(async () => {
 	navigateWithRetry();
 });
 
-app.on("before-quit", async () => {
-	isQuitting = true;
-	stopLocalScheduler();
-	destroyAudioPlayer();
-	destroyTray();
-	stopDevServer();
-	await closePrismaDatabase();
+app.on("before-quit", (event) => {
+	if (!cleanupFinished) {
+		event.preventDefault();
+		cleanupAndQuit().then(() => {
+			app.quit();
+		});
+	}
 });
 
 const handleTerminationSignal = () => {
-	isQuitting = true;
-	stopDevServer();
-	app.quit();
+	cleanupAndQuit().then(() => {
+		process.exit(0);
+	});
 };
 
 process.on("SIGINT", handleTerminationSignal);
 process.on("SIGTERM", handleTerminationSignal);
+process.on("exit", () => {
+	stopGoogleOAuthLoopbackServer();
+	stopDevServer();
+});
+
+app.on("will-quit", () => {
+	stopGoogleOAuthLoopbackServer();
+	stopDevServer();
+});
 
 app.on("window-all-closed", () => {
-	// On Windows/Linux, do not quit if running as background tray utility
 	if (isQuitting) {
 		app.quit();
 	}

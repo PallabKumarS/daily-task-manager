@@ -14,10 +14,11 @@ function getNotificationIcon(): NativeImage {
 	if (appIcon && !appIcon.isEmpty()) return appIcon;
 
 	const iconCandidates = [
+		path.resolve(__dirname, "../assets/logo.png"),
+		path.resolve(__dirname, "../../assets/logo.png"),
+		path.resolve(process.cwd(), "desktop-app", "assets", "logo.png"),
 		path.resolve(process.cwd(), "assets", "logo.png"),
 		path.resolve(process.cwd(), "..", "assets", "logo.png"),
-		path.resolve(__dirname, "../../assets/logo.png"),
-		path.resolve(__dirname, "../assets/logo.png"),
 	];
 
 	for (const candidate of iconCandidates) {
