@@ -57,13 +57,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 		}
 
 		try {
-			let res = await api.get<AuthUser>("/auth/me").catch(() => null);
-
-			// If running in desktop and first attempt failed, retry once briefly
-			if ((!res || !res.success) && isDesktop) {
-				await new Promise((r) => setTimeout(r, 250));
-				res = await api.get<AuthUser>("/auth/me").catch(() => null);
-			}
+			const res = await api.get<AuthUser>("/auth/me").catch(() => null);
 
 			if (res?.success && res.data) {
 				setUser(res.data);
@@ -73,16 +67,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 				getSocket();
 				return;
 			}
-			if (!isDesktop) {
-				setUser(null);
-				clearAuthToken();
-			}
+
+			setUser(null);
+			clearAuthToken();
 		} catch (error) {
 			console.error("[Auth] refreshUser failed:", error);
-			if (!isDesktop) {
-				setUser(null);
-				clearAuthToken();
-			}
+			setUser(null);
+			clearAuthToken();
 		} finally {
 			setLoading(false);
 		}
@@ -177,7 +168,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 			disconnectSocket();
 			setUser(null);
 			toast.success("Logged out successfully");
-			router.push("/");
+			router.push("/login");
 		}
 	}, [router]);
 

@@ -24,6 +24,7 @@ export function startLocalScheduler(mainWindow: BrowserWindow): void {
 		try {
 			const prisma = getPrismaClient();
 			const userId = getCurrentUserId();
+			if (!userId) return;
 			const now = new Date();
 			const todayStr = getTodayDateString(now);
 

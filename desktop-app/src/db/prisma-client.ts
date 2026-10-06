@@ -2,9 +2,14 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { PrismaClient } from "@prisma/client";
 import { app } from "electron";
+import {
+	configureSessionStore,
+	getActiveUserId,
+	readPersistedSessionUserId,
+	restoreSession,
+} from "./session-store.js";
 
 let prismaInstance: PrismaClient | null = null;
-let currentUserId = "local_user_default";
 
 const SCHEMA_DDL = `
 CREATE TABLE IF NOT EXISTS "User" (
@@ -200,12 +205,38 @@ export function getDatabasePath(): string {
 	return targetPath;
 }
 
-export function getCurrentUserId(): string {
-	return currentUserId;
+export function getDatabaseDirectory(): string {
+	return path.dirname(getDatabasePath());
 }
 
-export function setCurrentUserId(userId: string): void {
-	currentUserId = userId;
+export function getCurrentUserId(): string | null {
+	return getActiveUserId();
+}
+
+const LEGACY_PLACEHOLDER_USER_ID = "local_user_default";
+
+/**
+ * Earlier builds auto-created a placeholder account on first launch. Remove it
+ * when it owns no data so fresh installs land on onboarding instead.
+ */
+async function removeEmptyPlaceholderUser(db: PrismaClient): Promise<void> {
+	const placeholder = await db.user.findUnique({
+		where: { id: LEGACY_PLACEHOLDER_USER_ID },
+	});
+	if (!placeholder) return;
+
+	const where = { userId: LEGACY_PLACEHOLDER_USER_ID };
+	const counts = await Promise.all([
+		db.task.count({ where }),
+		db.routine.count({ where }),
+		db.transaction.count({ where }),
+		db.dailyTracker.count({ where }),
+		db.categoryOption.count({ where }),
+	]);
+	if (counts.every((count) => count === 0)) {
+		await db.user.delete({ where: { id: LEGACY_PLACEHOLDER_USER_ID } });
+		console.log("[DayPulse Database] Removed empty legacy placeholder profile");
+	}
 }
 
 export async function initPrismaDatabase(): Promise<PrismaClient> {
@@ -213,6 +244,7 @@ export async function initPrismaDatabase(): Promise<PrismaClient> {
 
 	const dbPath = getDatabasePath();
 	console.log(`[DayPulse Database] Initializing local SQLite at: ${dbPath}`);
+	configureSessionStore(path.dirname(dbPath));
 
 	prismaInstance = new PrismaClient({
 		datasources: {
@@ -222,7 +254,6 @@ export async function initPrismaDatabase(): Promise<PrismaClient> {
 		},
 	});
 
-	// Execute DDL schema to ensure tables and indexes exist
 	const statements = SCHEMA_DDL.split(";")
 		.map((s) => s.trim())
 		.filter(Boolean);
@@ -235,35 +266,27 @@ export async function initPrismaDatabase(): Promise<PrismaClient> {
 		}
 	}
 
-	// Prioritize primary user if available, otherwise any registered user
-	const existingUser =
-		(await prismaInstance.user.findFirst({
-			where: { email: "pallabkumar26@gmail.com" },
-		})) ||
-		(await prismaInstance.user.findFirst({
-			where: { email: { not: "local@daypulse.app" } },
-			orderBy: { createdAt: "desc" },
-		})) ||
-		(await prismaInstance.user.findFirst());
+	try {
+		await removeEmptyPlaceholderUser(prismaInstance);
+	} catch (err) {
+		console.warn("[DayPulse Database] Placeholder cleanup notice:", err);
+	}
 
-	if (!existingUser) {
-		const defaultUser = await prismaInstance.user.create({
-			data: {
-				id: "local_user_default",
-				email: "local@daypulse.app",
-				name: "Local User",
-				passwordHash: "local_standalone_session",
-				currency: "USD",
-			},
-		});
-		currentUserId = defaultUser.id;
+	const persistedUserId = readPersistedSessionUserId();
+	const sessionUser = persistedUserId
+		? await prismaInstance.user.findUnique({ where: { id: persistedUserId } })
+		: null;
+
+	if (sessionUser) {
+		restoreSession(sessionUser.id);
 		console.log(
-			`[DayPulse Database] Seeded default local profile: ${defaultUser.id}`,
+			`[DayPulse Database] Restored session: ${sessionUser.email} (${sessionUser.id})`,
 		);
 	} else {
-		currentUserId = existingUser.id;
+		restoreSession(null);
+		const accountCount = await prismaInstance.user.count();
 		console.log(
-			`[DayPulse Database] Active local user: ${existingUser.email} (${existingUser.id})`,
+			`[DayPulse Database] No active session (${accountCount} local account(s))`,
 		);
 	}
 

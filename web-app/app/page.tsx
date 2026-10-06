@@ -13,11 +13,7 @@ export default function HomePage() {
 	const router = useRouter();
 
 	React.useEffect(() => {
-		const isDesktop =
-			typeof window !== "undefined" &&
-			Boolean((window as unknown as { electronAPI?: unknown }).electronAPI);
-
-		if (!loading && (user || isDesktop)) {
+		if (!loading && user) {
 			router.replace("/dashboard");
 		}
 	}, [user, loading, router]);

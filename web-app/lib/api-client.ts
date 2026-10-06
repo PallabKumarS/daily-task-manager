@@ -77,6 +77,15 @@ export async function apiRequest<T = unknown>(
 		});
 
 		if (!ipcRes.success) {
+			if (ipcRes.statusCode === 401) {
+				clearAuthToken();
+				if (
+					typeof window !== "undefined" &&
+					!window.location.pathname.startsWith("/login")
+				) {
+					window.dispatchEvent(new CustomEvent("daypulse:unauthorized"));
+				}
+			}
 			throw new Error(ipcRes.message || "An error occurred in local storage");
 		}
 

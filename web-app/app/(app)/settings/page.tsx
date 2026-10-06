@@ -65,6 +65,7 @@ function SettingsContent() {
 	const [savingProfile, setSavingProfile] = React.useState(false);
 	const [importing, setImporting] = React.useState(false);
 	const [categoryModalOpen, setCategoryModalOpen] = React.useState(false);
+	const fileInputRef = React.useRef<HTMLInputElement>(null);
 
 	// Google Sync state
 	const [googleStatus, setGoogleStatus] = React.useState<GoogleSyncStatus>({
@@ -196,20 +197,17 @@ function SettingsContent() {
 		}
 	};
 
-	const handleImportBackup = async (e: React.ChangeEvent<HTMLInputElement>) => {
-		const file = e.target.files?.[0];
-		if (!file) return;
-
+	const processArchiveBase64 = async (fileName: string, base64Data: string) => {
 		setImporting(true);
 		try {
 			const isZip =
-				file.name.endsWith(".zip") ||
-				file.name.endsWith(".daypulse") ||
-				file.type.includes("zip");
+				fileName.endsWith(".zip") ||
+				fileName.endsWith(".daypulse") ||
+				base64Data.startsWith("data:application/zip") ||
+				base64Data.startsWith("UEsDB");
 
 			if (isZip) {
-				const base64Data = await fileToBase64(file);
-				const manifest = await extractManifestFromZip(file);
+				const manifest = await extractManifestFromZip(base64Data);
 
 				const confirmDesc = manifest
 					? `Backup from ${new Date(manifest.exportedAt).toLocaleDateString()} for ${manifest.user?.name || "User"}.\n\nContains: ${manifest.counts.tasks} tasks, ${manifest.counts.routines} routines, ${manifest.counts.transactions} transactions, ${manifest.counts.trackers} trackers.\n\nExisting records will be safely updated and merged.`
@@ -223,13 +221,12 @@ function SettingsContent() {
 				});
 
 				if (!ok) {
-					setImporting(false);
-					e.target.value = "";
 					return;
 				}
 
 				const res = await api.post<{
 					restoredCounts?: Record<string, number>;
+					summary?: string;
 				}>("/sync/archive/restore", {
 					archiveBase64: base64Data,
 				});
@@ -242,8 +239,9 @@ function SettingsContent() {
 				}
 			} else {
 				// Legacy JSON fallback
-				const text = await file.text();
-				const parsed = JSON.parse(text);
+				const clean = base64Data.replace(/^data:.*?;base64,/, "").trim();
+				const jsonText = atob(clean);
+				const parsed = JSON.parse(jsonText);
 
 				const ok = await confirm({
 					title: "Restore Legacy JSON Backup?",
@@ -254,12 +252,13 @@ function SettingsContent() {
 				});
 
 				if (!ok) {
-					setImporting(false);
-					e.target.value = "";
 					return;
 				}
 
-				const res = await api.post("/sync/restore", parsed);
+				const res = await api.post<{ summary?: string }>(
+					"/sync/restore",
+					parsed,
+				);
 				if (res.success) {
 					toast.success(res.message || "Data restored successfully");
 					window.dispatchEvent(new CustomEvent("daypulse:refresh"));
@@ -268,12 +267,43 @@ function SettingsContent() {
 				}
 			}
 		} catch (err) {
-			const msg = err instanceof Error ? err.message : "Invalid backup file";
+			const msg =
+				err instanceof Error ? err.message : "Invalid backup file format";
 			toast.error(msg);
 		} finally {
 			setImporting(false);
-			e.target.value = "";
+			if (fileInputRef.current) fileInputRef.current.value = "";
 		}
+	};
+
+	const handlePickBackupFile = async () => {
+		const electron = (
+			window as unknown as {
+				electronAPI?: {
+					pickBackupFile?: () => Promise<{
+						fileName: string;
+						base64Data: string;
+					} | null>;
+				};
+			}
+		).electronAPI;
+
+		if (electron?.pickBackupFile) {
+			const res = await electron.pickBackupFile();
+			if (res?.base64Data) {
+				await processArchiveBase64(res.fileName, res.base64Data);
+			}
+		} else {
+			fileInputRef.current?.click();
+		}
+	};
+
+	const handleImportBackup = async (e: React.ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files?.[0];
+		if (!file) return;
+
+		const base64Data = await fileToBase64(file);
+		await processArchiveBase64(file.name, base64Data);
 	};
 
 	// Google Sync Actions
@@ -697,19 +727,25 @@ function SettingsContent() {
 							<code className="text-teal-400">.daypulse</code>, or legacy{" "}
 							<code className="text-teal-400">.json</code> file.
 						</p>
-						<label className="flex items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-800 px-4 py-2 text-xs font-semibold text-slate-200 hover:bg-slate-700/80 cursor-pointer transition">
+						<button
+							type="button"
+							onClick={handlePickBackupFile}
+							disabled={importing}
+							className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-800 px-4 py-2 text-xs font-semibold text-slate-200 hover:bg-slate-700/80 cursor-pointer transition disabled:opacity-50"
+						>
 							<Upload className="w-4 h-4" />
 							<span>
 								{importing ? "Processing..." : "Select Archive File..."}
 							</span>
-							<input
-								type="file"
-								accept=".zip,.daypulse,.json,application/zip"
-								onChange={handleImportBackup}
-								disabled={importing}
-								className="hidden"
-							/>
-						</label>
+						</button>
+						<input
+							ref={fileInputRef}
+							type="file"
+							accept=".zip,.daypulse,.json,application/zip"
+							onChange={handleImportBackup}
+							disabled={importing}
+							className="hidden"
+						/>
 					</div>
 				</div>
 			</div>

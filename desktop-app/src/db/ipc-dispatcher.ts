@@ -1,23 +1,32 @@
+import crypto from "node:crypto";
 import bcrypt from "bcryptjs";
+import JSZip from "jszip";
 import { createBackupArchive } from "./archive-builder.js";
 import {
+	extractArchiveCollections,
 	previewBackupArchive,
 	restoreBackupArchive,
 } from "./archive-extractor.js";
+import {
+	type BackupCollections,
+	type BackupRecord,
+	emptyCollections,
+	mergeBackupIntoUser,
+	summarizeMergeReport,
+} from "./backup-merge.js";
 import { handleCategoryRoute } from "./category-handlers.js";
 import { calculateFinanceAnalytics } from "./finance-analytics.js";
 import {
+	clearLatestGoogleRestoreLoginResult,
 	executeGoogleSyncRestore,
 	executeGoogleSyncUpload,
 	getGoogleAuthUrl,
+	getLatestGoogleRestoreLoginResult,
 	isGoogleConfigured,
 	startGoogleOAuthLoopbackServer,
 } from "./google-sync.js";
-import {
-	getCurrentUserId,
-	getPrismaClient,
-	setCurrentUserId,
-} from "./prisma-client.js";
+import { getCurrentUserId, getPrismaClient } from "./prisma-client.js";
+import { endSession, startSession } from "./session-store.js";
 
 export interface IpcApiRequest {
 	endpoint: string;
@@ -44,7 +53,7 @@ export async function handleIpcApiDispatch(
 	req: IpcApiRequest,
 ): Promise<IpcApiResponse> {
 	const prisma = getPrismaClient();
-	let userId = getCurrentUserId();
+	let userId = getCurrentUserId() || "";
 
 	// Resolve user from token if passed
 	if (req.token) {
@@ -62,7 +71,6 @@ export async function handleIpcApiDispatch(
 			});
 			if (matchedUser) {
 				userId = matchedUser.id;
-				setCurrentUserId(matchedUser.id);
 			}
 		}
 	}
@@ -85,26 +93,16 @@ export async function handleIpcApiDispatch(
 	try {
 		// ================= AUTH ROUTES =================
 		if (pathname === "/auth/me" && method === "GET") {
-			let user = await prisma.user.findUnique({ where: { id: userId } });
-			if (!user || user.id === "local_user_default") {
-				// Prioritize real user if available (e.g. pallabkumar26@gmail.com)
-				const realUser = await prisma.user.findFirst({
-					where: { email: { not: "local@daypulse.app" } },
-					orderBy: { createdAt: "desc" },
-				});
-				if (realUser) {
-					user = realUser;
-					setCurrentUserId(realUser.id);
-					userId = realUser.id;
-				} else if (!user) {
-					user = await prisma.user.findFirst();
-					if (user) {
-						setCurrentUserId(user.id);
-						userId = user.id;
-					}
-				}
+			if (!userId) {
+				return {
+					statusCode: 401,
+					success: false,
+					message: "Not authenticated",
+					data: null,
+				};
 			}
 
+			const user = await prisma.user.findUnique({ where: { id: userId } });
 			if (!user) {
 				return {
 					statusCode: 401,
@@ -127,6 +125,14 @@ export async function handleIpcApiDispatch(
 		}
 
 		if (pathname === "/auth/me" && method === "PATCH") {
+			if (!userId) {
+				return {
+					statusCode: 401,
+					success: false,
+					message: "Not authenticated",
+					data: null,
+				};
+			}
 			const updated = await prisma.user.update({
 				where: { id: userId },
 				data: {
@@ -167,7 +173,7 @@ export async function handleIpcApiDispatch(
 				};
 			}
 
-			setCurrentUserId(user.id);
+			startSession(user.id);
 			return {
 				statusCode: 200,
 				success: true,
@@ -177,7 +183,7 @@ export async function handleIpcApiDispatch(
 						email: user.email,
 						name: user.name,
 						currency: user.currency,
-						createdAt: user.createdAt,
+						createdAt: user.createdAt.toISOString(),
 					},
 					token: `daypulse_token_${user.id}`,
 				},
@@ -214,7 +220,7 @@ export async function handleIpcApiDispatch(
 				},
 			});
 
-			setCurrentUserId(newUser.id);
+			startSession(newUser.id);
 			return {
 				statusCode: 201,
 				success: true,
@@ -224,7 +230,7 @@ export async function handleIpcApiDispatch(
 						email: newUser.email,
 						name: newUser.name,
 						currency: newUser.currency,
-						createdAt: newUser.createdAt,
+						createdAt: newUser.createdAt.toISOString(),
 					},
 					token: `daypulse_token_${newUser.id}`,
 				},
@@ -232,10 +238,150 @@ export async function handleIpcApiDispatch(
 		}
 
 		if (pathname === "/auth/logout" && method === "POST") {
+			endSession();
 			return {
 				statusCode: 200,
 				success: true,
 				message: "Logged out successfully",
+				data: null,
+			};
+		}
+
+		// Pre-auth file-based backup restore (works from login / onboarding screen)
+		if (pathname === "/auth/restore-backup" && method === "POST") {
+			const archiveBase64 = String(
+				body.archiveBase64 || body.archive || body.data || "",
+			);
+			const backupPayload = (body.backup || body.data) as
+				| Record<string, unknown>
+				| undefined;
+
+			let targetEmail = "";
+			let targetName = "Restored User";
+			let targetCurrency = "USD";
+			let collections: BackupCollections = emptyCollections();
+
+			if (archiveBase64) {
+				const clean = archiveBase64.replace(/^data:.*?;base64,/, "").trim();
+				const buffer = Buffer.from(clean, "base64");
+				const zip = await JSZip.loadAsync(buffer);
+				const extracted = await extractArchiveCollections(zip);
+				collections = extracted.collections;
+				targetEmail =
+					extracted.user?.email || extracted.manifest?.user?.email || "";
+				targetName =
+					extracted.user?.name ||
+					extracted.manifest?.user?.name ||
+					"Restored User";
+				targetCurrency =
+					extracted.user?.currency ||
+					extracted.manifest?.user?.currency ||
+					"USD";
+			} else if (backupPayload && typeof backupPayload === "object") {
+				const u = (backupPayload.user as Record<string, unknown>) || {};
+				targetEmail = String(u.email || "");
+				targetName = String(u.name || "Restored User");
+				targetCurrency = String(u.currency || "USD");
+				collections = {
+					tasks: (backupPayload.tasks as BackupRecord[]) || [],
+					routines: (backupPayload.routines as BackupRecord[]) || [],
+					routineLogs: (backupPayload.routineLogs as BackupRecord[]) || [],
+					transactions: (backupPayload.transactions as BackupRecord[]) || [],
+					trackers: (backupPayload.trackers as BackupRecord[]) || [],
+					trackerLogs: (backupPayload.trackerLogs as BackupRecord[]) || [],
+					categories: (backupPayload.categories as BackupRecord[]) || [],
+				};
+			} else {
+				return {
+					statusCode: 400,
+					success: false,
+					message: "No backup data or archive provided",
+					data: null,
+				};
+			}
+
+			if (!targetEmail) {
+				targetEmail = String(body.email || "local@daypulse.app");
+			}
+
+			let targetUser = await prisma.user.findUnique({
+				where: { email: targetEmail },
+			});
+			if (!targetUser) {
+				const salt = await bcrypt.genSalt(10);
+				const rawPassword =
+					typeof body.password === "string" && body.password
+						? body.password
+						: crypto.randomUUID();
+				const passwordHash = await bcrypt.hash(rawPassword, salt);
+				targetUser = await prisma.user.create({
+					data: {
+						email: targetEmail,
+						name: targetName,
+						passwordHash,
+						currency: targetCurrency,
+					},
+				});
+			}
+
+			const mergeReport = await mergeBackupIntoUser(
+				prisma,
+				targetUser.id,
+				collections,
+			);
+			startSession(targetUser.id);
+			const summary = summarizeMergeReport(mergeReport);
+
+			return {
+				statusCode: 200,
+				success: true,
+				message: `Workspace restored successfully (${summary})`,
+				data: {
+					user: {
+						id: targetUser.id,
+						email: targetUser.email,
+						name: targetUser.name,
+						currency: targetUser.currency,
+						createdAt: targetUser.createdAt.toISOString(),
+					},
+					token: `daypulse_token_${targetUser.id}`,
+					summary,
+				},
+			};
+		}
+
+		if (pathname === "/auth/google/restore-url" && method === "GET") {
+			if (!isGoogleConfigured()) {
+				return {
+					statusCode: 400,
+					success: false,
+					message:
+						"Google Drive sync is not configured. Please define GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in .env.",
+					data: null,
+				};
+			}
+			startGoogleOAuthLoopbackServer(prisma);
+			clearLatestGoogleRestoreLoginResult();
+			const url = getGoogleAuthUrl("restore_onboarding");
+			return {
+				statusCode: 200,
+				success: true,
+				data: { url },
+			};
+		}
+
+		if (pathname === "/auth/google/restore-status" && method === "GET") {
+			const result = getLatestGoogleRestoreLoginResult();
+			if (result) {
+				return {
+					statusCode: 200,
+					success: true,
+					data: result,
+				};
+			}
+			return {
+				statusCode: 200,
+				success: true,
 				data: null,
 			};
 		}
@@ -253,24 +399,21 @@ export async function handleIpcApiDispatch(
 			data: null,
 		});
 
-		// undefined = leave unchanged, empty/null = clear, otherwise parse
-		const optionalDate = (val: unknown): Date | null | undefined => {
-			if (val === undefined) return undefined;
-			if (val === null || val === "") return null;
-			const parsed = new Date(String(val));
-			return Number.isNaN(parsed.getTime()) ? null : parsed;
-		};
-
-		const optionalText = (val: unknown): string | null | undefined => {
-			if (val === undefined) return undefined;
-			return typeof val === "string" && val !== "" ? val : null;
-		};
-
 		const numberOr = (val: unknown, fallback: number): number => {
 			if (val === undefined || val === null || val === "") return fallback;
 			const parsed = Number(val);
 			return Number.isFinite(parsed) ? parsed : fallback;
 		};
+
+		if (!userId && pathname !== "/sync/archive/preview") {
+			return {
+				statusCode: 401,
+				success: false,
+				message:
+					"Authentication required. Please sign in or restore your account.",
+				data: null,
+			};
+		}
 
 		// ================= TASK ROUTES =================
 		if (pathname === "/tasks" && method === "GET") {
@@ -1556,261 +1699,28 @@ export async function handleIpcApiDispatch(
 				};
 			}
 
-			// Restore categories
-			if (Array.isArray(backup.categories)) {
-				for (const c of backup.categories) {
-					const id = String(c.id);
-					await prisma.categoryOption
-						.upsert({
-							where: { id },
-							create: {
-								id,
-								userId,
-								name: String(c.name || "General"),
-								group: String(c.group || "EXPENSE"),
-								color: typeof c.color === "string" ? c.color : null,
-							},
-							update: {
-								name: String(c.name || "General"),
-								group: String(c.group || "EXPENSE"),
-								color: typeof c.color === "string" ? c.color : null,
-							},
-						})
-						.catch(() => null);
-				}
-			}
-
-			// Restore tasks
-			if (Array.isArray(backup.tasks)) {
-				for (const t of backup.tasks) {
-					const id = String(t.id);
-					await prisma.task
-						.upsert({
-							where: { id },
-							create: {
-								id,
-								userId,
-								title: String(t.title || "Restored Task"),
-								description:
-									typeof t.description === "string" ? t.description : null,
-								type: typeof t.type === "string" ? t.type : "TASK",
-								category:
-									typeof t.category === "string" ? t.category : "General",
-								priority:
-									typeof t.priority === "string" ? t.priority : "MEDIUM",
-								status: typeof t.status === "string" ? t.status : "PENDING",
-								startDate: t.startDate ? new Date(String(t.startDate)) : null,
-								dueDate: t.dueDate ? new Date(String(t.dueDate)) : null,
-								remindBeforeMinutes: Number(t.remindBeforeMinutes) || 15,
-								isRecurring: Boolean(t.isRecurring),
-								repeatFrequency:
-									typeof t.repeatFrequency === "string"
-										? t.repeatFrequency
-										: null,
-								repeatInterval: Number(t.repeatInterval) || 1,
-								repeatDaysOfWeek:
-									typeof t.repeatDaysOfWeek === "string"
-										? t.repeatDaysOfWeek
-										: null,
-								repeatTime:
-									typeof t.repeatTime === "string" ? t.repeatTime : null,
-							},
-							update: {
-								title: String(t.title || "Restored Task"),
-								description:
-									typeof t.description === "string" ? t.description : null,
-								type: typeof t.type === "string" ? t.type : "TASK",
-								category:
-									typeof t.category === "string" ? t.category : "General",
-								priority:
-									typeof t.priority === "string" ? t.priority : "MEDIUM",
-								status: typeof t.status === "string" ? t.status : "PENDING",
-								startDate: t.startDate ? new Date(String(t.startDate)) : null,
-								dueDate: t.dueDate ? new Date(String(t.dueDate)) : null,
-							},
-						})
-						.catch(() => null);
-				}
-			}
-
-			// Restore routines
-			if (Array.isArray(backup.routines)) {
-				for (const r of backup.routines) {
-					const id = String(r.id);
-					await prisma.routine
-						.upsert({
-							where: { id },
-							create: {
-								id,
-								userId,
-								title: String(r.title || "Routine"),
-								description:
-									typeof r.description === "string" ? r.description : null,
-								timeSlot:
-									typeof r.timeSlot === "string" ? r.timeSlot : "morning",
-								targetTime:
-									typeof r.targetTime === "string" ? r.targetTime : null,
-								daysOfWeek:
-									typeof r.daysOfWeek === "string"
-										? r.daysOfWeek
-										: "0,1,2,3,4,5,6",
-								reminderMinutes: Number(r.reminderMinutes) || 0,
-								streakCount: Number(r.streakCount) || 0,
-								lastCompletedDate:
-									typeof r.lastCompletedDate === "string"
-										? r.lastCompletedDate
-										: null,
-							},
-							update: {
-								title: String(r.title || "Routine"),
-								description:
-									typeof r.description === "string" ? r.description : null,
-								timeSlot:
-									typeof r.timeSlot === "string" ? r.timeSlot : "morning",
-								targetTime:
-									typeof r.targetTime === "string" ? r.targetTime : null,
-								daysOfWeek:
-									typeof r.daysOfWeek === "string"
-										? r.daysOfWeek
-										: "0,1,2,3,4,5,6",
-							},
-						})
-						.catch(() => null);
-				}
-			}
-
-			// Restore routine logs
-			if (Array.isArray(backup.routineLogs)) {
-				for (const rl of backup.routineLogs) {
-					const routineId = String(rl.routineId);
-					const date = String(rl.date);
-					await prisma.routineLog
-						.upsert({
-							where: {
-								routineId_date: { routineId, date },
-							},
-							create: {
-								routineId,
-								userId,
-								date,
-								completed: Boolean(rl.completed),
-							},
-							update: {
-								completed: Boolean(rl.completed),
-							},
-						})
-						.catch(() => null);
-				}
-			}
-
-			// Restore transactions
-			if (Array.isArray(backup.transactions)) {
-				for (const tx of backup.transactions) {
-					const id = String(tx.id);
-					await prisma.transaction
-						.upsert({
-							where: { id },
-							create: {
-								id,
-								userId,
-								type: String(tx.type || "EXPENSE"),
-								amount: Number(tx.amount) || 0,
-								category: String(tx.category || "General"),
-								description:
-									typeof tx.description === "string" ? tx.description : null,
-								paymentMethod:
-									typeof tx.paymentMethod === "string"
-										? tx.paymentMethod
-										: "Cash",
-								date: tx.date ? new Date(String(tx.date)) : new Date(),
-							},
-							update: {
-								type: String(tx.type || "EXPENSE"),
-								amount: Number(tx.amount) || 0,
-								category: String(tx.category || "General"),
-								description:
-									typeof tx.description === "string" ? tx.description : null,
-							},
-						})
-						.catch(() => null);
-				}
-			}
-
-			// Restore trackers
-			if (Array.isArray(backup.trackers)) {
-				for (const trk of backup.trackers) {
-					const id = String(trk.id);
-					await prisma.dailyTracker
-						.upsert({
-							where: { id },
-							create: {
-								id,
-								userId,
-								name: String(trk.name || "Tracker"),
-								category:
-									typeof trk.category === "string"
-										? trk.category
-										: "Meals & Food",
-								unitName:
-									typeof trk.unitName === "string" ? trk.unitName : "meals",
-								defaultTarget: Number(trk.defaultTarget) || 2,
-								unitPrice: trk.unitPrice ? Number(trk.unitPrice) : null,
-								currency:
-									typeof trk.currency === "string" ? trk.currency : "USD",
-								description:
-									typeof trk.description === "string" ? trk.description : null,
-								color: typeof trk.color === "string" ? trk.color : "emerald",
-							},
-							update: {
-								name: String(trk.name || "Tracker"),
-								unitPrice: trk.unitPrice ? Number(trk.unitPrice) : null,
-							},
-						})
-						.catch(() => null);
-				}
-			}
-
-			// Restore tracker logs
-			if (Array.isArray(backup.trackerLogs)) {
-				for (const tl of backup.trackerLogs) {
-					const trackerId = String(tl.trackerId);
-					const date = String(tl.date);
-					await prisma.dailyTrackerLog
-						.upsert({
-							where: {
-								trackerId_date: { trackerId, date },
-							},
-							create: {
-								trackerId,
-								userId,
-								date,
-								value: Number(tl.value) || 0,
-								status: typeof tl.status === "string" ? tl.status : "LOGGED",
-								unitPrice: tl.unitPrice ? Number(tl.unitPrice) : null,
-								notes: typeof tl.notes === "string" ? tl.notes : null,
-								isSettled: Boolean(tl.isSettled),
-							},
-							update: {
-								value: tl.value !== undefined ? Number(tl.value) : undefined,
-								status: typeof tl.status === "string" ? tl.status : undefined,
-								unitPrice:
-									tl.unitPrice !== undefined ? Number(tl.unitPrice) : undefined,
-								notes: typeof tl.notes === "string" ? tl.notes : undefined,
-								isSettled:
-									tl.isSettled !== undefined
-										? Boolean(tl.isSettled)
-										: undefined,
-							},
-						})
-						.catch(() => null);
-				}
-			}
+			const mergeReport = await mergeBackupIntoUser(prisma, userId, {
+				tasks: backup.tasks || [],
+				routines: backup.routines || [],
+				routineLogs: backup.routineLogs || [],
+				transactions: backup.transactions || [],
+				trackers: backup.trackers || [],
+				trackerLogs: backup.trackerLogs || [],
+				categories: backup.categories || [],
+			});
+			const summary = summarizeMergeReport(mergeReport);
 
 			return {
 				statusCode: 200,
 				success: true,
-				message: "Backup bundle successfully restored into local database",
-				data: { restoredAt: new Date().toISOString() },
+				message: summary
+					? `Backup restored successfully (${summary})`
+					: "Backup bundle successfully restored into local database",
+				data: {
+					restoredAt: new Date().toISOString(),
+					summary,
+					mergeReport,
+				},
 			};
 		}
 
@@ -1880,8 +1790,9 @@ export async function handleIpcApiDispatch(
 			return {
 				statusCode: 200,
 				success: true,
-				message:
-					"Archive successfully unpacked and restored into local database",
+				message: restoreResult.summary
+					? `Archive restored successfully: ${restoreResult.summary}`
+					: "Archive successfully unpacked and restored into local database",
 				data: restoreResult,
 			};
 		}
@@ -1958,6 +1869,15 @@ export async function handleIpcApiDispatch(
 		}
 
 		if (pathname === "/sync/auth-url" && method === "GET") {
+			if (!isGoogleConfigured()) {
+				return {
+					statusCode: 400,
+					success: false,
+					message:
+						"Google Drive sync is not configured. Please define GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in .env.",
+					data: null,
+				};
+			}
 			startGoogleOAuthLoopbackServer(prisma);
 			const url = getGoogleAuthUrl(userId);
 			return {
