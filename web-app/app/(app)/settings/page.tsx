@@ -8,7 +8,6 @@ import {
 	FileText,
 	KeyRound,
 	RefreshCw,
-	Shield,
 	Tag,
 	Unlink,
 	Upload,
@@ -67,7 +66,6 @@ function SettingsContent() {
 	});
 	const [syncingGoogle, setSyncingGoogle] = React.useState(false);
 	const [restoringGoogle, setRestoringGoogle] = React.useState(false);
-	const [simulating, setSimulating] = React.useState(false);
 	const [showSetupGuide, setShowSetupGuide] = React.useState(false);
 
 	const fetchGoogleStatus = React.useCallback(async () => {
@@ -403,28 +401,6 @@ function SettingsContent() {
 		}
 	};
 
-	const handleSimulateSync = async (action: "upload" | "restore") => {
-		setSimulating(true);
-		try {
-			const res = await api.post("/sync/simulate", {
-				action: action === "upload" ? "export" : "import",
-			});
-			if (res.success) {
-				toast.success(res.message);
-				fetchGoogleStatus();
-				if (action === "restore") {
-					window.dispatchEvent(new CustomEvent("daypulse:refresh"));
-				}
-			} else {
-				toast.error(res.message || "Simulation failed");
-			}
-		} catch (error) {
-			toast.error(error instanceof Error ? error.message : "Simulation request error");
-		} finally {
-			setSimulating(false);
-		}
-	};
-
 	const testAlarm = () => {
 		triggerNotification({
 			title: "DayPulse System Alert & Chime",
@@ -533,47 +509,6 @@ function SettingsContent() {
 								</Button>
 							</>
 						)}
-					</div>
-				</div>
-
-				{/* Sandbox Simulation / Instant Test Box */}
-				<div className="rounded-2xl border border-cyan-500/20 bg-cyan-950/15 p-4 space-y-2.5">
-					<div className="flex items-center justify-between">
-						<div className="flex items-center gap-2">
-							<Shield className="w-4 h-4 text-cyan-400" />
-							<span className="text-xs font-bold text-slate-200">
-								Google Drive Sandbox Simulator
-							</span>
-						</div>
-						<span className="text-[10px] text-cyan-400 uppercase font-semibold">
-							Immediate Local Test
-						</span>
-					</div>
-					<p className="text-xs text-slate-300 leading-relaxed">
-						Test the complete cloud synchronization lifecycle (payload validation, cloud archiving,
-						and atomic database restoration) immediately without needing external API credentials.
-					</p>
-					<div className="flex flex-wrap items-center gap-2 pt-1">
-						<Button
-							size="sm"
-							variant="secondary"
-							onClick={() => handleSimulateSync("upload")}
-							disabled={simulating}
-							className="text-xs gap-1.5"
-						>
-							<Upload className="w-3.5 h-3.5 text-cyan-400" />
-							<span>Simulate Cloud Backup</span>
-						</Button>
-						<Button
-							size="sm"
-							variant="outline"
-							onClick={() => handleSimulateSync("restore")}
-							disabled={simulating}
-							className="text-xs gap-1.5"
-						>
-							<Download className="w-3.5 h-3.5 text-emerald-400" />
-							<span>Simulate Cloud Restore</span>
-						</Button>
 					</div>
 				</div>
 

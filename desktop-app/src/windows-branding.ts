@@ -3,7 +3,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { app, type NativeImage, nativeImage, shell } from "electron";
 
-export function getWindowIconPath(): string {
+export function getIcoIconPath(): string {
 	const candidates = [
 		path.join(__dirname, "assets", "daypulse.ico"),
 		path.join(__dirname, "assets", "favicon.ico"),
@@ -21,14 +21,44 @@ export function getWindowIconPath(): string {
 	return "";
 }
 
+export function getPngIconPath(): string {
+	const candidates = [
+		path.join(__dirname, "assets", "logo.png"),
+		path.resolve(__dirname, "../assets/logo.png"),
+		path.resolve(__dirname, "../../assets/logo.png"),
+		path.resolve(process.cwd(), "desktop-app", "assets", "logo.png"),
+		path.resolve(process.cwd(), "assets", "logo.png"),
+	];
+
+	for (const candidate of candidates) {
+		if (fs.existsSync(candidate)) return candidate;
+	}
+	return "";
+}
+
+export function getWindowIconPath(): string {
+	const png = getPngIconPath();
+	if (png) return png;
+	return getIcoIconPath();
+}
+
 export function getWindowIcon(): NativeImage {
-	const iconPath = getWindowIconPath();
-	if (iconPath) {
+	const pngPath = getPngIconPath();
+	if (pngPath) {
 		try {
-			const img = nativeImage.createFromPath(iconPath);
+			const img = nativeImage.createFromPath(pngPath);
 			if (!img.isEmpty()) return img;
 		} catch {
-			// Continue with fallback
+			// Fallback
+		}
+	}
+	const icoPath = getIcoIconPath();
+	if (icoPath) {
+		try {
+			const img = nativeImage.createFromPath(icoPath);
+			if (!img.isEmpty()) return img;
+		} catch {
+			// Fallback
 		}
 	}
 	return nativeImage.createEmpty();
