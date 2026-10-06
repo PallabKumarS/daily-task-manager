@@ -16,10 +16,7 @@ const getTodayDateString = (): string => {
 	return `${year}-${month}-${day}`;
 };
 
-export const getTrackersFromDB = async (
-	userId: string,
-	targetDate = getTodayDateString(),
-) => {
+export const getTrackersFromDB = async (userId: string, targetDate = getTodayDateString()) => {
 	const [yearStr, monthStr] = targetDate.split("-");
 	const year = Number(yearStr);
 	const month = Number(monthStr);
@@ -178,10 +175,7 @@ export const getTrackerDetailsFromDB = async (
 				unsettledCost += dayCost;
 			}
 
-			if (
-				existingLog.status === "CANCELLED" ||
-				(existingLog.value === 0 && existingLog.notes)
-			) {
+			if (existingLog.status === "CANCELLED" || (existingLog.value === 0 && existingLog.notes)) {
 				cancelledDaysCount += 1;
 			}
 
@@ -236,10 +230,7 @@ export const getTrackerDetailsFromDB = async (
 	};
 };
 
-export const createTrackerInDB = async (
-	userId: string,
-	payload: ICreateTracker,
-) => {
+export const createTrackerInDB = async (userId: string, payload: ICreateTracker) => {
 	const tracker = await prisma.dailyTracker.create({
 		data: {
 			userId,
@@ -320,8 +311,7 @@ export const logTrackerDayInDB = async (
 		throw new AppError(404, "Tracker not found.");
 	}
 
-	const logUnitPrice =
-		payload.unitPrice !== undefined ? payload.unitPrice : tracker.unitPrice;
+	const logUnitPrice = payload.unitPrice !== undefined ? payload.unitPrice : tracker.unitPrice;
 
 	const log = await prisma.dailyTrackerLog.upsert({
 		where: {
@@ -378,10 +368,7 @@ export const settleTrackerInDB = async (
 	});
 
 	if (unsettledLogs.length === 0) {
-		throw new AppError(
-			400,
-			"No unsettled items found for the selected period.",
-		);
+		throw new AppError(400, "No unsettled items found for the selected period.");
 	}
 
 	let totalAmount = 0;
@@ -396,10 +383,7 @@ export const settleTrackerInDB = async (
 	totalAmount = Number(totalAmount.toFixed(2));
 
 	if (totalAmount <= 0) {
-		throw new AppError(
-			400,
-			"Total settlement amount is 0. No payment required.",
-		);
+		throw new AppError(400, "Total settlement amount is 0. No payment required.");
 	}
 
 	const settlementDescription =

@@ -1,12 +1,6 @@
 "use client";
 
-import {
-	AlertCircle,
-	CheckCircle2,
-	Cloud,
-	ExternalLink,
-	RefreshCw,
-} from "lucide-react";
+import { AlertCircle, CheckCircle2, Cloud, ExternalLink, RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 import { toast } from "sonner";
@@ -32,22 +26,17 @@ interface GoogleRestoreResult {
 	restoredAt: string;
 }
 
-export function GoogleRestoreModal({
-	isOpen,
-	onClose,
-}: GoogleRestoreModalProps) {
+export function GoogleRestoreModal({ isOpen, onClose }: GoogleRestoreModalProps) {
 	const router = useRouter();
 	const { refreshUser } = useAuth();
 
-	const [status, setStatus] = React.useState<
-		"idle" | "authorizing" | "restoring" | "success"
-	>("idle");
+	const [status, setStatus] = React.useState<"idle" | "authorizing" | "restoring" | "success">(
+		"idle",
+	);
 	const [statusText, setStatusText] = React.useState("");
 	const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
 
-	const pollTimerRef = React.useRef<ReturnType<typeof setInterval> | null>(
-		null,
-	);
+	const pollTimerRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
 
 	const stopPolling = React.useCallback(() => {
 		if (pollTimerRef.current) {
@@ -133,8 +122,7 @@ export function GoogleRestoreModal({
 						await refreshUser();
 
 						toast.success(
-							statusRes.data.summary ||
-								"Workspace restored from Google Drive successfully",
+							statusRes.data.summary || "Workspace restored from Google Drive successfully",
 						);
 
 						setTimeout(() => {
@@ -147,10 +135,7 @@ export function GoogleRestoreModal({
 				}
 			}, 2000);
 		} catch (err) {
-			const msg =
-				err instanceof Error
-					? err.message
-					: "Could not initiate Google restore";
+			const msg = err instanceof Error ? err.message : "Could not initiate Google restore";
 			setErrorMessage(msg);
 			setStatus("idle");
 			toast.error(msg);
@@ -172,13 +157,10 @@ export function GoogleRestoreModal({
 							<div className="h-14 w-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-3 shadow-lg shadow-emerald-500/5">
 								<Cloud className="w-7 h-7" />
 							</div>
-							<h3 className="text-sm font-semibold text-white">
-								Cloud Account Recovery
-							</h3>
+							<h3 className="text-sm font-semibold text-white">Cloud Account Recovery</h3>
 							<p className="text-xs text-slate-400 mt-1.5 max-w-sm leading-relaxed">
-								DayPulse will securely connect to your Google Drive to locate
-								your encrypted backup, verify data integrity, and reconstruct
-								your routines, finances, and tasks.
+								DayPulse will securely connect to your Google Drive to locate your encrypted backup,
+								verify data integrity, and reconstruct your routines, finances, and tasks.
 							</p>
 						</div>
 
@@ -192,8 +174,8 @@ export function GoogleRestoreModal({
 						<div className="rounded-xl border border-slate-800 bg-slate-950/40 p-3.5 flex items-start gap-2.5 text-xs text-slate-400">
 							<AlertCircle className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
 							<p className="leading-relaxed">
-								A browser window will open for authorization. No Google Drive
-								files outside of DayPulse backups are accessed.
+								A browser window will open for authorization. No Google Drive files outside of
+								DayPulse backups are accessed.
 							</p>
 						</div>
 
@@ -220,12 +202,10 @@ export function GoogleRestoreModal({
 							<RefreshCw className="w-7 h-7 animate-spin" />
 						</div>
 						<div className="space-y-1">
-							<p className="text-sm font-semibold text-slate-200">
-								{statusText}
-							</p>
+							<p className="text-sm font-semibold text-slate-200">{statusText}</p>
 							<p className="text-xs text-slate-400 max-w-xs leading-relaxed">
-								Please complete the Google authentication prompt in your browser
-								tab. DayPulse will automatically continue once authorized.
+								Please complete the Google authentication prompt in your browser tab. DayPulse will
+								automatically continue once authorized.
 							</p>
 						</div>
 
@@ -243,9 +223,7 @@ export function GoogleRestoreModal({
 							<CheckCircle2 className="w-7 h-7" />
 						</div>
 						<div className="space-y-1">
-							<p className="text-sm font-semibold text-emerald-300">
-								Workspace Restored
-							</p>
+							<p className="text-sm font-semibold text-emerald-300">Workspace Restored</p>
 							<p className="text-xs text-slate-400">{statusText}</p>
 						</div>
 					</div>

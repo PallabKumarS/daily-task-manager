@@ -2,18 +2,14 @@
 
 import * as React from "react";
 import { RoutineFormModal } from "@/components/routines/routine-form-modal";
-import {
-	type RoutineItem,
-	RoutineList,
-} from "@/components/routines/routine-list";
+import { type RoutineItem, RoutineList } from "@/components/routines/routine-list";
 import { api } from "@/lib/api-client";
 
 export default function RoutinesPage() {
 	const [routines, setRoutines] = React.useState<RoutineItem[]>([]);
 	const [loading, setLoading] = React.useState(true);
 	const [modalOpen, setModalOpen] = React.useState(false);
-	const [editingRoutine, setEditingRoutine] =
-		React.useState<RoutineItem | null>(null);
+	const [editingRoutine, setEditingRoutine] = React.useState<RoutineItem | null>(null);
 
 	const fetchRoutines = React.useCallback(async () => {
 		try {
@@ -49,9 +45,7 @@ export default function RoutinesPage() {
 					? {
 							...r,
 							isCompletedToday: !currentlyCompleted,
-							streakCount: currentlyCompleted
-								? Math.max(0, r.streakCount - 1)
-								: r.streakCount + 1,
+							streakCount: currentlyCompleted ? Math.max(0, r.streakCount - 1) : r.streakCount + 1,
 						}
 					: r,
 			),
@@ -86,12 +80,10 @@ export default function RoutinesPage() {
 	return (
 		<div className="space-y-6">
 			<div>
-				<h1 className="text-2xl font-bold tracking-tight text-white">
-					Daily Routines & Protocols
-				</h1>
+				<h1 className="text-2xl font-bold tracking-tight text-white">Daily Routines & Protocols</h1>
 				<p className="text-xs text-slate-400 mt-1">
-					Lock in morning, afternoon, and evening habit loops. Track streaks and
-					get proactive alerts.
+					Lock in morning, afternoon, and evening habit loops. Track streaks and get proactive
+					alerts.
 				</p>
 			</div>
 

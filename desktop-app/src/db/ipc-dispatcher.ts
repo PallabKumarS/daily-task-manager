@@ -49,9 +49,7 @@ export interface IpcApiResponse<T = unknown> {
 	} | null;
 }
 
-export async function handleIpcApiDispatch(
-	req: IpcApiRequest,
-): Promise<IpcApiResponse> {
+export async function handleIpcApiDispatch(req: IpcApiRequest): Promise<IpcApiResponse> {
 	const prisma = getPrismaClient();
 	let userId = getCurrentUserId() || "";
 
@@ -137,8 +135,7 @@ export async function handleIpcApiDispatch(
 				where: { id: userId },
 				data: {
 					name: typeof body.name === "string" ? body.name : undefined,
-					currency:
-						typeof body.currency === "string" ? body.currency : undefined,
+					currency: typeof body.currency === "string" ? body.currency : undefined,
 				},
 			});
 			return { statusCode: 200, success: true, data: updated };
@@ -160,10 +157,7 @@ export async function handleIpcApiDispatch(
 				};
 			}
 
-			const isPasswordMatched = await bcrypt.compare(
-				password,
-				user.passwordHash,
-			);
+			const isPasswordMatched = await bcrypt.compare(password, user.passwordHash);
 			if (!isPasswordMatched) {
 				return {
 					statusCode: 401,
@@ -249,12 +243,8 @@ export async function handleIpcApiDispatch(
 
 		// Pre-auth file-based backup restore (works from login / onboarding screen)
 		if (pathname === "/auth/restore-backup" && method === "POST") {
-			const archiveBase64 = String(
-				body.archiveBase64 || body.archive || body.data || "",
-			);
-			const backupPayload = (body.backup || body.data) as
-				| Record<string, unknown>
-				| undefined;
+			const archiveBase64 = String(body.archiveBase64 || body.archive || body.data || "");
+			const backupPayload = (body.backup || body.data) as Record<string, unknown> | undefined;
 
 			let targetEmail = "";
 			let targetName = "Restored User";
@@ -267,16 +257,9 @@ export async function handleIpcApiDispatch(
 				const zip = await JSZip.loadAsync(buffer);
 				const extracted = await extractArchiveCollections(zip);
 				collections = extracted.collections;
-				targetEmail =
-					extracted.user?.email || extracted.manifest?.user?.email || "";
-				targetName =
-					extracted.user?.name ||
-					extracted.manifest?.user?.name ||
-					"Restored User";
-				targetCurrency =
-					extracted.user?.currency ||
-					extracted.manifest?.user?.currency ||
-					"USD";
+				targetEmail = extracted.user?.email || extracted.manifest?.user?.email || "";
+				targetName = extracted.user?.name || extracted.manifest?.user?.name || "Restored User";
+				targetCurrency = extracted.user?.currency || extracted.manifest?.user?.currency || "USD";
 			} else if (backupPayload && typeof backupPayload === "object") {
 				const u = (backupPayload.user as Record<string, unknown>) || {};
 				targetEmail = String(u.email || "");
@@ -310,9 +293,7 @@ export async function handleIpcApiDispatch(
 			if (!targetUser) {
 				const salt = await bcrypt.genSalt(10);
 				const rawPassword =
-					typeof body.password === "string" && body.password
-						? body.password
-						: crypto.randomUUID();
+					typeof body.password === "string" && body.password ? body.password : crypto.randomUUID();
 				const passwordHash = await bcrypt.hash(rawPassword, salt);
 				targetUser = await prisma.user.create({
 					data: {
@@ -324,11 +305,7 @@ export async function handleIpcApiDispatch(
 				});
 			}
 
-			const mergeReport = await mergeBackupIntoUser(
-				prisma,
-				targetUser.id,
-				collections,
-			);
+			const mergeReport = await mergeBackupIntoUser(prisma, targetUser.id, collections);
 			startSession(targetUser.id);
 			const summary = summarizeMergeReport(mergeReport);
 
@@ -409,8 +386,7 @@ export async function handleIpcApiDispatch(
 			return {
 				statusCode: 401,
 				success: false,
-				message:
-					"Authentication required. Please sign in or restore your account.",
+				message: "Authentication required. Please sign in or restore your account.",
 				data: null,
 			};
 		}
@@ -456,37 +432,24 @@ export async function handleIpcApiDispatch(
 				data: {
 					userId,
 					title: String(body.title || "Untitled Task"),
-					description:
-						typeof body.description === "string" ? body.description : null,
+					description: typeof body.description === "string" ? body.description : null,
 					type: typeof body.type === "string" ? body.type : "TASK",
-					category:
-						typeof body.category === "string" ? body.category : "General",
-					priority:
-						typeof body.priority === "string" ? body.priority : "MEDIUM",
+					category: typeof body.category === "string" ? body.category : "General",
+					priority: typeof body.priority === "string" ? body.priority : "MEDIUM",
 					status: typeof body.status === "string" ? body.status : "PENDING",
 					startDate: body.startDate ? new Date(String(body.startDate)) : null,
 					dueDate: body.dueDate ? new Date(String(body.dueDate)) : null,
 					remindBeforeMinutes: numberOr(body.remindBeforeMinutes, 15),
 					isRecurring: Boolean(body.isRecurring),
-					repeatFrequency: body.repeatFrequency
-						? String(body.repeatFrequency)
-						: null,
+					repeatFrequency: body.repeatFrequency ? String(body.repeatFrequency) : null,
 					repeatInterval: Number(body.repeatInterval) || 1,
-					repeatDaysOfWeek: body.repeatDaysOfWeek
-						? String(body.repeatDaysOfWeek)
-						: null,
+					repeatDaysOfWeek: body.repeatDaysOfWeek ? String(body.repeatDaysOfWeek) : null,
 					repeatTime: body.repeatTime ? String(body.repeatTime) : null,
-					repeatDayOfMonth: body.repeatDayOfMonth
-						? Number(body.repeatDayOfMonth)
-						: null,
-					repeatMonthOfYear: body.repeatMonthOfYear
-						? Number(body.repeatMonthOfYear)
-						: null,
+					repeatDayOfMonth: body.repeatDayOfMonth ? Number(body.repeatDayOfMonth) : null,
+					repeatMonthOfYear: body.repeatMonthOfYear ? Number(body.repeatMonthOfYear) : null,
 					repeatEndType: body.repeatEndType ? String(body.repeatEndType) : null,
 					repeatCount: body.repeatCount ? Number(body.repeatCount) : null,
-					repeatUntil: body.repeatUntil
-						? new Date(String(body.repeatUntil))
-						: null,
+					repeatUntil: body.repeatUntil ? new Date(String(body.repeatUntil)) : null,
 				},
 			});
 
@@ -535,32 +498,17 @@ export async function handleIpcApiDispatch(
 				where: { id: taskId },
 				data: {
 					title: typeof body.title === "string" ? body.title : undefined,
-					description:
-						typeof body.description === "string" ? body.description : undefined,
+					description: typeof body.description === "string" ? body.description : undefined,
 					status: typeof body.status === "string" ? body.status : undefined,
-					priority:
-						typeof body.priority === "string" ? body.priority : undefined,
-					category:
-						typeof body.category === "string" ? body.category : undefined,
+					priority: typeof body.priority === "string" ? body.priority : undefined,
+					category: typeof body.category === "string" ? body.category : undefined,
 					type: typeof body.type === "string" ? body.type : undefined,
-					startDate: body.startDate
-						? new Date(String(body.startDate))
-						: undefined,
+					startDate: body.startDate ? new Date(String(body.startDate)) : undefined,
 					dueDate: body.dueDate ? new Date(String(body.dueDate)) : undefined,
-					completedAt:
-						body.status === "COMPLETED"
-							? new Date()
-							: body.status
-								? null
-								: undefined,
+					completedAt: body.status === "COMPLETED" ? new Date() : body.status ? null : undefined,
 					remindBeforeMinutes:
-						body.remindBeforeMinutes !== undefined
-							? Number(body.remindBeforeMinutes)
-							: undefined,
-					isRecurring:
-						body.isRecurring !== undefined
-							? Boolean(body.isRecurring)
-							: undefined,
+						body.remindBeforeMinutes !== undefined ? Number(body.remindBeforeMinutes) : undefined,
+					isRecurring: body.isRecurring !== undefined ? Boolean(body.isRecurring) : undefined,
 					repeatFrequency:
 						body.repeatFrequency !== undefined
 							? body.repeatFrequency
@@ -568,9 +516,7 @@ export async function handleIpcApiDispatch(
 								: null
 							: undefined,
 					repeatInterval:
-						body.repeatInterval !== undefined
-							? Number(body.repeatInterval)
-							: undefined,
+						body.repeatInterval !== undefined ? Number(body.repeatInterval) : undefined,
 					repeatDaysOfWeek:
 						body.repeatDaysOfWeek !== undefined
 							? body.repeatDaysOfWeek
@@ -626,9 +572,7 @@ export async function handleIpcApiDispatch(
 								: null
 							: undefined,
 					completedOccurrences:
-						body.completedOccurrences !== undefined
-							? Number(body.completedOccurrences)
-							: undefined,
+						body.completedOccurrences !== undefined ? Number(body.completedOccurrences) : undefined,
 				},
 			});
 
@@ -691,16 +635,10 @@ export async function handleIpcApiDispatch(
 				data: {
 					userId,
 					title: String(body.title || "Routine"),
-					description:
-						typeof body.description === "string" ? body.description : null,
-					timeSlot:
-						typeof body.timeSlot === "string" ? body.timeSlot : "morning",
-					targetTime:
-						typeof body.targetTime === "string" ? body.targetTime : null,
-					daysOfWeek:
-						typeof body.daysOfWeek === "string"
-							? body.daysOfWeek
-							: "0,1,2,3,4,5,6",
+					description: typeof body.description === "string" ? body.description : null,
+					timeSlot: typeof body.timeSlot === "string" ? body.timeSlot : "morning",
+					targetTime: typeof body.targetTime === "string" ? body.targetTime : null,
+					daysOfWeek: typeof body.daysOfWeek === "string" ? body.daysOfWeek : "0,1,2,3,4,5,6",
 					reminderMinutes: Number(body.reminderMinutes) || 0,
 				},
 			});
@@ -719,9 +657,7 @@ export async function handleIpcApiDispatch(
 		if (routineToggleMatch && method === "POST") {
 			const routineId = routineToggleMatch[1];
 			const todayStr =
-				typeof body.date === "string"
-					? body.date
-					: new Date().toISOString().slice(0, 10);
+				typeof body.date === "string" ? body.date : new Date().toISOString().slice(0, 10);
 
 			const existingLog = await prisma.routineLog.findUnique({
 				where: {
@@ -761,9 +697,7 @@ export async function handleIpcApiDispatch(
 					where: { id: routineId },
 					data: {
 						streakCount: newStreak,
-						lastCompletedDate: isNowCompleted
-							? todayStr
-							: routine.lastCompletedDate,
+						lastCompletedDate: isNowCompleted ? todayStr : routine.lastCompletedDate,
 					},
 				});
 			}
@@ -802,9 +736,7 @@ export async function handleIpcApiDispatch(
 				return notFound("Routine not found");
 			}
 			const todayStr = new Date().toISOString().slice(0, 10);
-			const isCompletedToday = routine.logs.some(
-				(l) => l.date === todayStr && l.completed,
-			);
+			const isCompletedToday = routine.logs.some((l) => l.date === todayStr && l.completed);
 			return {
 				statusCode: 200,
 				success: true,
@@ -823,22 +755,13 @@ export async function handleIpcApiDispatch(
 				where: { id: routineId },
 				data: {
 					title: typeof body.title === "string" ? body.title : undefined,
-					description:
-						typeof body.description === "string" ? body.description : undefined,
-					timeSlot:
-						typeof body.timeSlot === "string" ? body.timeSlot : undefined,
-					targetTime:
-						typeof body.targetTime === "string" ? body.targetTime : undefined,
-					daysOfWeek:
-						typeof body.daysOfWeek === "string" ? body.daysOfWeek : undefined,
+					description: typeof body.description === "string" ? body.description : undefined,
+					timeSlot: typeof body.timeSlot === "string" ? body.timeSlot : undefined,
+					targetTime: typeof body.targetTime === "string" ? body.targetTime : undefined,
+					daysOfWeek: typeof body.daysOfWeek === "string" ? body.daysOfWeek : undefined,
 					reminderMinutes:
-						body.reminderMinutes !== undefined
-							? Number(body.reminderMinutes)
-							: undefined,
-					streakCount:
-						body.streakCount !== undefined
-							? Number(body.streakCount)
-							: undefined,
+						body.reminderMinutes !== undefined ? Number(body.reminderMinutes) : undefined,
+					streakCount: body.streakCount !== undefined ? Number(body.streakCount) : undefined,
 					lastCompletedDate:
 						body.lastCompletedDate !== undefined
 							? body.lastCompletedDate
@@ -890,8 +813,7 @@ export async function handleIpcApiDispatch(
 					totalIncome += t.amount;
 				} else {
 					totalExpense += t.amount;
-					categoryBreakdown[t.category] =
-						(categoryBreakdown[t.category] || 0) + t.amount;
+					categoryBreakdown[t.category] = (categoryBreakdown[t.category] || 0) + t.amount;
 				}
 			}
 
@@ -907,15 +829,9 @@ export async function handleIpcApiDispatch(
 			};
 		}
 
-		if (
-			(pathname === "/finances/transactions" || pathname === "/finances") &&
-			method === "GET"
-		) {
+		if ((pathname === "/finances/transactions" || pathname === "/finances") && method === "GET") {
 			const where: Record<string, unknown> = { userId };
-			if (
-				query.type &&
-				["EXPENSE", "INCOME"].includes(query.type.toUpperCase())
-			) {
+			if (query.type && ["EXPENSE", "INCOME"].includes(query.type.toUpperCase())) {
 				where.type = query.type.toUpperCase();
 			}
 			if (query.category) {
@@ -938,35 +854,22 @@ export async function handleIpcApiDispatch(
 			const formatted = transactions.map((t) => ({
 				...t,
 				date: t.date instanceof Date ? t.date.toISOString() : String(t.date),
-				createdAt:
-					t.createdAt instanceof Date
-						? t.createdAt.toISOString()
-						: String(t.createdAt),
-				updatedAt:
-					t.updatedAt instanceof Date
-						? t.updatedAt.toISOString()
-						: String(t.updatedAt),
+				createdAt: t.createdAt instanceof Date ? t.createdAt.toISOString() : String(t.createdAt),
+				updatedAt: t.updatedAt instanceof Date ? t.updatedAt.toISOString() : String(t.updatedAt),
 			}));
 
 			return { statusCode: 200, success: true, data: formatted };
 		}
 
-		if (
-			(pathname === "/finances/transactions" || pathname === "/finances") &&
-			method === "POST"
-		) {
+		if ((pathname === "/finances/transactions" || pathname === "/finances") && method === "POST") {
 			const tx = await prisma.transaction.create({
 				data: {
 					userId,
 					type: String(body.type || "EXPENSE").toUpperCase(),
 					amount: Number(body.amount) || 0,
 					category: String(body.category || "General"),
-					description:
-						typeof body.description === "string" ? body.description : null,
-					paymentMethod:
-						typeof body.paymentMethod === "string"
-							? body.paymentMethod
-							: "Cash",
+					description: typeof body.description === "string" ? body.description : null,
+					paymentMethod: typeof body.paymentMethod === "string" ? body.paymentMethod : "Cash",
 					date: body.date ? new Date(String(body.date)) : new Date(),
 				},
 			});
@@ -977,16 +880,11 @@ export async function handleIpcApiDispatch(
 				message: `${tx.type === "INCOME" ? "Income" : "Expense"} recorded`,
 				data: {
 					...tx,
-					date:
-						tx.date instanceof Date ? tx.date.toISOString() : String(tx.date),
+					date: tx.date instanceof Date ? tx.date.toISOString() : String(tx.date),
 					createdAt:
-						tx.createdAt instanceof Date
-							? tx.createdAt.toISOString()
-							: String(tx.createdAt),
+						tx.createdAt instanceof Date ? tx.createdAt.toISOString() : String(tx.createdAt),
 					updatedAt:
-						tx.updatedAt instanceof Date
-							? tx.updatedAt.toISOString()
-							: String(tx.updatedAt),
+						tx.updatedAt instanceof Date ? tx.updatedAt.toISOString() : String(tx.updatedAt),
 				},
 			};
 		}
@@ -1004,9 +902,7 @@ export async function handleIpcApiDispatch(
 			};
 		}
 
-		const txSingleMatch = pathname.match(
-			/^\/finances(?:\/transactions)?\/([^/]+)$/,
-		);
+		const txSingleMatch = pathname.match(/^\/finances(?:\/transactions)?\/([^/]+)$/);
 		if (
 			txSingleMatch &&
 			txSingleMatch[1] !== "analytics" &&
@@ -1032,16 +928,11 @@ export async function handleIpcApiDispatch(
 					success: true,
 					data: {
 						...tx,
-						date:
-							tx.date instanceof Date ? tx.date.toISOString() : String(tx.date),
+						date: tx.date instanceof Date ? tx.date.toISOString() : String(tx.date),
 						createdAt:
-							tx.createdAt instanceof Date
-								? tx.createdAt.toISOString()
-								: String(tx.createdAt),
+							tx.createdAt instanceof Date ? tx.createdAt.toISOString() : String(tx.createdAt),
 						updatedAt:
-							tx.updatedAt instanceof Date
-								? tx.updatedAt.toISOString()
-								: String(tx.updatedAt),
+							tx.updatedAt instanceof Date ? tx.updatedAt.toISOString() : String(tx.updatedAt),
 					},
 				};
 			}
@@ -1070,8 +961,7 @@ export async function handleIpcApiDispatch(
 					updateData.category = body.category;
 				}
 				if (body.description !== undefined) {
-					updateData.description =
-						typeof body.description === "string" ? body.description : null;
+					updateData.description = typeof body.description === "string" ? body.description : null;
 				}
 				if (typeof body.paymentMethod === "string") {
 					updateData.paymentMethod = body.paymentMethod;
@@ -1091,10 +981,7 @@ export async function handleIpcApiDispatch(
 					message: "Transaction updated",
 					data: {
 						...updated,
-						date:
-							updated.date instanceof Date
-								? updated.date.toISOString()
-								: String(updated.date),
+						date: updated.date instanceof Date ? updated.date.toISOString() : String(updated.date),
 						createdAt:
 							updated.createdAt instanceof Date
 								? updated.createdAt.toISOString()
@@ -1157,8 +1044,7 @@ export async function handleIpcApiDispatch(
 			});
 
 			const formatted = trackers.map((tracker) => {
-				const todayLog =
-					tracker.logs.find((l) => l.date === targetDate) || null;
+				const todayLog = tracker.logs.find((l) => l.date === targetDate) || null;
 
 				let totalUnitsMonth = 0;
 				let totalCostMonth = 0;
@@ -1221,14 +1107,12 @@ export async function handleIpcApiDispatch(
 				data: {
 					userId,
 					name: String(body.name || "Tracker"),
-					category:
-						typeof body.category === "string" ? body.category : "Meals & Food",
+					category: typeof body.category === "string" ? body.category : "Meals & Food",
 					unitName: typeof body.unitName === "string" ? body.unitName : "meals",
 					defaultTarget: Number(body.defaultTarget) || 2,
 					unitPrice: body.unitPrice ? Number(body.unitPrice) : null,
 					currency: typeof body.currency === "string" ? body.currency : "USD",
-					description:
-						typeof body.description === "string" ? body.description : null,
+					description: typeof body.description === "string" ? body.description : null,
 					color: typeof body.color === "string" ? body.color : "emerald",
 				},
 			});
@@ -1256,9 +1140,7 @@ export async function handleIpcApiDispatch(
 		if (trackerLogMatch && method === "POST") {
 			const trackerId = trackerLogMatch[1];
 			const dateStr =
-				typeof body.date === "string"
-					? body.date
-					: new Date().toISOString().slice(0, 10);
+				typeof body.date === "string" ? body.date : new Date().toISOString().slice(0, 10);
 
 			const log = await prisma.dailyTrackerLog.upsert({
 				where: {
@@ -1279,17 +1161,14 @@ export async function handleIpcApiDispatch(
 				update: {
 					value: body.value !== undefined ? Number(body.value) : undefined,
 					status: typeof body.status === "string" ? body.status : undefined,
-					unitPrice:
-						body.unitPrice !== undefined ? Number(body.unitPrice) : undefined,
+					unitPrice: body.unitPrice !== undefined ? Number(body.unitPrice) : undefined,
 					notes: typeof body.notes === "string" ? body.notes : undefined,
 				},
 			});
 			return { statusCode: 200, success: true, data: log };
 		}
 
-		const trackerSingleLogMatch = pathname.match(
-			/^\/trackers\/([^/]+)\/logs?\/([^/]+)$/,
-		);
+		const trackerSingleLogMatch = pathname.match(/^\/trackers\/([^/]+)\/logs?\/([^/]+)$/);
 		if (trackerSingleLogMatch && method === "PATCH") {
 			const logId = trackerSingleLogMatch[2];
 			const updated = await prisma.dailyTrackerLog.update({
@@ -1297,11 +1176,9 @@ export async function handleIpcApiDispatch(
 				data: {
 					value: body.value !== undefined ? Number(body.value) : undefined,
 					status: typeof body.status === "string" ? body.status : undefined,
-					unitPrice:
-						body.unitPrice !== undefined ? Number(body.unitPrice) : undefined,
+					unitPrice: body.unitPrice !== undefined ? Number(body.unitPrice) : undefined,
 					notes: typeof body.notes === "string" ? body.notes : undefined,
-					isSettled:
-						body.isSettled !== undefined ? Boolean(body.isSettled) : undefined,
+					isSettled: body.isSettled !== undefined ? Boolean(body.isSettled) : undefined,
 				},
 			});
 			return { statusCode: 200, success: true, data: updated };
@@ -1375,10 +1252,7 @@ export async function handleIpcApiDispatch(
 								? body.category
 								: tracker.category || "Meals & Food",
 						description: settlementDescription,
-						paymentMethod:
-							typeof body.paymentMethod === "string"
-								? body.paymentMethod
-								: "Cash",
+						paymentMethod: typeof body.paymentMethod === "string" ? body.paymentMethod : "Cash",
 						date: new Date(),
 					},
 				}),
@@ -1418,9 +1292,7 @@ export async function handleIpcApiDispatch(
 
 			const now = new Date();
 			const targetYear = query.year ? Number(query.year) : now.getFullYear();
-			const targetMonth = query.month
-				? Number(query.month)
-				: now.getMonth() + 1;
+			const targetMonth = query.month ? Number(query.month) : now.getMonth() + 1;
 
 			const monthStr = String(targetMonth).padStart(2, "0");
 			const lastDay = new Date(targetYear, targetMonth, 0).getDate();
@@ -1537,24 +1409,17 @@ export async function handleIpcApiDispatch(
 				where: { id: trackerId },
 				data: {
 					name: typeof body.name === "string" ? body.name : undefined,
-					category:
-						typeof body.category === "string" ? body.category : undefined,
-					unitName:
-						typeof body.unitName === "string" ? body.unitName : undefined,
-					defaultTarget:
-						body.defaultTarget !== undefined
-							? Number(body.defaultTarget)
-							: undefined,
+					category: typeof body.category === "string" ? body.category : undefined,
+					unitName: typeof body.unitName === "string" ? body.unitName : undefined,
+					defaultTarget: body.defaultTarget !== undefined ? Number(body.defaultTarget) : undefined,
 					unitPrice:
 						body.unitPrice !== undefined
 							? body.unitPrice
 								? Number(body.unitPrice)
 								: null
 							: undefined,
-					currency:
-						typeof body.currency === "string" ? body.currency : undefined,
-					description:
-						typeof body.description === "string" ? body.description : undefined,
+					currency: typeof body.currency === "string" ? body.currency : undefined,
+					description: typeof body.description === "string" ? body.description : undefined,
 					color: typeof body.color === "string" ? body.color : undefined,
 				},
 			});
@@ -1744,8 +1609,7 @@ export async function handleIpcApiDispatch(
 
 		// ================= MULTI-COLLECTION ZIP ARCHIVE ROUTES =================
 		if (
-			(pathname === "/sync/archive/export" ||
-				pathname === "/sync/export-archive") &&
+			(pathname === "/sync/archive/export" || pathname === "/sync/export-archive") &&
 			(method === "POST" || method === "GET")
 		) {
 			const archiveResult = await createBackupArchive(userId, prisma);
@@ -1762,9 +1626,7 @@ export async function handleIpcApiDispatch(
 		}
 
 		if (pathname === "/sync/archive/preview" && method === "POST") {
-			const archiveBase64 = String(
-				body.archiveBase64 || body.archive || body.data || "",
-			);
+			const archiveBase64 = String(body.archiveBase64 || body.archive || body.data || "");
 			if (!archiveBase64) {
 				return {
 					statusCode: 400,
@@ -1784,13 +1646,10 @@ export async function handleIpcApiDispatch(
 		}
 
 		if (
-			(pathname === "/sync/archive/restore" ||
-				pathname === "/sync/restore-archive") &&
+			(pathname === "/sync/archive/restore" || pathname === "/sync/restore-archive") &&
 			method === "POST"
 		) {
-			const archiveBase64 = String(
-				body.archiveBase64 || body.archive || body.data || "",
-			);
+			const archiveBase64 = String(body.archiveBase64 || body.archive || body.data || "");
 			if (!archiveBase64) {
 				return {
 					statusCode: 400,
@@ -1800,11 +1659,7 @@ export async function handleIpcApiDispatch(
 				};
 			}
 
-			const restoreResult = await restoreBackupArchive(
-				archiveBase64,
-				userId,
-				prisma,
-			);
+			const restoreResult = await restoreBackupArchive(archiveBase64, userId, prisma);
 			return {
 				statusCode: 200,
 				success: true,
@@ -1834,11 +1689,7 @@ export async function handleIpcApiDispatch(
 				const importData = body.data;
 				if (typeof importData === "string") {
 					// Could be base64 zip archive
-					const restoreResult = await restoreBackupArchive(
-						importData,
-						userId,
-						prisma,
-					);
+					const restoreResult = await restoreBackupArchive(importData, userId, prisma);
 					return {
 						statusCode: 200,
 						success: true,
@@ -1851,14 +1702,13 @@ export async function handleIpcApiDispatch(
 
 		// ================= SYNC & GOOGLE CLOUD ROUTES =================
 		if (pathname === "/sync/status" && method === "GET") {
-			const [conn, taskCount, routineCount, txCount, trackerCount] =
-				await Promise.all([
-					prisma.googleConnection.findUnique({ where: { userId } }),
-					prisma.task.count({ where: { userId } }),
-					prisma.routine.count({ where: { userId } }),
-					prisma.transaction.count({ where: { userId } }),
-					prisma.dailyTracker.count({ where: { userId } }),
-				]);
+			const [conn, taskCount, routineCount, txCount, trackerCount] = await Promise.all([
+				prisma.googleConnection.findUnique({ where: { userId } }),
+				prisma.task.count({ where: { userId } }),
+				prisma.routine.count({ where: { userId } }),
+				prisma.transaction.count({ where: { userId } }),
+				prisma.dailyTracker.count({ where: { userId } }),
+			]);
 			const configured = isGoogleConfigured();
 			return {
 				statusCode: 200,
@@ -1871,9 +1721,7 @@ export async function handleIpcApiDispatch(
 					email: conn?.googleEmail || null,
 					googleEmail: conn?.googleEmail || null,
 					lastSyncAt: conn?.lastSyncAt ? conn.lastSyncAt.toISOString() : null,
-					lastGoogleSyncAt: conn?.lastSyncAt
-						? conn.lastSyncAt.toISOString()
-						: null,
+					lastGoogleSyncAt: conn?.lastSyncAt ? conn.lastSyncAt.toISOString() : null,
 					driveFileId: conn?.driveFileId || null,
 					userId,
 					stats: {
@@ -1967,10 +1815,7 @@ export async function handleIpcApiDispatch(
 		};
 	} catch (err: unknown) {
 		const message = err instanceof Error ? err.message : String(err);
-		console.error(
-			`[IPC Dispatcher Error] ${method} ${pathname} failed:`,
-			message,
-		);
+		console.error(`[IPC Dispatcher Error] ${method} ${pathname} failed:`, message);
 		return {
 			statusCode: 500,
 			success: false,

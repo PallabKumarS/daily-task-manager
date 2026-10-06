@@ -40,9 +40,9 @@ export function CategoryManagerModal({
 	onUpdated,
 }: CategoryManagerModalProps) {
 	const confirm = useConfirm();
-	const [activeGroup, setActiveGroup] = React.useState<
-		"EXPENSE" | "INCOME" | "PAYMENT_METHOD"
-	>(defaultGroup);
+	const [activeGroup, setActiveGroup] = React.useState<"EXPENSE" | "INCOME" | "PAYMENT_METHOD">(
+		defaultGroup,
+	);
 	const [categories, setCategories] = React.useState<CustomCategoryItem[]>([]);
 
 	// New category input state
@@ -100,9 +100,7 @@ export function CategoryManagerModal({
 				if (onUpdated) onUpdated();
 			}
 		} catch (err) {
-			toast.error(
-				err instanceof Error ? err.message : "Failed to create category",
-			);
+			toast.error(err instanceof Error ? err.message : "Failed to create category");
 		}
 	};
 
@@ -136,9 +134,7 @@ export function CategoryManagerModal({
 				if (onUpdated) onUpdated();
 			}
 		} catch (err) {
-			toast.error(
-				err instanceof Error ? err.message : "Failed to update category",
-			);
+			toast.error(err instanceof Error ? err.message : "Failed to update category");
 		} finally {
 			setSavingEdit(false);
 		}
@@ -162,9 +158,7 @@ export function CategoryManagerModal({
 				if (onUpdated) onUpdated();
 			}
 		} catch (err) {
-			toast.error(
-				err instanceof Error ? err.message : "Failed to delete category",
-			);
+			toast.error(err instanceof Error ? err.message : "Failed to delete category");
 		}
 	};
 
@@ -172,14 +166,7 @@ export function CategoryManagerModal({
 	const defaultList = React.useMemo(() => {
 		if (activeGroup === "EXPENSE") return EXPENSE_CATEGORIES;
 		if (activeGroup === "INCOME") return INCOME_CATEGORIES;
-		return [
-			"Cash",
-			"Debit / Credit Card",
-			"Bank Transfer",
-			"Mobile Banking",
-			"Crypto",
-			"Other",
-		];
+		return ["Cash", "Debit / Credit Card", "Bank Transfer", "Mobile Banking", "Crypto", "Other"];
 	}, [activeGroup]);
 
 	const customList = React.useMemo(() => {
@@ -244,8 +231,7 @@ export function CategoryManagerModal({
 				<div className="space-y-2">
 					<div className="flex items-center justify-between px-1">
 						<span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-							Custom{" "}
-							{activeGroup === "PAYMENT_METHOD" ? "Methods" : "Categories"} (
+							Custom {activeGroup === "PAYMENT_METHOD" ? "Methods" : "Categories"} (
 							{customList.length})
 						</span>
 						{!isAdding && (
@@ -321,8 +307,7 @@ export function CategoryManagerModal({
 					<div className="max-h-44 overflow-y-auto space-y-1.5 pr-1 scrollbar-thin scrollbar-thumb-slate-800">
 						{customList.length === 0 && !isAdding ? (
 							<div className="rounded-xl border border-dashed border-slate-800 p-3 text-center text-xs text-slate-500">
-								No custom {activeGroup.toLowerCase()} created yet. Click "+ Add
-								New" to create one.
+								No custom {activeGroup.toLowerCase()} created yet. Click "+ Add New" to create one.
 							</div>
 						) : (
 							customList.map((cat) => {
@@ -352,9 +337,7 @@ export function CategoryManagerModal({
 															type="button"
 															onClick={() => setEditColor(c)}
 															className={`h-3.5 w-3.5 rounded-full transition-transform cursor-pointer ${
-																editColor === c
-																	? "scale-125 ring-2 ring-white/60"
-																	: "opacity-60"
+																editColor === c ? "scale-125 ring-2 ring-white/60" : "opacity-60"
 															}`}
 															style={{ backgroundColor: c }}
 														/>

@@ -1,14 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-	Activity,
-	ArrowRight,
-	Cloud,
-	FileArchive,
-	Lock,
-	Mail,
-} from "lucide-react";
+import { Activity, ArrowRight, Cloud, FileArchive, Lock, Mail } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import * as React from "react";
@@ -86,9 +79,7 @@ export default function LoginPage() {
 									{...register("email")}
 								/>
 							</div>
-							{errors.email && (
-								<p className="text-xs text-red-400">{errors.email.message}</p>
-							)}
+							{errors.email && <p className="text-xs text-red-400">{errors.email.message}</p>}
 						</div>
 
 						<div className="space-y-1.5">
@@ -103,11 +94,7 @@ export default function LoginPage() {
 									{...register("password")}
 								/>
 							</div>
-							{errors.password && (
-								<p className="text-xs text-red-400">
-									{errors.password.message}
-								</p>
-							)}
+							{errors.password && <p className="text-xs text-red-400">{errors.password.message}</p>}
 						</div>
 
 						<Button
@@ -155,10 +142,7 @@ export default function LoginPage() {
 
 					<div className="mt-6 text-center text-xs text-slate-400">
 						Don&apos;t have an account?{" "}
-						<Link
-							href="/register"
-							className="text-emerald-400 font-semibold hover:underline"
-						>
+						<Link href="/register" className="text-emerald-400 font-semibold hover:underline">
 							Create an account
 						</Link>
 					</div>
@@ -170,10 +154,7 @@ export default function LoginPage() {
 				onClose={() => setIsRestoreModalOpen(false)}
 			/>
 
-			<GoogleRestoreModal
-				isOpen={isGoogleModalOpen}
-				onClose={() => setIsGoogleModalOpen(false)}
-			/>
+			<GoogleRestoreModal isOpen={isGoogleModalOpen} onClose={() => setIsGoogleModalOpen(false)} />
 		</div>
 	);
 }

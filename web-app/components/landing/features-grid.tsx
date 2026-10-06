@@ -1,18 +1,6 @@
 "use client";
 
-import {
-	ArrowRight,
-	Bell,
-	CalendarCheck,
-	CheckSquare,
-	Cloud,
-	Flame,
-	Layers,
-	PieChart,
-	Shield,
-	TrendingUp,
-} from "lucide-react";
-import * as React from "react";
+import { Bell, CalendarCheck, Cloud, TrendingUp } from "lucide-react";
 
 const FEATURES = [
 	{
@@ -61,8 +49,8 @@ export function FeaturesGrid() {
 						Everything your daily life demands. Nothing superfluous.
 					</p>
 					<p className="mt-3 text-sm text-slate-400 leading-relaxed">
-						Crafted for rapid execution, memory efficiency, zero cognitive
-						overload, and full data sovereignty.
+						Crafted for rapid execution, memory efficiency, zero cognitive overload, and full data
+						sovereignty.
 					</p>
 				</div>
 
@@ -83,12 +71,8 @@ export function FeaturesGrid() {
 									</span>
 								</div>
 
-								<h3 className="mt-5 text-xl font-bold text-white tracking-tight">
-									{f.title}
-								</h3>
-								<p className="mt-2 text-sm text-slate-400 leading-relaxed">
-									{f.description}
-								</p>
+								<h3 className="mt-5 text-xl font-bold text-white tracking-tight">{f.title}</h3>
+								<p className="mt-2 text-sm text-slate-400 leading-relaxed">{f.description}</p>
 							</div>
 						);
 					})}

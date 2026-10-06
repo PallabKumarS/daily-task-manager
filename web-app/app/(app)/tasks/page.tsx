@@ -67,9 +67,7 @@ export default function TasksPage() {
 
 			setTasks((prev) =>
 				prev.map((t) =>
-					t.id === item.id
-						? { ...t, status: nextStatus as TaskItem["status"] }
-						: t,
+					t.id === item.id ? { ...t, status: nextStatus as TaskItem["status"] } : t,
 				),
 			);
 
@@ -103,12 +101,10 @@ export default function TasksPage() {
 	return (
 		<div className="space-y-6">
 			<div>
-				<h1 className="text-2xl font-bold tracking-tight text-white">
-					Tasks & Calendar Events
-				</h1>
+				<h1 className="text-2xl font-bold tracking-tight text-white">Tasks & Calendar Events</h1>
 				<p className="text-xs text-slate-400 mt-1">
-					Schedule priority actions with precision alert lead times (5m, 15m,
-					30m, 1h) and status tracking.
+					Schedule priority actions with precision alert lead times (5m, 15m, 30m, 1h) and status
+					tracking.
 				</p>
 			</div>
 

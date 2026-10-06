@@ -66,12 +66,9 @@ export default function RegisterPage() {
 						</div>
 						<span className="text-xl font-black text-white">DayPulse</span>
 					</Link>
-					<h1 className="text-2xl font-bold tracking-tight text-white pt-2">
-						Create your account
-					</h1>
+					<h1 className="text-2xl font-bold tracking-tight text-white pt-2">Create your account</h1>
 					<p className="text-xs text-slate-400">
-						Start managing routines, scheduling tasks, and tracking daily
-						cashflow
+						Start managing routines, scheduling tasks, and tracking daily cashflow
 					</p>
 				</div>
 
@@ -88,9 +85,7 @@ export default function RegisterPage() {
 									{...register("name")}
 								/>
 							</div>
-							{errors.name && (
-								<p className="text-xs text-red-400">{errors.name.message}</p>
-							)}
+							{errors.name && <p className="text-xs text-red-400">{errors.name.message}</p>}
 						</div>
 
 						<div className="space-y-1.5">
@@ -105,9 +100,7 @@ export default function RegisterPage() {
 									{...register("email")}
 								/>
 							</div>
-							{errors.email && (
-								<p className="text-xs text-red-400">{errors.email.message}</p>
-							)}
+							{errors.email && <p className="text-xs text-red-400">{errors.email.message}</p>}
 						</div>
 
 						<div className="space-y-1.5">
@@ -122,19 +115,13 @@ export default function RegisterPage() {
 									{...register("password")}
 								/>
 							</div>
-							{errors.password && (
-								<p className="text-xs text-red-400">
-									{errors.password.message}
-								</p>
-							)}
+							{errors.password && <p className="text-xs text-red-400">{errors.password.message}</p>}
 						</div>
 
 						<CustomSelect
 							label="Preferred Currency"
 							value={selectedCurrency}
-							onChange={(val) =>
-								setValue("currency", val, { shouldValidate: true })
-							}
+							onChange={(val) => setValue("currency", val, { shouldValidate: true })}
 							options={CURRENCY_SELECT_OPTIONS}
 							allowManage={false}
 						/>
@@ -145,29 +132,21 @@ export default function RegisterPage() {
 							disabled={isSubmitting}
 							className="w-full gap-2 mt-2 h-11"
 						>
-							<span>
-								{isSubmitting ? "Creating account..." : "Get Started"}
-							</span>
+							<span>{isSubmitting ? "Creating account..." : "Get Started"}</span>
 							<ArrowRight className="w-4 h-4" />
 						</Button>
 					</form>
 
 					<div className="mt-6 text-center text-xs text-slate-400">
 						Already have an account?{" "}
-						<Link
-							href="/login"
-							className="text-emerald-400 font-semibold hover:underline"
-						>
+						<Link href="/login" className="text-emerald-400 font-semibold hover:underline">
 							Sign In
 						</Link>
 					</div>
 
 					<div className="mt-2 text-center text-xs text-slate-500">
 						Setting up a new device?{" "}
-						<Link
-							href="/login"
-							className="text-teal-400 font-medium hover:underline"
-						>
+						<Link href="/login" className="text-teal-400 font-medium hover:underline">
 							Restore existing workspace
 						</Link>
 					</div>

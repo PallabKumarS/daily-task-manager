@@ -13,11 +13,7 @@ import { Modal } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/lib/api-client";
-import {
-	EXPENSE_CATEGORIES,
-	getCurrencySymbol,
-	INCOME_CATEGORIES,
-} from "@/lib/currency-symbols";
+import { EXPENSE_CATEGORIES, getCurrencySymbol, INCOME_CATEGORIES } from "@/lib/currency-symbols";
 
 const formSchema = z.object({
 	type: z.enum(["EXPENSE", "INCOME"]),
@@ -73,13 +69,11 @@ export function TransactionFormModal({
 	const currencySymbol = getCurrencySymbol(user?.currency || "USD");
 
 	const [amountDisplay, setAmountDisplay] = React.useState<string>("");
-	const [customCategories, setCustomCategories] = React.useState<
-		CustomCategoryItem[]
-	>([]);
+	const [customCategories, setCustomCategories] = React.useState<CustomCategoryItem[]>([]);
 	const [categoryManagerOpen, setCategoryManagerOpen] = React.useState(false);
-	const [managerGroup, setManagerGroup] = React.useState<
-		"EXPENSE" | "INCOME" | "PAYMENT_METHOD"
-	>("EXPENSE");
+	const [managerGroup, setManagerGroup] = React.useState<"EXPENSE" | "INCOME" | "PAYMENT_METHOD">(
+		"EXPENSE",
+	);
 
 	const {
 		register,
@@ -93,10 +87,7 @@ export function TransactionFormModal({
 		defaultValues: {
 			type: defaultType,
 			amount: 0,
-			category:
-				defaultType === "EXPENSE"
-					? EXPENSE_CATEGORIES[0]
-					: INCOME_CATEGORIES[0],
+			category: defaultType === "EXPENSE" ? EXPENSE_CATEGORIES[0] : INCOME_CATEGORIES[0],
 			description: "",
 			paymentMethod: "Cash",
 			date: new Date().toISOString().slice(0, 10),
@@ -127,10 +118,7 @@ export function TransactionFormModal({
 		const onCategoriesUpdated = () => fetchCustomCategories();
 		window.addEventListener("daypulse:categories-updated", onCategoriesUpdated);
 		return () => {
-			window.removeEventListener(
-				"daypulse:categories-updated",
-				onCategoriesUpdated,
-			);
+			window.removeEventListener("daypulse:categories-updated", onCategoriesUpdated);
 		};
 	}, [isOpen, fetchCustomCategories]);
 
@@ -156,10 +144,7 @@ export function TransactionFormModal({
 			reset({
 				type: defaultType,
 				amount: 0,
-				category:
-					defaultType === "EXPENSE"
-						? EXPENSE_CATEGORIES[0]
-						: INCOME_CATEGORIES[0],
+				category: defaultType === "EXPENSE" ? EXPENSE_CATEGORIES[0] : INCOME_CATEGORIES[0],
 				description: "",
 				paymentMethod: "Cash",
 				date: new Date().toISOString().slice(0, 10),
@@ -169,8 +154,7 @@ export function TransactionFormModal({
 
 	const handleTypeToggle = (type: "EXPENSE" | "INCOME") => {
 		setValue("type", type);
-		const defaultCat =
-			type === "EXPENSE" ? EXPENSE_CATEGORIES[0] : INCOME_CATEGORIES[0];
+		const defaultCat = type === "EXPENSE" ? EXPENSE_CATEGORIES[0] : INCOME_CATEGORIES[0];
 		setValue("category", defaultCat);
 	};
 
@@ -202,8 +186,7 @@ export function TransactionFormModal({
 				toast.success(`Category "${res.data.name}" saved to your collection`);
 			}
 		} catch (err) {
-			const message =
-				err instanceof Error ? err.message : "Failed to create category";
+			const message = err instanceof Error ? err.message : "Failed to create category";
 			toast.error(message);
 		}
 	};
@@ -220,53 +203,39 @@ export function TransactionFormModal({
 				toast.success(`Payment method "${res.data.name}" saved`);
 			}
 		} catch (err) {
-			const message =
-				err instanceof Error ? err.message : "Failed to create payment method";
+			const message = err instanceof Error ? err.message : "Failed to create payment method";
 			toast.error(message);
 		}
 	};
 
 	const onSubmit = async (data: FormValues) => {
 		try {
-			const endpoint = initialData
-				? `/finances/${initialData.id}`
-				: "/finances";
-			const res = initialData
-				? await api.patch(endpoint, data)
-				: await api.post(endpoint, data);
+			const endpoint = initialData ? `/finances/${initialData.id}` : "/finances";
+			const res = initialData ? await api.patch(endpoint, data) : await api.post(endpoint, data);
 
 			if (res.success) {
-				toast.success(
-					res.message ||
-						`${data.type === "INCOME" ? "Income" : "Expense"} recorded`,
-				);
+				toast.success(res.message || `${data.type === "INCOME" ? "Income" : "Expense"} recorded`);
 				onSuccess();
 				onClose();
 			} else {
 				toast.error(res.message || "Failed to record transaction");
 			}
 		} catch (err) {
-			const message =
-				err instanceof Error ? err.message : "Error recording transaction";
+			const message = err instanceof Error ? err.message : "Error recording transaction";
 			toast.error(message);
 		}
 	};
 
 	// Compile Category Options (Defaults + User Custom Categories)
 	const categoryOptions: SelectOption[] = React.useMemo(() => {
-		const defaults =
-			currentType === "EXPENSE" ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
+		const defaults = currentType === "EXPENSE" ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
 		const defaultOpts: SelectOption[] = defaults.map((cat) => ({
 			label: cat,
 			value: cat,
 		}));
 
 		const userOpts: SelectOption[] = customCategories
-			.filter(
-				(c) =>
-					c.group === currentType &&
-					!(defaults as readonly string[]).includes(c.name),
-			)
+			.filter((c) => c.group === currentType && !(defaults as readonly string[]).includes(c.name))
 			.map((c) => ({
 				label: c.name,
 				value: c.name,
@@ -279,12 +248,10 @@ export function TransactionFormModal({
 
 	// Compile Payment Method Options (Defaults + User Custom Methods)
 	const paymentOptions: SelectOption[] = React.useMemo(() => {
-		const defaultOpts: SelectOption[] = DEFAULT_PAYMENT_METHODS.map(
-			(method) => ({
-				label: method,
-				value: method,
-			}),
-		);
+		const defaultOpts: SelectOption[] = DEFAULT_PAYMENT_METHODS.map((method) => ({
+			label: method,
+			value: method,
+		}));
 
 		const userOpts: SelectOption[] = customCategories
 			.filter(
@@ -362,19 +329,12 @@ export function TransactionFormModal({
 								autoComplete="off"
 							/>
 						</div>
-						{errors.amount && (
-							<p className="text-xs text-red-400">{errors.amount.message}</p>
-						)}
+						{errors.amount && <p className="text-xs text-red-400">{errors.amount.message}</p>}
 					</div>
 
 					<div className="space-y-1.5">
 						<Label htmlFor="date">Date</Label>
-						<Input
-							id="date"
-							type="date"
-							className="h-11"
-							{...register("date")}
-						/>
+						<Input id="date" type="date" className="h-11" {...register("date")} />
 					</div>
 				</div>
 
@@ -383,9 +343,7 @@ export function TransactionFormModal({
 					<CustomSelect
 						label="Category"
 						value={selectedCategory}
-						onChange={(val) =>
-							setValue("category", val, { shouldValidate: true })
-						}
+						onChange={(val) => setValue("category", val, { shouldValidate: true })}
 						options={categoryOptions}
 						placeholder="Select category..."
 						group={currentType}
@@ -401,9 +359,7 @@ export function TransactionFormModal({
 					<CustomSelect
 						label="Payment Method"
 						value={selectedPaymentMethod}
-						onChange={(val) =>
-							setValue("paymentMethod", val, { shouldValidate: true })
-						}
+						onChange={(val) => setValue("paymentMethod", val, { shouldValidate: true })}
 						options={paymentOptions}
 						placeholder="Select payment method..."
 						group="PAYMENT_METHOD"
@@ -434,12 +390,7 @@ export function TransactionFormModal({
 				</div>
 
 				<div className="flex justify-end gap-3 pt-3">
-					<Button
-						type="button"
-						variant="outline"
-						onClick={onClose}
-						disabled={isSubmitting}
-					>
+					<Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
 						Cancel
 					</Button>
 					<Button

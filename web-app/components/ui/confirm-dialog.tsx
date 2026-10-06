@@ -110,9 +110,7 @@ export function ConfirmDialog({
 				role="alertdialog"
 				aria-modal="true"
 				aria-labelledby="confirm-dialog-title"
-				aria-describedby={
-					description ? "confirm-dialog-description" : undefined
-				}
+				aria-describedby={description ? "confirm-dialog-description" : undefined}
 				className={cn(
 					"relative w-full max-w-lg rounded-3xl border border-slate-700/80 bg-slate-900 p-6 sm:p-7 shadow-2xl shadow-black/90 z-10 flex flex-col animate-in zoom-in-95 duration-200",
 				)}

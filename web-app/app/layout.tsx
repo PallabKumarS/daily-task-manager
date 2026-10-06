@@ -55,8 +55,7 @@ export default function RootLayout({
 								richColors
 								closeButton
 								toastOptions={{
-									className:
-										"rounded-xl border border-slate-800 bg-slate-900 text-slate-100",
+									className: "rounded-xl border border-slate-800 bg-slate-900 text-slate-100",
 								}}
 							/>
 						</ConfirmProvider>

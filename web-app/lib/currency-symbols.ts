@@ -16,9 +16,7 @@ export const CURRENCIES: CurrencyOption[] = [
 ];
 
 export function getCurrencySymbol(code: string): string {
-	const match = CURRENCIES.find(
-		(c) => c.code.toUpperCase() === code.toUpperCase(),
-	);
+	const match = CURRENCIES.find((c) => c.code.toUpperCase() === code.toUpperCase());
 	return match ? match.symbol : code;
 }
 

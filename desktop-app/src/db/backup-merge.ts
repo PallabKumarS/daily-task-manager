@@ -263,11 +263,7 @@ async function mergeRoutines(tx: Tx, userId: string, records: BackupRecord[]) {
 	return stats;
 }
 
-async function mergeTransactions(
-	tx: Tx,
-	userId: string,
-	records: BackupRecord[],
-) {
+async function mergeTransactions(tx: Tx, userId: string, records: BackupRecord[]) {
 	const stats = emptyStats();
 	const existing = indexById(
 		await tx.transaction.findMany({
@@ -365,11 +361,7 @@ async function ownedIds(
 	return new Set(rows.map((row) => row.id));
 }
 
-async function mergeRoutineLogs(
-	tx: Tx,
-	userId: string,
-	records: BackupRecord[],
-) {
+async function mergeRoutineLogs(tx: Tx, userId: string, records: BackupRecord[]) {
 	const stats = emptyStats();
 	const routineIds = records.map((r) => String(r.routineId || ""));
 	const owned = await ownedIds(tx, "routine", userId, routineIds);
@@ -391,10 +383,7 @@ async function mergeRoutineLogs(
 				data: { routineId, userId, date, completed, completedAt },
 			});
 			stats.created++;
-		} else if (
-			completedAt > local.completedAt &&
-			local.completed !== completed
-		) {
+		} else if (completedAt > local.completedAt && local.completed !== completed) {
 			await tx.routineLog.update({
 				where: { id: local.id },
 				data: { completed, completedAt },
@@ -407,11 +396,7 @@ async function mergeRoutineLogs(
 	return stats;
 }
 
-async function mergeTrackerLogs(
-	tx: Tx,
-	userId: string,
-	records: BackupRecord[],
-) {
+async function mergeTrackerLogs(tx: Tx, userId: string, records: BackupRecord[]) {
 	const stats = emptyStats();
 	const trackerIds = records.map((r) => String(r.trackerId || ""));
 	const owned = await ownedIds(tx, "dailyTracker", userId, trackerIds);
@@ -451,11 +436,7 @@ async function mergeTrackerLogs(
 	return stats;
 }
 
-async function mergeCategories(
-	tx: Tx,
-	userId: string,
-	records: BackupRecord[],
-) {
+async function mergeCategories(tx: Tx, userId: string, records: BackupRecord[]) {
 	const stats = emptyStats();
 	for (const record of records) {
 		const name = text(record.name, "").trim();
@@ -504,29 +485,13 @@ export async function mergeBackupIntoUser(
 ): Promise<MergeReport> {
 	return prisma.$transaction(
 		async (tx) => {
-			const categories = await mergeCategories(
-				tx,
-				userId,
-				collections.categories,
-			);
+			const categories = await mergeCategories(tx, userId, collections.categories);
 			const tasks = await mergeTasks(tx, userId, collections.tasks);
 			const routines = await mergeRoutines(tx, userId, collections.routines);
-			const transactions = await mergeTransactions(
-				tx,
-				userId,
-				collections.transactions,
-			);
+			const transactions = await mergeTransactions(tx, userId, collections.transactions);
 			const trackers = await mergeTrackers(tx, userId, collections.trackers);
-			const routineLogs = await mergeRoutineLogs(
-				tx,
-				userId,
-				collections.routineLogs,
-			);
-			const trackerLogs = await mergeTrackerLogs(
-				tx,
-				userId,
-				collections.trackerLogs,
-			);
+			const routineLogs = await mergeRoutineLogs(tx, userId, collections.routineLogs);
+			const trackerLogs = await mergeTrackerLogs(tx, userId, collections.trackerLogs);
 			return {
 				tasks,
 				routines,

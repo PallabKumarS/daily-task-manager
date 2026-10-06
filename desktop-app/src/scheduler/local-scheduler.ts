@@ -16,9 +16,7 @@ const getTodayDateString = (date = new Date()): string => {
 export function startLocalScheduler(mainWindow: BrowserWindow): void {
 	if (schedulerInterval) return;
 
-	console.log(
-		"[DayPulse Scheduler] Starting in-process reminder scheduler (30s interval)...",
-	);
+	console.log("[DayPulse Scheduler] Starting in-process reminder scheduler (30s interval)...");
 
 	const checkReminders = async () => {
 		try {
@@ -53,8 +51,7 @@ export function startLocalScheduler(mainWindow: BrowserWindow): void {
 				const diffMs = dueTime - currentTime;
 
 				if (diffMs <= leadMs && diffMs >= -5 * 60 * 1000) {
-					const itemType =
-						task.type.toLowerCase() === "event" ? "event" : "task";
+					const itemType = task.type.toLowerCase() === "event" ? "event" : "task";
 					const minutesLeft = Math.max(0, Math.ceil(diffMs / 60000));
 
 					triggerDesktopAlarm(mainWindow, {
@@ -88,8 +85,7 @@ export function startLocalScheduler(mainWindow: BrowserWindow): void {
 			const currentDayOfWeek = String(now.getDay());
 
 			for (const routine of routines) {
-				const isCompletedToday =
-					routine.logs.length > 0 && routine.logs[0].completed;
+				const isCompletedToday = routine.logs.length > 0 && routine.logs[0].completed;
 				if (isCompletedToday) continue;
 
 				const activeDays = (routine.daysOfWeek || "0,1,2,3,4,5,6").split(",");
@@ -103,11 +99,7 @@ export function startLocalScheduler(mainWindow: BrowserWindow): void {
 					const diff = routineTimeMinutes - nowMinutes;
 
 					const reminderKey = `routine_${routine.id}_${todayStr}`;
-					if (
-						diff <= leadTime &&
-						diff >= -15 &&
-						!sentRemindersToday.has(reminderKey)
-					) {
+					if (diff <= leadTime && diff >= -15 && !sentRemindersToday.has(reminderKey)) {
 						sentRemindersToday.add(reminderKey);
 
 						triggerDesktopAlarm(mainWindow, {

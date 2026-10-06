@@ -32,9 +32,7 @@ export function TransactionList({
 	onRefresh,
 }: TransactionListProps) {
 	const confirm = useConfirm();
-	const [filterType, setFilterType] = React.useState<
-		"ALL" | "EXPENSE" | "INCOME"
-	>("ALL");
+	const [filterType, setFilterType] = React.useState<"ALL" | "EXPENSE" | "INCOME">("ALL");
 
 	const handleDelete = async (id: string) => {
 		const ok = await confirm({
@@ -91,12 +89,8 @@ export function TransactionList({
 		<div className="rounded-2xl border border-slate-800/80 bg-slate-900/60 p-5 backdrop-blur-xl">
 			<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-800">
 				<div>
-					<h4 className="text-sm font-bold text-slate-100">
-						Transaction History
-					</h4>
-					<p className="text-xs text-slate-400">
-						Detailed itemized record of earnings & spendings
-					</p>
+					<h4 className="text-sm font-bold text-slate-100">Transaction History</h4>
+					<p className="text-xs text-slate-400">Detailed itemized record of earnings & spendings</p>
 				</div>
 
 				<div className="flex items-center gap-2 self-start sm:self-center">
@@ -116,9 +110,7 @@ export function TransactionList({
 							type="button"
 							onClick={() => setFilterType("ALL")}
 							className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
-								filterType === "ALL"
-									? "bg-slate-800 text-white"
-									: "text-slate-400 hover:text-white"
+								filterType === "ALL" ? "bg-slate-800 text-white" : "text-slate-400 hover:text-white"
 							}`}
 						>
 							All
@@ -152,8 +144,7 @@ export function TransactionList({
 			<div className="mt-4 divide-y divide-slate-800/60 max-h-96 overflow-y-auto pr-1">
 				{filtered.length === 0 ? (
 					<div className="py-12 text-center text-xs text-slate-500">
-						No transactions found. Log your first expense or earning to track
-						data.
+						No transactions found. Log your first expense or earning to track data.
 					</div>
 				) : (
 					filtered.map((item) => {

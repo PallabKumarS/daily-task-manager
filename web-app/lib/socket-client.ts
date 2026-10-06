@@ -3,15 +3,12 @@ import { getAuthToken } from "./api-client";
 
 let socket: Socket | null = null;
 
-const SOCKET_URL =
-	process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:5000";
+const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:5000";
 
 export function getSocket(): Socket | null {
 	if (typeof window === "undefined") return null;
 
-	const isDesktop = Boolean(
-		(window as unknown as { electronAPI?: unknown }).electronAPI,
-	);
+	const isDesktop = Boolean((window as unknown as { electronAPI?: unknown }).electronAPI);
 	if (isDesktop) return null;
 
 	const token = getAuthToken();

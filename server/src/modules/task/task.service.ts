@@ -69,11 +69,7 @@ export const createTaskInDB = async (userId: string, payload: ICreateTask) => {
 	return task;
 };
 
-export const updateTaskInDB = async (
-	userId: string,
-	id: string,
-	payload: IUpdateTask,
-) => {
+export const updateTaskInDB = async (userId: string, id: string, payload: IUpdateTask) => {
 	const existing = await prisma.task.findFirst({
 		where: { id, userId },
 	});
@@ -85,17 +81,13 @@ export const updateTaskInDB = async (
 	const updateData: Record<string, unknown> = { ...payload };
 
 	if (payload.startDate !== undefined) {
-		updateData.startDate = payload.startDate
-			? new Date(payload.startDate)
-			: null;
+		updateData.startDate = payload.startDate ? new Date(payload.startDate) : null;
 	}
 	if (payload.dueDate !== undefined) {
 		updateData.dueDate = payload.dueDate ? new Date(payload.dueDate) : null;
 	}
 	if (payload.repeatUntil !== undefined) {
-		updateData.repeatUntil = payload.repeatUntil
-			? new Date(payload.repeatUntil)
-			: null;
+		updateData.repeatUntil = payload.repeatUntil ? new Date(payload.repeatUntil) : null;
 	}
 	if (payload.status === "COMPLETED" && existing.status !== "COMPLETED") {
 		updateData.completedAt = new Date();

@@ -163,7 +163,7 @@ const SPLASH_HTML = `
 </html>
 `;
 
-export function createSplashWindow(): BrowserWindow {
+export function createSplashWindow(iconPath?: string): BrowserWindow {
 	if (splashWindow && !splashWindow.isDestroyed()) {
 		return splashWindow;
 	}
@@ -177,6 +177,7 @@ export function createSplashWindow(): BrowserWindow {
 		center: true,
 		alwaysOnTop: true,
 		skipTaskbar: true,
+		icon: iconPath || undefined,
 		backgroundColor: "#00000000",
 		webPreferences: {
 			nodeIntegration: false,
@@ -184,9 +185,7 @@ export function createSplashWindow(): BrowserWindow {
 		},
 	});
 
-	splashWindow.loadURL(
-		`data:text/html;charset=utf-8,${encodeURIComponent(SPLASH_HTML)}`,
-	);
+	splashWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(SPLASH_HTML)}`);
 
 	return splashWindow;
 }
@@ -195,14 +194,10 @@ export function updateSplashStatus(status: string): void {
 	if (!splashWindow || splashWindow.isDestroyed()) return;
 
 	const safeStatus = status.replace(/["'\\]/g, "");
-	splashWindow.webContents
-		.executeJavaScript(`window.setStatus("${safeStatus}");`)
-		.catch(() => {});
+	splashWindow.webContents.executeJavaScript(`window.setStatus("${safeStatus}");`).catch(() => {});
 }
 
-export async function closeSplashWindow(
-	mainWindow: BrowserWindow,
-): Promise<void> {
+export async function closeSplashWindow(mainWindow: BrowserWindow): Promise<void> {
 	mainWindow.show();
 	mainWindow.focus();
 

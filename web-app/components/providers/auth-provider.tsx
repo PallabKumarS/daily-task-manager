@@ -3,12 +3,7 @@
 import { useRouter } from "next/navigation";
 import * as React from "react";
 import { toast } from "sonner";
-import {
-	api,
-	clearAuthToken,
-	getAuthToken,
-	setAuthToken,
-} from "@/lib/api-client";
+import { api, clearAuthToken, getAuthToken, setAuthToken } from "@/lib/api-client";
 import { disconnectSocket, getSocket } from "@/lib/socket-client";
 
 export interface AuthUser {
@@ -24,17 +19,9 @@ interface AuthContextType {
 	loading: boolean;
 	refreshUser: () => Promise<void>;
 	login: (email: string, password: string) => Promise<boolean>;
-	register: (
-		name: string,
-		email: string,
-		password: string,
-		currency?: string,
-	) => Promise<boolean>;
+	register: (name: string, email: string, password: string, currency?: string) => Promise<boolean>;
 	logout: () => Promise<void>;
-	updateProfile: (data: {
-		name?: string;
-		currency?: string;
-	}) => Promise<boolean>;
+	updateProfile: (data: { name?: string; currency?: string }) => Promise<boolean>;
 }
 
 const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
@@ -98,10 +85,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 	const login = React.useCallback(
 		async (email: string, password: string): Promise<boolean> => {
 			try {
-				const res = await api.post<{ user: AuthUser; token: string }>(
-					"/auth/login",
-					{ email, password },
-				);
+				const res = await api.post<{ user: AuthUser; token: string }>("/auth/login", {
+					email,
+					password,
+				});
 
 				if (res.success && res.data.token) {
 					setAuthToken(res.data.token);
@@ -115,8 +102,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 				toast.error(res.message || "Failed to sign in");
 				return false;
 			} catch (error) {
-				const message =
-					error instanceof Error ? error.message : "Network error during login";
+				const message = error instanceof Error ? error.message : "Network error during login";
 				toast.error(message);
 				return false;
 			}
@@ -125,17 +111,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 	);
 
 	const register = React.useCallback(
-		async (
-			name: string,
-			email: string,
-			password: string,
-			currency = "USD",
-		): Promise<boolean> => {
+		async (name: string, email: string, password: string, currency = "USD"): Promise<boolean> => {
 			try {
-				const res = await api.post<{ user: AuthUser; token: string }>(
-					"/auth/register",
-					{ name, email, password, currency },
-				);
+				const res = await api.post<{ user: AuthUser; token: string }>("/auth/register", {
+					name,
+					email,
+					password,
+					currency,
+				});
 
 				if (res.success && res.data.token) {
 					setAuthToken(res.data.token);
@@ -150,9 +133,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 				return false;
 			} catch (error) {
 				const message =
-					error instanceof Error
-						? error.message
-						: "Network error during registration";
+					error instanceof Error ? error.message : "Network error during registration";
 				toast.error(message);
 				return false;
 			}
@@ -184,8 +165,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 				toast.error(res.message || "Update failed");
 				return false;
 			} catch (error) {
-				const message =
-					error instanceof Error ? error.message : "Failed to update profile";
+				const message = error instanceof Error ? error.message : "Failed to update profile";
 				toast.error(message);
 				return false;
 			}

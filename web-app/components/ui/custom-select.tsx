@@ -1,15 +1,6 @@
 "use client";
 
-import {
-	Check,
-	ChevronDown,
-	Pencil,
-	Plus,
-	RotateCcw,
-	Search,
-	Trash2,
-	X,
-} from "lucide-react";
+import { Check, ChevronDown, Pencil, Plus, RotateCcw, Search, Trash2, X } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
 import { useConfirm } from "@/components/ui/confirm-dialog";
@@ -32,11 +23,7 @@ export interface CustomSelectProps {
 	placeholder?: string;
 	group?: string;
 	onCreateNew?: (name: string, color?: string) => Promise<void> | void;
-	onEditOption?: (
-		value: string,
-		newLabel: string,
-		newColor?: string,
-	) => Promise<void> | void;
+	onEditOption?: (value: string, newLabel: string, newColor?: string) => Promise<void> | void;
 	onDeleteOption?: (value: string) => Promise<void> | void;
 	onEditClick?: () => void;
 	createPlaceholder?: string;
@@ -78,13 +65,10 @@ export function CustomSelect({
 
 	const [editingValue, setEditingValue] = React.useState<string | null>(null);
 	const [editingLabel, setEditingLabel] = React.useState("");
-	const [editingColor, setEditingColor] = React.useState<string | undefined>(
-		undefined,
-	);
+	const [editingColor, setEditingColor] = React.useState<string | undefined>(undefined);
 	const [editingLoading, setEditingLoading] = React.useState(false);
 
-	const [activeOptions, setActiveOptions] =
-		React.useState<SelectOption[]>(initialOptions);
+	const [activeOptions, setActiveOptions] = React.useState<SelectOption[]>(initialOptions);
 	const containerRef = React.useRef<HTMLDivElement>(null);
 
 	const storagePrefix = `daypulse_opts_${group || label || placeholder}`;
@@ -116,9 +100,9 @@ export function CustomSelect({
 		// Merge backend categories if group is supplied
 		if (group) {
 			try {
-				const res = await api.get<
-					Array<{ id: string; name: string; color?: string }>
-				>(`/categories?group=${encodeURIComponent(group)}`);
+				const res = await api.get<Array<{ id: string; name: string; color?: string }>>(
+					`/categories?group=${encodeURIComponent(group)}`,
+				);
 				if (res.success && Array.isArray(res.data)) {
 					const backendOpts: SelectOption[] = res.data.map((cat) => ({
 						id: cat.id,
@@ -130,11 +114,7 @@ export function CustomSelect({
 
 					// Merge backend options, avoiding duplicates
 					for (const bo of backendOpts) {
-						if (
-							!merged.some(
-								(m) => m.value.toLowerCase() === bo.value.toLowerCase(),
-							)
-						) {
+						if (!merged.some((m) => m.value.toLowerCase() === bo.value.toLowerCase())) {
 							merged.push(bo);
 						}
 					}
@@ -146,9 +126,7 @@ export function CustomSelect({
 
 		// Merge custom saved options from localStorage
 		for (const co of customSaved) {
-			if (
-				!merged.some((m) => m.value.toLowerCase() === co.value.toLowerCase())
-			) {
+			if (!merged.some((m) => m.value.toLowerCase() === co.value.toLowerCase())) {
 				merged.push(co);
 			}
 		}
@@ -178,10 +156,7 @@ export function CustomSelect({
 	// Close on outside click
 	React.useEffect(() => {
 		const handleOutsideClick = (e: MouseEvent) => {
-			if (
-				containerRef.current &&
-				!containerRef.current.contains(e.target as Node)
-			) {
+			if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
 				setIsOpen(false);
 				setIsCreating(false);
 				setEditingValue(null);
@@ -232,9 +207,7 @@ export function CustomSelect({
 			if (typeof window !== "undefined") {
 				try {
 					const customRaw = localStorage.getItem(`${storagePrefix}_custom`);
-					const customList: SelectOption[] = customRaw
-						? JSON.parse(customRaw)
-						: [];
+					const customList: SelectOption[] = customRaw ? JSON.parse(customRaw) : [];
 					if (!customList.some((c) => c.value === trimmed)) {
 						customList.push({
 							label: trimmed,
@@ -242,10 +215,7 @@ export function CustomSelect({
 							color: newOptionColor,
 							isCustom: true,
 						});
-						localStorage.setItem(
-							`${storagePrefix}_custom`,
-							JSON.stringify(customList),
-						);
+						localStorage.setItem(`${storagePrefix}_custom`, JSON.stringify(customList));
 					}
 				} catch {
 					// ignore storage error
@@ -260,8 +230,7 @@ export function CustomSelect({
 			setSearch("");
 			toast.success(`Option "${trimmed}" created`);
 		} catch (err: unknown) {
-			const msg =
-				err instanceof Error ? err.message : "Failed to create option";
+			const msg = err instanceof Error ? err.message : "Failed to create option";
 			toast.error(msg);
 		} finally {
 			setCreatingLoading(false);
@@ -302,15 +271,11 @@ export function CustomSelect({
 			if (typeof window !== "undefined") {
 				try {
 					const editRaw = localStorage.getItem(`${storagePrefix}_edits`);
-					const editOverrides: Record<
-						string,
-						{ label: string; color?: string }
-					> = editRaw ? JSON.parse(editRaw) : {};
+					const editOverrides: Record<string, { label: string; color?: string }> = editRaw
+						? JSON.parse(editRaw)
+						: {};
 					editOverrides[opt.value] = { label: trimmed, color: editingColor };
-					localStorage.setItem(
-						`${storagePrefix}_edits`,
-						JSON.stringify(editOverrides),
-					);
+					localStorage.setItem(`${storagePrefix}_edits`, JSON.stringify(editOverrides));
 				} catch {
 					// ignore
 				}
@@ -354,10 +319,7 @@ export function CustomSelect({
 					const deletedValues: string[] = delRaw ? JSON.parse(delRaw) : [];
 					if (!deletedValues.includes(opt.value)) {
 						deletedValues.push(opt.value);
-						localStorage.setItem(
-							`${storagePrefix}_deleted`,
-							JSON.stringify(deletedValues),
-						);
+						localStorage.setItem(`${storagePrefix}_deleted`, JSON.stringify(deletedValues));
 					}
 				} catch {
 					// ignore
@@ -437,9 +399,7 @@ export function CustomSelect({
 										style={{ backgroundColor: selectedOption.color }}
 									/>
 								)}
-								<span className="font-medium text-slate-100">
-									{selectedOption.label}
-								</span>
+								<span className="font-medium text-slate-100">{selectedOption.label}</span>
 								{selectedOption.badge && (
 									<span className="rounded-md bg-slate-800 px-1.5 py-0.5 text-[10px] font-semibold text-slate-400">
 										{selectedOption.badge}
@@ -509,10 +469,7 @@ export function CustomSelect({
 														className="flex-1 rounded-lg border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-slate-100 focus:border-emerald-500 focus:outline-none"
 														onKeyDown={(e) => {
 															if (e.key === "Enter")
-																handleSaveEdit(
-																	e as unknown as React.MouseEvent,
-																	opt,
-																);
+																handleSaveEdit(e as unknown as React.MouseEvent, opt);
 															if (e.key === "Escape") setEditingValue(null);
 														}}
 													/>
@@ -537,9 +494,7 @@ export function CustomSelect({
 
 												{/* Color Selector */}
 												<div className="flex items-center gap-1.5 pt-1">
-													<span className="text-[10px] text-slate-400 mr-1">
-														Color:
-													</span>
+													<span className="text-[10px] text-slate-400 mr-1">Color:</span>
 													{PALETTE.map((c) => (
 														<button
 															key={c}
@@ -589,9 +544,7 @@ export function CustomSelect({
 											</button>
 
 											<div className="flex items-center gap-1 shrink-0 ml-2">
-												{isSelected && (
-													<Check className="h-3.5 w-3.5 text-emerald-400 mr-1" />
-												)}
+												{isSelected && <Check className="h-3.5 w-3.5 text-emerald-400 mr-1" />}
 
 												{allowManage && (
 													<div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
@@ -669,9 +622,7 @@ export function CustomSelect({
 
 										{/* Color dot selector */}
 										<div className="flex items-center gap-1.5">
-											<span className="text-[10px] text-slate-400 mr-1">
-												Color:
-											</span>
+											<span className="text-[10px] text-slate-400 mr-1">Color:</span>
 											{PALETTE.map((c) => (
 												<button
 													key={c}

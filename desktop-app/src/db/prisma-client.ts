@@ -188,15 +188,10 @@ export function getDatabasePath(): string {
 			if (fs.existsSync(candidate)) {
 				try {
 					fs.copyFileSync(candidate, targetPath);
-					console.log(
-						`[DayPulse Database] Migrated seed database from: ${candidate}`,
-					);
+					console.log(`[DayPulse Database] Migrated seed database from: ${candidate}`);
 					break;
 				} catch (err) {
-					console.warn(
-						"[DayPulse Database] Failed to copy dev.db candidate:",
-						err,
-					);
+					console.warn("[DayPulse Database] Failed to copy dev.db candidate:", err);
 				}
 			}
 		}
@@ -279,15 +274,11 @@ export async function initPrismaDatabase(): Promise<PrismaClient> {
 
 	if (sessionUser) {
 		restoreSession(sessionUser.id);
-		console.log(
-			`[DayPulse Database] Restored session: ${sessionUser.email} (${sessionUser.id})`,
-		);
+		console.log(`[DayPulse Database] Restored session: ${sessionUser.email} (${sessionUser.id})`);
 	} else {
 		restoreSession(null);
 		const accountCount = await prismaInstance.user.count();
-		console.log(
-			`[DayPulse Database] No active session (${accountCount} local account(s))`,
-		);
+		console.log(`[DayPulse Database] No active session (${accountCount} local account(s))`);
 	}
 
 	return prismaInstance;

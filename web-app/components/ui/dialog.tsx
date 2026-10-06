@@ -73,17 +73,10 @@ export function Modal({
 			>
 				<div className="flex items-start justify-between pb-4 sm:pb-5 border-b border-slate-800 shrink-0">
 					<div>
-						<h2
-							id="modal-title"
-							className="text-lg sm:text-xl font-bold text-slate-100"
-						>
+						<h2 id="modal-title" className="text-lg sm:text-xl font-bold text-slate-100">
 							{title}
 						</h2>
-						{description && (
-							<p className="text-xs sm:text-sm text-slate-400 mt-1">
-								{description}
-							</p>
-						)}
+						{description && <p className="text-xs sm:text-sm text-slate-400 mt-1">{description}</p>}
 					</div>
 					<button
 						type="button"
@@ -95,9 +88,7 @@ export function Modal({
 					</button>
 				</div>
 
-				<div className="pt-4 sm:pt-5 pb-2 px-1.5 sm:px-2 overflow-y-auto flex-1">
-					{children}
-				</div>
+				<div className="pt-4 sm:pt-5 pb-2 px-1.5 sm:px-2 overflow-y-auto flex-1">{children}</div>
 			</div>
 		</div>
 	);

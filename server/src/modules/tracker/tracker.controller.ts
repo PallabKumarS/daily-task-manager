@@ -5,8 +5,7 @@ import * as trackerService from "./tracker.service.js";
 
 export const getTrackers = catchAsync(async (req: Request, res: Response) => {
 	const userId = req.user?.userId as string;
-	const targetDate =
-		typeof req.query.date === "string" ? req.query.date : undefined;
+	const targetDate = typeof req.query.date === "string" ? req.query.date : undefined;
 	const result = await trackerService.getTrackersFromDB(userId, targetDate);
 
 	sendResponse(res, {
@@ -17,28 +16,21 @@ export const getTrackers = catchAsync(async (req: Request, res: Response) => {
 	});
 });
 
-export const getTrackerDetails = catchAsync(
-	async (req: Request, res: Response) => {
-		const userId = req.user?.userId as string;
-		const trackerId = req.params.id as string;
-		const year = req.query.year ? Number(req.query.year) : undefined;
-		const month = req.query.month ? Number(req.query.month) : undefined;
+export const getTrackerDetails = catchAsync(async (req: Request, res: Response) => {
+	const userId = req.user?.userId as string;
+	const trackerId = req.params.id as string;
+	const year = req.query.year ? Number(req.query.year) : undefined;
+	const month = req.query.month ? Number(req.query.month) : undefined;
 
-		const result = await trackerService.getTrackerDetailsFromDB(
-			userId,
-			trackerId,
-			year,
-			month,
-		);
+	const result = await trackerService.getTrackerDetailsFromDB(userId, trackerId, year, month);
 
-		sendResponse(res, {
-			statusCode: 200,
-			success: true,
-			message: "Tracker details retrieved successfully.",
-			data: result,
-		});
-	},
-);
+	sendResponse(res, {
+		statusCode: 200,
+		success: true,
+		message: "Tracker details retrieved successfully.",
+		data: result,
+	});
+});
 
 export const createTracker = catchAsync(async (req: Request, res: Response) => {
 	const userId = req.user?.userId as string;
@@ -55,11 +47,7 @@ export const createTracker = catchAsync(async (req: Request, res: Response) => {
 export const updateTracker = catchAsync(async (req: Request, res: Response) => {
 	const userId = req.user?.userId as string;
 	const trackerId = req.params.id as string;
-	const result = await trackerService.updateTrackerInDB(
-		userId,
-		trackerId,
-		req.body,
-	);
+	const result = await trackerService.updateTrackerInDB(userId, trackerId, req.body);
 
 	sendResponse(res, {
 		statusCode: 200,
@@ -85,11 +73,7 @@ export const deleteTracker = catchAsync(async (req: Request, res: Response) => {
 export const logTrackerDay = catchAsync(async (req: Request, res: Response) => {
 	const userId = req.user?.userId as string;
 	const trackerId = req.params.id as string;
-	const result = await trackerService.logTrackerDayInDB(
-		userId,
-		trackerId,
-		req.body,
-	);
+	const result = await trackerService.logTrackerDayInDB(userId, trackerId, req.body);
 
 	sendResponse(res, {
 		statusCode: 200,
@@ -102,11 +86,7 @@ export const logTrackerDay = catchAsync(async (req: Request, res: Response) => {
 export const settleTracker = catchAsync(async (req: Request, res: Response) => {
 	const userId = req.user?.userId as string;
 	const trackerId = req.params.id as string;
-	const result = await trackerService.settleTrackerInDB(
-		userId,
-		trackerId,
-		req.body,
-	);
+	const result = await trackerService.settleTrackerInDB(userId, trackerId, req.body);
 
 	sendResponse(res, {
 		statusCode: 200,

@@ -13,19 +13,16 @@ import type { DailyTrackerItem } from "@/components/trackers/tracker-types";
 
 export default function DashboardPage() {
 	const [routineModalOpen, setRoutineModalOpen] = React.useState(false);
-	const [editingRoutine, setEditingRoutine] =
-		React.useState<RoutineItem | null>(null);
+	const [editingRoutine, setEditingRoutine] = React.useState<RoutineItem | null>(null);
 
 	const [taskModalOpen, setTaskModalOpen] = React.useState(false);
 	const [editingTask, setEditingTask] = React.useState<TaskItem | null>(null);
 
 	const [transactionModalOpen, setTransactionModalOpen] = React.useState(false);
-	const [editingTransaction, setEditingTransaction] =
-		React.useState<TransactionItem | null>(null);
+	const [editingTransaction, setEditingTransaction] = React.useState<TransactionItem | null>(null);
 
 	const [trackerModalOpen, setTrackerModalOpen] = React.useState(false);
-	const [editingTracker, setEditingTracker] =
-		React.useState<DailyTrackerItem | null>(null);
+	const [editingTracker, setEditingTracker] = React.useState<DailyTrackerItem | null>(null);
 
 	const [refreshKey, setRefreshKey] = React.useState(0);
 

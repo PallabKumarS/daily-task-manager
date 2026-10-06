@@ -1,16 +1,8 @@
 "use client";
 
-import {
-	Calculator,
-	CalendarCheck,
-	CheckSquare,
-	LayoutDashboard,
-	Settings,
-	TrendingUp,
-} from "lucide-react";
+import { Calculator, CalendarCheck, CheckSquare, LayoutDashboard, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import * as React from "react";
 import { cn } from "@/lib/utils";
 
 const DOCK_ITEMS = [
@@ -29,17 +21,14 @@ export function BottomDock() {
 			<div className="flex items-center justify-around">
 				{DOCK_ITEMS.map((item) => {
 					const Icon = item.icon;
-					const isActive =
-						pathname === item.href || pathname.startsWith(`${item.href}/`);
+					const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
 					return (
 						<Link
 							key={item.href}
 							href={item.href}
 							className={cn(
 								"flex flex-col items-center justify-center py-1 px-3 rounded-xl transition duration-150 min-w-[56px]",
-								isActive
-									? "text-emerald-400 font-semibold"
-									: "text-slate-400 hover:text-slate-200",
+								isActive ? "text-emerald-400 font-semibold" : "text-slate-400 hover:text-slate-200",
 							)}
 						>
 							<div

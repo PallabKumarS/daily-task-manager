@@ -47,8 +47,7 @@ export const startReminderScheduler = () => {
 
 				// If current time is within lead time and not more than 5 minutes overdue
 				if (diffMs <= leadMs && diffMs >= -5 * 60 * 1000) {
-					const itemType =
-						task.type.toLowerCase() === "event" ? "event" : "task";
+					const itemType = task.type.toLowerCase() === "event" ? "event" : "task";
 					const minutesLeft = Math.max(0, Math.ceil(diffMs / 60000));
 
 					sendAlarmNotification(task.userId, {
@@ -125,25 +124,20 @@ export const startReminderScheduler = () => {
 				} else if (frequency === "DAILY") {
 					// If days of week specified for daily, honor it
 					if (task.repeatDaysOfWeek) {
-						const activeDays = task.repeatDaysOfWeek
-							.split(",")
-							.map((s) => s.trim());
+						const activeDays = task.repeatDaysOfWeek.split(",").map((s) => s.trim());
 						if (!activeDays.includes(currentDayOfWeek)) continue;
 					}
 				} else if (frequency === "MONTHLY") {
 					const targetDay =
-						task.repeatDayOfMonth ||
-						(task.startDate ? new Date(task.startDate).getDate() : 1);
+						task.repeatDayOfMonth || (task.startDate ? new Date(task.startDate).getDate() : 1);
 					if (currentDayOfMonth !== targetDay) continue;
 				} else if (frequency === "YEARLY") {
 					const targetMonth =
 						task.repeatMonthOfYear ||
 						(task.startDate ? new Date(task.startDate).getMonth() + 1 : 1);
 					const targetDay =
-						task.repeatDayOfMonth ||
-						(task.startDate ? new Date(task.startDate).getDate() : 1);
-					if (currentMonth !== targetMonth || currentDayOfMonth !== targetDay)
-						continue;
+						task.repeatDayOfMonth || (task.startDate ? new Date(task.startDate).getDate() : 1);
+					if (currentMonth !== targetMonth || currentDayOfMonth !== targetDay) continue;
 				}
 
 				// Extract target trigger times (supports single "21:00" or comma-separated "09:00,21:00")
@@ -166,8 +160,7 @@ export const startReminderScheduler = () => {
 					const [hoursStr, minutesStr] = timeStr.split(":");
 					const targetHours = parseInt(hoursStr, 10);
 					const targetMinutes = parseInt(minutesStr, 10);
-					if (Number.isNaN(targetHours) || Number.isNaN(targetMinutes))
-						continue;
+					if (Number.isNaN(targetHours) || Number.isNaN(targetMinutes)) continue;
 
 					const recurrenceCacheKey = `${task.id}:${todayStr}:${timeStr}`;
 					if (sentRecurringTaskRemindersToday.has(recurrenceCacheKey)) continue;
@@ -180,8 +173,7 @@ export const startReminderScheduler = () => {
 
 					if (diffMs <= leadMs && diffMs >= -5 * 60 * 1000) {
 						const minutesLeft = Math.max(0, Math.ceil(diffMs / 60000));
-						const itemType =
-							task.type.toLowerCase() === "event" ? "event" : "task";
+						const itemType = task.type.toLowerCase() === "event" ? "event" : "task";
 
 						const notificationMessage =
 							minutesLeft > 0
@@ -201,9 +193,7 @@ export const startReminderScheduler = () => {
 						sentRecurringTaskRemindersToday.add(recurrenceCacheKey);
 
 						const nextCount = (task.completedOccurrences || 0) + 1;
-						const willComplete = task.repeatCount
-							? nextCount >= task.repeatCount
-							: false;
+						const willComplete = task.repeatCount ? nextCount >= task.repeatCount : false;
 
 						await prisma.task.update({
 							where: { id: task.id },

@@ -28,10 +28,7 @@ export const logDailyTrackerZodSchema = z.object({
 		.string({ required_error: "Date (YYYY-MM-DD) is required" })
 		.regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be YYYY-MM-DD format"),
 	value: z.number().min(0, "Value cannot be negative"),
-	status: z
-		.enum(["LOGGED", "CANCELLED", "SKIPPED"])
-		.optional()
-		.default("LOGGED"),
+	status: z.enum(["LOGGED", "CANCELLED", "SKIPPED"]).optional().default("LOGGED"),
 	notes: z.string().nullable().optional(),
 	unitPrice: z.number().nonnegative().nullable().optional(),
 });

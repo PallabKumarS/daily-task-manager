@@ -56,17 +56,13 @@ export async function requestPlatformNotificationPermissions(): Promise<boolean>
 	return false;
 }
 
-export async function dispatchUnifiedAlarm(
-	payload: UnifiedAlarmPayload,
-): Promise<void> {
+export async function dispatchUnifiedAlarm(payload: UnifiedAlarmPayload): Promise<void> {
 	// 1. Android Capacitor Native Platform
 	if (Capacitor.isNativePlatform()) {
 		await ensureAndroidAlarmChannel();
 
 		const numericId = Math.abs(
-			payload.id
-				.split("")
-				.reduce((acc, char) => acc * 31 + char.charCodeAt(0), 0) % 2147483647,
+			payload.id.split("").reduce((acc, char) => acc * 31 + char.charCodeAt(0), 0) % 2147483647,
 		);
 
 		const scheduleOption = payload.scheduledTime

@@ -156,9 +156,7 @@ export function TrackerFormModal({
 						placeholder="e.g. Daily Meals, Cow Milk Delivery, Water Bottles..."
 						{...register("name")}
 					/>
-					{errors.name && (
-						<p className="text-xs text-rose-400">{errors.name.message}</p>
-					)}
+					{errors.name && <p className="text-xs text-rose-400">{errors.name.message}</p>}
 				</div>
 
 				{/* Category & Unit Name */}
@@ -179,9 +177,7 @@ export function TrackerFormModal({
 							placeholder="e.g. meals, liters, bottles, hours, pages"
 							{...register("unitName")}
 						/>
-						{errors.unitName && (
-							<p className="text-xs text-rose-400">{errors.unitName.message}</p>
-						)}
+						{errors.unitName && <p className="text-xs text-rose-400">{errors.unitName.message}</p>}
 					</div>
 				</div>
 
@@ -197,9 +193,7 @@ export function TrackerFormModal({
 							{...register("defaultTarget", { valueAsNumber: true })}
 						/>
 						{errors.defaultTarget && (
-							<p className="text-xs text-rose-400">
-								{errors.defaultTarget.message}
-							</p>
+							<p className="text-xs text-rose-400">{errors.defaultTarget.message}</p>
 						)}
 					</div>
 
@@ -211,13 +205,11 @@ export function TrackerFormModal({
 							step="any"
 							placeholder="e.g. 80.00 or 4.50 (leave empty if non-monetary)"
 							{...register("unitPrice", {
-								setValueAs: (v) =>
-									v === "" || v === null || Number.isNaN(v) ? null : Number(v),
+								setValueAs: (v) => (v === "" || v === null || Number.isNaN(v) ? null : Number(v)),
 							})}
 						/>
 						<p className="text-[11px] text-slate-500">
-							Set a price per unit to enable automatic bill calculation and
-							ledger reconciliation.
+							Set a price per unit to enable automatic bill calculation and ledger reconciliation.
 						</p>
 					</div>
 				</div>
@@ -255,12 +247,7 @@ export function TrackerFormModal({
 
 				{/* Action Buttons */}
 				<div className="pt-2 flex items-center justify-end gap-3">
-					<Button
-						type="button"
-						variant="outline"
-						onClick={onClose}
-						disabled={isSubmitting}
-					>
+					<Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
 						Cancel
 					</Button>
 					<Button
@@ -268,11 +255,7 @@ export function TrackerFormModal({
 						disabled={isSubmitting}
 						className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold"
 					>
-						{isSubmitting
-							? "Saving..."
-							: initialData
-								? "Update Tracker"
-								: "Create Tracker"}
+						{isSubmitting ? "Saving..." : initialData ? "Update Tracker" : "Create Tracker"}
 					</Button>
 				</div>
 			</form>
