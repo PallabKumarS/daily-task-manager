@@ -1,16 +1,11 @@
+import * as fs from "node:fs";
 import * as path from "node:path";
 import { BrowserWindow } from "electron";
-import { closeSplashWindow, updateSplashStatus } from "./splash-window.js";
-import { getIcoIconPath, getPngIconPath, getWindowIcon } from "./windows-branding.js";
+import { getAssetPath, getWindowIcon, getWindowIconPath } from "./windows-branding.js";
 
 export function createMainWindow(onCloseHide: () => void): BrowserWindow {
-	const icoPath = getIcoIconPath();
-	const pngPath = getPngIconPath();
+	const iconPath = getWindowIconPath();
 	const windowIcon = getWindowIcon();
-
-	// On Windows, icoPath gives native multi-resolution icons (16, 32, 48, 256)
-	const effectiveIcon = icoPath || (!windowIcon.isEmpty() ? windowIcon : pngPath || undefined);
-
 	const preloadPath = path.resolve(__dirname, "../preload.js");
 
 	const win = new BrowserWindow({
@@ -18,9 +13,9 @@ export function createMainWindow(onCloseHide: () => void): BrowserWindow {
 		height: 850,
 		minWidth: 920,
 		minHeight: 640,
-		show: false,
+		show: true,
 		title: "DayPulse",
-		icon: effectiveIcon,
+		icon: !windowIcon.isEmpty() ? windowIcon : iconPath || undefined,
 		backgroundColor: "#09090b",
 		autoHideMenuBar: true,
 		webPreferences: {
@@ -31,12 +26,16 @@ export function createMainWindow(onCloseHide: () => void): BrowserWindow {
 		},
 	});
 
-	if (icoPath) {
-		win.setIcon(icoPath);
-	} else if (!windowIcon.isEmpty()) {
+	if (!windowIcon.isEmpty()) {
 		win.setIcon(windowIcon);
-	} else if (pngPath) {
-		win.setIcon(pngPath);
+	} else if (iconPath) {
+		win.setIcon(iconPath);
+	}
+
+	// Directly load splash.html inside mainWindow matching krishan-traders pattern
+	const splashPath = getAssetPath("splash.html");
+	if (splashPath && fs.existsSync(splashPath)) {
+		win.loadFile(splashPath).catch(() => {});
 	}
 
 	win.on("close", (event) => {
@@ -57,18 +56,8 @@ export function createMainWindow(onCloseHide: () => void): BrowserWindow {
 			console.error("[Renderer Process Gone]", details);
 		});
 
-		win.webContents.on("did-start-loading", () => {
-			console.log("[DayPulse Desktop] WebContents started loading");
-		});
-
 		win.webContents.on("did-navigate", (_event, url) => {
 			console.log(`[DayPulse Desktop] Navigated to: ${url}`);
-		});
-
-		win.webContents.on("did-fail-load", (_event, errorCode, errorDescription, validatedURL) => {
-			console.warn(
-				`[DayPulse Desktop] Load failed: ${errorDescription} (${errorCode}) at ${validatedURL}`,
-			);
 		});
 	}
 
@@ -76,40 +65,25 @@ export function createMainWindow(onCloseHide: () => void): BrowserWindow {
 }
 
 export async function navigateMainWindow(win: BrowserWindow, uiUrl: string): Promise<void> {
-	updateSplashStatus("Loading application interface...");
-
 	let attempts = 0;
-	const maxAttempts = 15;
+	const maxAttempts = 20;
 
 	while (attempts < maxAttempts) {
 		attempts++;
 		try {
-			console.log(`[DayPulse Desktop] Connection attempt ${attempts} to: ${uiUrl}`);
+			console.log(`[DayPulse Desktop] Connecting to: ${uiUrl} (attempt ${attempts})`);
 			await win.loadURL(uiUrl);
-
-			win.once("ready-to-show", () => {
-				closeSplashWindow();
-				win.show();
-				win.focus();
-				console.log("[DayPulse Desktop] Main window presented to user");
-			});
+			console.log("[DayPulse Desktop] UI loaded successfully into main window");
 			return;
 		} catch (err) {
-			console.log(
-				`[DayPulse Desktop] Attempt ${attempts} unsuccessful, retrying in 1s... (${(err as Error).message})`,
-			);
+			console.log(`[DayPulse Desktop] Waiting for server... (${(err as Error).message})`);
 			await new Promise((r) => setTimeout(r, 1000));
 		}
 	}
 
-	// Final attempt fallback
 	try {
 		await win.loadURL(uiUrl);
-		closeSplashWindow();
-		win.show();
 	} catch (err) {
-		console.error("[DayPulse Desktop] Critical: Failed to load URL after multiple attempts:", err);
-		closeSplashWindow();
-		win.show();
+		console.error("[DayPulse Desktop] Failed to load URL after attempts:", err);
 	}
 }

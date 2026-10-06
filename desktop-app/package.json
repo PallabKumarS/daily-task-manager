@@ -7,8 +7,8 @@
 	"scripts": {
 		"build": "tsc && node scripts/copy-assets.mjs",
 		"watch": "tsc -w",
-		"start": "node scripts/brand-electron.mjs && tsc && node scripts/copy-assets.mjs && electron .",
-		"dev": "node scripts/brand-electron.mjs && tsc && node scripts/copy-assets.mjs && electron .",
+		"start": "tsc && node scripts/copy-assets.mjs && node scripts/brand-electron.mjs && node scripts/run-electron.mjs",
+		"dev": "tsc && node scripts/copy-assets.mjs && node scripts/brand-electron.mjs && node scripts/run-electron.mjs",
 		"pack:exe": "tsc && node scripts/copy-assets.mjs && electron-builder --win"
 	},
 	"build": {
@@ -31,7 +31,7 @@
 					]
 				}
 			],
-			"icon": "dist/assets/daypulse.ico"
+			"icon": "assets/daypulse.ico"
 		},
 		"nsis": {
 			"oneClick": true,

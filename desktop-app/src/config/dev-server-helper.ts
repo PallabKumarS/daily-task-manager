@@ -2,7 +2,6 @@ import { type ChildProcess, execSync, spawn } from "node:child_process";
 import * as fs from "node:fs";
 import * as http from "node:http";
 import * as path from "node:path";
-import { updateSplashStatus } from "../windows/splash-window.js";
 
 let nextDevProcess: ChildProcess | null = null;
 
@@ -94,7 +93,6 @@ export async function ensureDevServerReady(): Promise<void> {
 	}
 
 	console.log(`[DayPulse Desktop] Auto-spawning Next.js dev server in: ${webDir}`);
-	updateSplashStatus("Starting Next.js UI development server...");
 
 	const isWin = process.platform === "win32";
 	const npmCmd = isWin ? "npm.cmd" : "npm";
@@ -112,9 +110,6 @@ export async function ensureDevServerReady(): Promise<void> {
 	nextDevProcess.stdout?.on("data", (data: Buffer) => {
 		const out = data.toString();
 		process.stdout.write(`[Next.js Dev] ${out}`);
-		if (out.includes("Ready in") || out.includes("compiled")) {
-			updateSplashStatus("UI server ready. Compiling workspace...");
-		}
 	});
 
 	nextDevProcess.stderr?.on("data", (data: Buffer) => {
@@ -134,7 +129,6 @@ export async function ensureDevServerReady(): Promise<void> {
 		await new Promise((r) => setTimeout(r, 800));
 		if (await isUrlResponding(healthUrl, 1500)) {
 			console.log(`[DayPulse Desktop] UI server responsive at ${healthUrl}`);
-			updateSplashStatus("Workspace ready!");
 			return;
 		}
 	}
