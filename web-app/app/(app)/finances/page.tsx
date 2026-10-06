@@ -11,9 +11,12 @@ import { type TransactionItem, TransactionList } from "@/components/finances/tra
 import { useAuth } from "@/components/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api-client";
+import { getPeriodDateRange, useWorkweekPreferences } from "@/lib/workweek-preferences";
 
 export default function FinancesPage() {
 	const { user } = useAuth();
+	const { startOfWeek } = useWorkweekPreferences();
+
 	const [period, setPeriod] = React.useState<"week" | "month" | "year">("month");
 	const [currentDate, setCurrentDate] = React.useState(new Date());
 
@@ -55,14 +58,22 @@ export default function FinancesPage() {
 	const [editingTransaction, setEditingTransaction] = React.useState<TransactionItem | null>(null);
 	const [categoryManagerOpen, setCategoryManagerOpen] = React.useState(false);
 
+	const dateRange = React.useMemo(() => {
+		return getPeriodDateRange(currentDate, period, startOfWeek);
+	}, [currentDate, period, startOfWeek]);
+
 	const fetchData = React.useCallback(async () => {
 		try {
-			const dateStr = currentDate.toISOString();
+			const startIso = dateRange.startDate.toISOString();
+			const endIso = dateRange.endDate.toISOString();
+
 			const [analyticsRes, transRes] = await Promise.allSettled([
 				api.get<typeof analytics>(
-					`/finances/analytics?period=${period}&date=${encodeURIComponent(dateStr)}`,
+					`/finances/analytics?period=${period}&date=${encodeURIComponent(currentDate.toISOString())}`,
 				),
-				api.get<TransactionItem[]>(`/finances?limit=100`),
+				api.get<TransactionItem[]>(
+					`/finances?startDate=${encodeURIComponent(startIso)}&endDate=${encodeURIComponent(endIso)}`,
+				),
 			]);
 
 			if (
@@ -77,11 +88,11 @@ export default function FinancesPage() {
 				setTransactions(transRes.value.data);
 			}
 		} catch {
-			// ignore
+			// ignore network errors
 		} finally {
 			setLoading(false);
 		}
-	}, [period, currentDate]);
+	}, [period, currentDate, dateRange]);
 
 	React.useEffect(() => {
 		fetchData();
@@ -125,7 +136,16 @@ export default function FinancesPage() {
 
 	const formatPeriodLabel = () => {
 		if (period === "week") {
-			return `Week of ${currentDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
+			const start = dateRange.startDate.toLocaleDateString("en-US", {
+				month: "short",
+				day: "numeric",
+			});
+			const end = dateRange.endDate.toLocaleDateString("en-US", {
+				month: "short",
+				day: "numeric",
+				year: "numeric",
+			});
+			return `${start} – ${end}`;
 		}
 		if (period === "year") {
 			return `${currentDate.getFullYear()}`;
@@ -146,7 +166,7 @@ export default function FinancesPage() {
 		setModalOpen(true);
 	};
 
-	if (loading) {
+	if (loading && transactions.length === 0) {
 		return (
 			<div className="py-20 text-center text-slate-400 text-xs">
 				Loading financial ledger & analytics...
@@ -163,8 +183,7 @@ export default function FinancesPage() {
 						Daily Spendings & Earnings
 					</h1>
 					<p className="text-xs text-slate-400 mt-1">
-						Maintain daily ledger records with automated cumulative balances across weeks, months,
-						and years.
+						Itemized ledger entries with tabbed timeframes and 1-click repetition
 					</p>
 				</div>
 
@@ -186,15 +205,15 @@ export default function FinancesPage() {
 				</div>
 			</div>
 
-			{/* Period & Date Navigator Bar */}
+			{/* Primary Section: Period & Date Navigator Tabs */}
 			<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl border border-slate-800 bg-slate-900/60 backdrop-blur-xl">
 				<div className="flex items-center rounded-xl bg-slate-950 p-1 border border-slate-800">
 					<button
 						type="button"
 						onClick={() => setPeriod("week")}
-						className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+						className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
 							period === "week"
-								? "bg-emerald-500/20 text-emerald-400"
+								? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-sm"
 								: "text-slate-400 hover:text-white"
 						}`}
 					>
@@ -203,9 +222,9 @@ export default function FinancesPage() {
 					<button
 						type="button"
 						onClick={() => setPeriod("month")}
-						className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+						className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
 							period === "month"
-								? "bg-emerald-500/20 text-emerald-400"
+								? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-sm"
 								: "text-slate-400 hover:text-white"
 						}`}
 					>
@@ -214,9 +233,9 @@ export default function FinancesPage() {
 					<button
 						type="button"
 						onClick={() => setPeriod("year")}
-						className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+						className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
 							period === "year"
-								? "bg-emerald-500/20 text-emerald-400"
+								? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-sm"
 								: "text-slate-400 hover:text-white"
 						}`}
 					>
@@ -234,7 +253,7 @@ export default function FinancesPage() {
 						>
 							<ChevronLeft className="w-4 h-4" />
 						</button>
-						<span className="text-xs font-bold text-slate-200 min-w-[140px] text-center">
+						<span className="text-xs font-bold text-slate-200 min-w-[150px] text-center">
 							{formatPeriodLabel()}
 						</span>
 						<button
@@ -250,7 +269,7 @@ export default function FinancesPage() {
 					<button
 						type="button"
 						onClick={handleResetToday}
-						className="text-xs text-slate-400 hover:text-emerald-400 px-2 py-1 rounded-lg hover:bg-slate-800 transition cursor-pointer"
+						className="text-xs text-slate-400 hover:text-emerald-400 px-2.5 py-1 rounded-lg hover:bg-slate-800 transition cursor-pointer"
 					>
 						Today
 					</button>
@@ -266,26 +285,35 @@ export default function FinancesPage() {
 				currency={user?.currency || "USD"}
 			/>
 
-			{/* Cumulative Trajectory Chart */}
-			<CumulativeChart timeline={analytics.timeline} currency={user?.currency || "USD"} />
+			{/* Main Focus: Transaction History for Selected Period */}
+			<TransactionList
+				transactions={transactions}
+				currency={user?.currency || "USD"}
+				onEdit={handleEdit}
+				onRefresh={fetchData}
+			/>
 
-			{/* Category Breakdown & Itemized History */}
-			<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-				<div className="lg:col-span-1">
-					<CategoryBreakdown
-						expenseCategories={analytics.expenseCategories}
-						incomeCategories={analytics.incomeCategories}
-						currency={user?.currency || "USD"}
-					/>
+			{/* Secondary Section Placed Below: Cumulative Trajectory & Category Breakdown */}
+			<div className="space-y-4 pt-2">
+				<div className="pb-1">
+					<h3 className="text-sm font-bold text-slate-200">Cashflow Analytics & Breakdown</h3>
+					<p className="text-xs text-slate-400">
+						Visual trajectory and category proportions for {formatPeriodLabel()}
+					</p>
 				</div>
 
-				<div className="lg:col-span-2">
-					<TransactionList
-						transactions={transactions}
-						currency={user?.currency || "USD"}
-						onEdit={handleEdit}
-						onRefresh={fetchData}
-					/>
+				<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+					<div className="lg:col-span-2">
+						<CumulativeChart timeline={analytics.timeline} currency={user?.currency || "USD"} />
+					</div>
+
+					<div className="lg:col-span-1">
+						<CategoryBreakdown
+							expenseCategories={analytics.expenseCategories}
+							incomeCategories={analytics.incomeCategories}
+							currency={user?.currency || "USD"}
+						/>
+					</div>
 				</div>
 			</div>
 

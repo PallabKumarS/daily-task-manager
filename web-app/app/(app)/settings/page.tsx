@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { CategoryManagerModal } from "@/components/categories/category-manager-modal";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useNotifications } from "@/components/providers/notification-provider";
+import { WorkweekSettingsCard } from "@/components/settings/workweek-settings-card";
 import { Button } from "@/components/ui/button";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { CustomSelect, type SelectOption } from "@/components/ui/custom-select";
@@ -719,6 +720,9 @@ function SettingsContent() {
 					accents.
 				</p>
 			</div>
+
+			{/* Workweek & Calendar Schedule Preferences */}
+			<WorkweekSettingsCard />
 
 			{/* User Preferences */}
 			<div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-xl space-y-4">

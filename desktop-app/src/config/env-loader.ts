@@ -41,8 +41,8 @@ export function loadDesktopEnv(): void {
 	candidates.push(
 		path.resolve(process.cwd(), ".env"),
 		path.resolve(process.cwd(), "..", ".env"),
+		path.resolve(__dirname, "../../../.env"),
 		path.resolve(__dirname, "../../.env"),
-		path.resolve(__dirname, "../.env"),
 	);
 
 	for (const envPath of candidates) {

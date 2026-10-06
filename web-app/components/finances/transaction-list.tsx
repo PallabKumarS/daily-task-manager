@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDownRight, ArrowUpRight, Edit2, Trash2 } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, CalendarPlus, Edit2, Repeat, Trash2 } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,7 @@ export function TransactionList({
 }: TransactionListProps) {
 	const confirm = useConfirm();
 	const [filterType, setFilterType] = React.useState<"ALL" | "EXPENSE" | "INCOME">("ALL");
+	const [duplicatingId, setDuplicatingId] = React.useState<string | null>(null);
 
 	const handleDelete = async (id: string) => {
 		const ok = await confirm({
@@ -80,6 +81,31 @@ export function TransactionList({
 		}
 	};
 
+	const handleDuplicateToToday = async (item: TransactionItem) => {
+		setDuplicatingId(item.id);
+		try {
+			const res = await api.post("/finances", {
+				type: item.type,
+				amount: item.amount,
+				category: item.category,
+				description: item.description,
+				paymentMethod: item.paymentMethod,
+				date: new Date().toISOString(),
+			});
+
+			if (res.success) {
+				toast.success(`Added ${item.type === "INCOME" ? "income" : "expense"} to today's ledger`);
+				onRefresh();
+			} else {
+				toast.error(res.message || "Failed to duplicate transaction to today");
+			}
+		} catch {
+			toast.error("Network error while adding transaction to today");
+		} finally {
+			setDuplicatingId(null);
+		}
+	};
+
 	const filtered = transactions.filter((t) => {
 		if (filterType === "ALL") return true;
 		return t.type === filterType;
@@ -90,7 +116,9 @@ export function TransactionList({
 			<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-800">
 				<div>
 					<h4 className="text-sm font-bold text-slate-100">Transaction History</h4>
-					<p className="text-xs text-slate-400">Detailed itemized record of earnings & spendings</p>
+					<p className="text-xs text-slate-400">
+						Itemized entries for this period ({filtered.length} total)
+					</p>
 				</div>
 
 				<div className="flex items-center gap-2 self-start sm:self-center">
@@ -141,10 +169,10 @@ export function TransactionList({
 				</div>
 			</div>
 
-			<div className="mt-4 divide-y divide-slate-800/60 max-h-96 overflow-y-auto pr-1">
+			<div className="mt-4 divide-y divide-slate-800/60 max-h-[460px] overflow-y-auto pr-1">
 				{filtered.length === 0 ? (
 					<div className="py-12 text-center text-xs text-slate-500">
-						No transactions found. Log your first expense or earning to track data.
+						No transactions found for this period. Log an expense or earning to track data.
 					</div>
 				) : (
 					filtered.map((item) => {
@@ -154,6 +182,11 @@ export function TransactionList({
 							day: "numeric",
 							year: "numeric",
 						});
+
+						const recurringMatch = item.description?.match(/\[Recurring:\s*([^\]]+)\]/i);
+						const cleanDesc = item.description
+							? item.description.replace(/\[Recurring:\s*[^\]]+\]/i, "").trim()
+							: "";
 
 						return (
 							<div
@@ -175,13 +208,19 @@ export function TransactionList({
 										)}
 									</div>
 									<div className="min-w-0">
-										<div className="flex items-center gap-2">
+										<div className="flex items-center gap-2 flex-wrap">
 											<p className="text-xs font-semibold text-slate-100 truncate">
-												{item.description || item.category}
+												{cleanDesc || item.category}
 											</p>
 											<span className="rounded-md bg-slate-800 px-1.5 py-0.5 text-[10px] text-slate-400 border border-slate-700/60">
 												{item.category}
 											</span>
+											{recurringMatch && (
+												<span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-1.5 py-0.5 text-[10px] text-emerald-400 border border-emerald-500/25">
+													<Repeat className="w-2.5 h-2.5" />
+													<span>{recurringMatch[1]}</span>
+												</span>
+											)}
 										</div>
 										<p className="text-[11px] text-slate-400 mt-0.5">
 											{dateStr} • {item.paymentMethod}
@@ -189,7 +228,7 @@ export function TransactionList({
 									</div>
 								</div>
 
-								<div className="flex items-center gap-4 shrink-0 pl-2">
+								<div className="flex items-center gap-3 shrink-0 pl-2">
 									<span
 										className={`text-sm font-bold ${
 											isIncome ? "text-emerald-400" : "text-red-400"
@@ -200,6 +239,15 @@ export function TransactionList({
 									</span>
 
 									<div className="flex items-center gap-1">
+										<button
+											type="button"
+											onClick={() => handleDuplicateToToday(item)}
+											disabled={duplicatingId === item.id}
+											className="p-1 rounded-lg text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 transition cursor-pointer disabled:opacity-40"
+											title="Add previous day card today (Repeat to today)"
+										>
+											<CalendarPlus className="w-3.5 h-3.5" />
+										</button>
 										<button
 											type="button"
 											onClick={() => onEdit(item)}
