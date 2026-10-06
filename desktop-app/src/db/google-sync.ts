@@ -286,8 +286,8 @@ export async function downloadLatestBackupFromGoogleDrive(
 	fileName = "DayPulse_Backup.json",
 ): Promise<unknown> {
 	const searchParams = new URLSearchParams({
-		q: `name = '${fileName}' and trashed = false`,
-		fields: "files(id, name, modifiedTime)",
+		q: `(name = '${fileName}' or name = 'DayPulse_Backup.zip') and trashed = false`,
+		fields: "files(id, name, modifiedTime, mimeType)",
 		orderBy: "modifiedTime desc",
 	});
 
@@ -301,20 +301,28 @@ export async function downloadLatestBackupFromGoogleDrive(
 	}
 
 	const searchJson = (await searchRes.json()) as {
-		files?: Array<{ id: string }>;
+		files?: Array<{ id: string; name: string }>;
 	};
 	if (!searchJson.files || searchJson.files.length === 0) {
 		throw new Error("No DayPulse backups found on your Google Drive");
 	}
 
-	const fileId = searchJson.files[0].id;
+	const targetFile = searchJson.files[0];
 	const downloadRes = await fetch(
-		`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
+		`https://www.googleapis.com/drive/v3/files/${targetFile.id}?alt=media`,
 		{ headers: { Authorization: `Bearer ${accessToken}` } },
 	);
 
 	if (!downloadRes.ok) {
 		throw new Error("Failed to download backup content from Google Drive");
+	}
+
+	if (targetFile.name.endsWith(".zip")) {
+		const arrayBuf = await downloadRes.arrayBuffer();
+		const buffer = Buffer.from(arrayBuf);
+		return {
+			archiveBase64: buffer.toString("base64"),
+		};
 	}
 
 	return downloadRes.json();

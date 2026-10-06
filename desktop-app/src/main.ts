@@ -11,11 +11,17 @@ import {
 } from "electron";
 import { triggerDesktopAlarm } from "./alarm-manager.js";
 import { destroyAudioPlayer, initAudioPlayer } from "./audio-player.js";
+import { executeGoogleSyncUpload } from "./db/google-sync.js";
 import {
 	handleIpcApiDispatch,
 	type IpcApiRequest,
 } from "./db/ipc-dispatcher.js";
-import { closePrismaDatabase, initPrismaDatabase } from "./db/prisma-client.js";
+import {
+	closePrismaDatabase,
+	getCurrentUserId,
+	getPrismaClient,
+	initPrismaDatabase,
+} from "./db/prisma-client.js";
 import { ensureDevServerReady, stopDevServer } from "./dev-server-helper.js";
 import { loadDesktopEnv } from "./env-loader.js";
 import {
@@ -238,8 +244,20 @@ function registerIpcHandlers(): void {
 	});
 
 	ipcMain.handle("sync:now", async () => {
-		console.log("[DayPulse Desktop] Manual Google Drive sync requested");
-		return true;
+		const userId = getCurrentUserId();
+		if (!userId) {
+			return { success: false, message: "No active user session" };
+		}
+		try {
+			const prisma = getPrismaClient();
+			const result = await executeGoogleSyncUpload(prisma, userId);
+			mainWindow?.webContents.send("daypulse:sync-updated", result);
+			return result;
+		} catch (err) {
+			const msg =
+				err instanceof Error ? err.message : "Failed to sync with Google Drive";
+			return { success: false, message: msg };
+		}
 	});
 
 	ipcMain.handle("shell:open-external", async (_event, url: string) => {
@@ -336,8 +354,22 @@ app.whenReady().then(async () => {
 	// 6. Setup System Tray
 	setupTray(
 		win,
-		() => {
-			win.webContents.send("sync:requested");
+		async () => {
+			const userId = getCurrentUserId();
+			if (!userId) {
+				win.show();
+				win.focus();
+				return;
+			}
+			try {
+				const prisma = getPrismaClient();
+				const result = await executeGoogleSyncUpload(prisma, userId);
+				win.webContents.send("daypulse:sync-updated", result);
+			} catch (err) {
+				console.warn("[DayPulse Desktop] Tray sync notice:", err);
+				win.show();
+				win.focus();
+			}
 		},
 		() => {
 			isQuitting = true;
