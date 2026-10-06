@@ -150,25 +150,23 @@ async function updateCategory(
 		}
 	}
 
-	const { category, updatedRecords } = await prisma.$transaction(
-		async (tx) => {
-			const updated = await tx.categoryOption.update({
-				where: { id },
-				data: {
-					name: nextName,
-					...(color !== undefined ? { color } : {}),
-				},
-			});
-			const count = await cascadeCategoryRename(
-				tx,
-				userId,
-				existing.group,
-				existing.name,
-				nextName,
-			);
-			return { category: updated, updatedRecords: count };
-		},
-	);
+	const { category, updatedRecords } = await prisma.$transaction(async (tx) => {
+		const updated = await tx.categoryOption.update({
+			where: { id },
+			data: {
+				name: nextName,
+				...(color !== undefined ? { color } : {}),
+			},
+		});
+		const count = await cascadeCategoryRename(
+			tx,
+			userId,
+			existing.group,
+			existing.name,
+			nextName,
+		);
+		return { category: updated, updatedRecords: count };
+	});
 
 	return {
 		statusCode: 200,
@@ -200,7 +198,9 @@ async function renameCategoryByName(
 	}
 
 	const [source, target] = await Promise.all([
-		prisma.categoryOption.findFirst({ where: { userId, group, name: oldName } }),
+		prisma.categoryOption.findFirst({
+			where: { userId, group, name: oldName },
+		}),
 		oldName === newName
 			? Promise.resolve(null)
 			: prisma.categoryOption.findFirst({
@@ -212,38 +212,36 @@ async function renameCategoryByName(
 		return fail(409, `A category named "${newName}" already exists.`);
 	}
 
-	const { category, updatedRecords } = await prisma.$transaction(
-		async (tx) => {
-			let saved: CategoryOption;
-			if (source) {
-				saved = await tx.categoryOption.update({
-					where: { id: source.id },
-					data: { name: newName, ...(color !== undefined ? { color } : {}) },
-				});
-			} else if (target) {
-				saved =
-					color !== undefined
-						? await tx.categoryOption.update({
-								where: { id: target.id },
-								data: { color },
-							})
-						: target;
-			} else {
-				saved = await tx.categoryOption.create({
-					data: { userId, group, name: newName, color: color ?? null },
-				});
-			}
+	const { category, updatedRecords } = await prisma.$transaction(async (tx) => {
+		let saved: CategoryOption;
+		if (source) {
+			saved = await tx.categoryOption.update({
+				where: { id: source.id },
+				data: { name: newName, ...(color !== undefined ? { color } : {}) },
+			});
+		} else if (target) {
+			saved =
+				color !== undefined
+					? await tx.categoryOption.update({
+							where: { id: target.id },
+							data: { color },
+						})
+					: target;
+		} else {
+			saved = await tx.categoryOption.create({
+				data: { userId, group, name: newName, color: color ?? null },
+			});
+		}
 
-			const count = await cascadeCategoryRename(
-				tx,
-				userId,
-				group,
-				oldName,
-				newName,
-			);
-			return { category: saved, updatedRecords: count };
-		},
-	);
+		const count = await cascadeCategoryRename(
+			tx,
+			userId,
+			group,
+			oldName,
+			newName,
+		);
+		return { category: saved, updatedRecords: count };
+	});
 
 	return {
 		statusCode: 200,
@@ -303,7 +301,10 @@ export async function handleCategoryRoute(
 		return null;
 	}
 
-	if (pathname === "/categories/rename" && (method === "POST" || method === "PATCH")) {
+	if (
+		pathname === "/categories/rename" &&
+		(method === "POST" || method === "PATCH")
+	) {
 		return renameCategoryByName(prisma, userId, body);
 	}
 

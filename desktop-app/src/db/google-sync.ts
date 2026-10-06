@@ -4,11 +4,15 @@ import bcrypt from "bcryptjs";
 import { createBackupArchive } from "./archive-builder.js";
 import { restoreBackupArchive } from "./archive-extractor.js";
 import { mergeBackupIntoUser, summarizeMergeReport } from "./backup-merge.js";
+import { decryptToken, encryptToken } from "./crypto-vault.js";
 import { startSession } from "./session-store.js";
 
-const getGoogleClientId = (): string => process.env.GOOGLE_CLIENT_ID || "";
+const getGoogleClientId = (): string =>
+	process.env.GOOGLE_CLIENT_ID_DESKTOP || process.env.GOOGLE_CLIENT_ID || "";
 const getGoogleClientSecret = (): string =>
-	process.env.GOOGLE_CLIENT_SECRET || "";
+	process.env.GOOGLE_CLIENT_SECRET_DESKTOP ||
+	process.env.GOOGLE_CLIENT_SECRET ||
+	"";
 const getGoogleRedirectUri = (): string =>
 	process.env.GOOGLE_REDIRECT_URI ||
 	"http://localhost:5000/api/v1/sync/google/callback";
@@ -155,36 +159,54 @@ export async function getValidAccessToken(
 		throw new Error("Google Drive is not connected for this account.");
 	}
 
+	const rawAccess = decryptToken(connection.encryptedAccess);
+	const rawRefresh = connection.encryptedRefresh
+		? decryptToken(connection.encryptedRefresh)
+		: "";
+
 	const now = new Date();
 	const expiry = connection.tokenExpiry
 		? new Date(connection.tokenExpiry)
 		: null;
 	const isExpiringSoon = expiry
 		? expiry.getTime() - now.getTime() < 5 * 60 * 1000
-		: false;
+		: true;
 
-	if (isExpiringSoon && connection.encryptedRefresh) {
+	if ((isExpiringSoon || !rawAccess) && rawRefresh) {
 		try {
-			const refreshed = await refreshGoogleAccessToken(
-				connection.encryptedRefresh,
-			);
+			const refreshed = await refreshGoogleAccessToken(rawRefresh);
 			const tokenExpiry = new Date(Date.now() + refreshed.expiresIn * 1000);
 
 			await prisma.googleConnection.update({
 				where: { userId },
 				data: {
-					encryptedAccess: refreshed.accessToken,
+					encryptedAccess: encryptToken(refreshed.accessToken),
 					tokenExpiry,
 				},
 			});
 
 			return refreshed.accessToken;
-		} catch {
-			return connection.encryptedAccess;
+		} catch (refreshErr) {
+			console.warn(
+				"[DayPulse Google Sync] Refresh token attempt notice:",
+				refreshErr,
+			);
+			if (rawAccess && !isExpiringSoon) {
+				return rawAccess;
+			}
+			throw new Error(
+				"Google Drive session has expired. Please reconnect your Google account in Settings.",
+			);
 		}
 	}
 
-	return connection.encryptedAccess;
+	if (!rawAccess) {
+		throw new Error(
+			"Google Drive session has expired. Please reconnect your Google account in Settings.",
+		);
+	}
+
+	return rawAccess;
 }
 
 export async function uploadBackupToGoogleDrive(
@@ -203,6 +225,12 @@ export async function uploadBackupToGoogleDrive(
 		`https://www.googleapis.com/drive/v3/files?${searchParams.toString()}`,
 		{ headers: { Authorization: `Bearer ${accessToken}` } },
 	);
+
+	if (searchRes.status === 401) {
+		throw new Error(
+			"Google Drive session has expired (401). Please reconnect your Google account in Settings.",
+		);
+	}
 
 	let existingFileId: string | null = null;
 	if (searchRes.ok) {
@@ -226,6 +254,12 @@ export async function uploadBackupToGoogleDrive(
 				body: fileContent,
 			},
 		);
+
+		if (updateRes.status === 401) {
+			throw new Error(
+				"Google Drive session has expired (401). Please reconnect your Google account in Settings.",
+			);
+		}
 
 		if (updateRes.ok) {
 			const updated = (await updateRes.json()) as { id: string };
@@ -268,6 +302,12 @@ export async function uploadBackupToGoogleDrive(
 		},
 	);
 
+	if (createRes.status === 401) {
+		throw new Error(
+			"Google Drive session has expired (401). Please reconnect your Google account in Settings.",
+		);
+	}
+
 	if (!createRes.ok) {
 		const err = await createRes.text();
 		throw new Error(`Failed to upload to Google Drive: ${err}`);
@@ -296,6 +336,12 @@ export async function downloadLatestBackupFromGoogleDrive(
 		{ headers: { Authorization: `Bearer ${accessToken}` } },
 	);
 
+	if (searchRes.status === 401) {
+		throw new Error(
+			"Google Drive session has expired (401). Please reconnect your Google account in Settings.",
+		);
+	}
+
 	if (!searchRes.ok) {
 		throw new Error("Failed to search Google Drive for backups");
 	}
@@ -312,6 +358,12 @@ export async function downloadLatestBackupFromGoogleDrive(
 		`https://www.googleapis.com/drive/v3/files/${targetFile.id}?alt=media`,
 		{ headers: { Authorization: `Bearer ${accessToken}` } },
 	);
+
+	if (downloadRes.status === 401) {
+		throw new Error(
+			"Google Drive session has expired (401). Please reconnect your Google account in Settings.",
+		);
+	}
 
 	if (!downloadRes.ok) {
 		throw new Error("Failed to download backup content from Google Drive");
@@ -410,16 +462,20 @@ export function startGoogleOAuthLoopbackServer(
 					update: {
 						googleId: profile.id,
 						googleEmail: profile.email,
-						encryptedAccess: tokens.accessToken,
-						encryptedRefresh: tokens.refreshToken || undefined,
+						encryptedAccess: encryptToken(tokens.accessToken),
+						encryptedRefresh: tokens.refreshToken
+							? encryptToken(tokens.refreshToken)
+							: undefined,
 						tokenExpiry,
 					},
 					create: {
 						userId: activeUserId,
 						googleId: profile.id,
 						googleEmail: profile.email,
-						encryptedAccess: tokens.accessToken,
-						encryptedRefresh: tokens.refreshToken || null,
+						encryptedAccess: encryptToken(tokens.accessToken),
+						encryptedRefresh: tokens.refreshToken
+							? encryptToken(tokens.refreshToken)
+							: null,
 						tokenExpiry,
 					},
 				});
@@ -548,6 +604,17 @@ export function startGoogleOAuthLoopbackServer(
 	loopbackServer.on("error", (err) => {
 		console.warn("[DayPulse Desktop] Loopback listener notice:", err);
 	});
+}
+
+export function stopGoogleOAuthLoopbackServer(): void {
+	if (loopbackServer) {
+		try {
+			loopbackServer.close();
+		} catch {
+			// Ignore if already closed
+		}
+		loopbackServer = null;
+	}
 }
 
 export async function executeGoogleSyncUpload(

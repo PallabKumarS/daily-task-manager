@@ -11,11 +11,15 @@ export function setupTray(
 	if (tray) return tray;
 
 	const iconCandidates = [
+		path.resolve(__dirname, "../assets/favicon.ico"),
+		path.resolve(__dirname, "../../assets/favicon.ico"),
+		path.resolve(process.cwd(), "desktop-app", "assets", "favicon.ico"),
 		path.resolve(process.cwd(), "assets", "favicon.ico"),
 		path.resolve(process.cwd(), "..", "assets", "favicon.ico"),
-		path.resolve(__dirname, "../../assets/favicon.ico"),
-		path.resolve(__dirname, "../assets/favicon.ico"),
+		path.resolve(__dirname, "../assets/logo.png"),
 		path.resolve(__dirname, "../../assets/logo.png"),
+		path.resolve(process.cwd(), "desktop-app", "assets", "logo.png"),
+		path.resolve(process.cwd(), "assets", "logo.png"),
 	];
 
 	let trayIcon = nativeImage.createEmpty();

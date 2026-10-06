@@ -350,13 +350,22 @@ function SettingsContent() {
 				fetchGoogleStatus();
 			} else {
 				toast.error(res.message || "Failed to backup to Google Drive");
+				if (
+					res.message?.includes("expired") ||
+					res.message?.includes("reconnect")
+				) {
+					setGoogleStatus((prev) => ({ ...prev, connected: false }));
+				}
 			}
 		} catch (error) {
-			toast.error(
+			const msg =
 				error instanceof Error
 					? error.message
-					: "Network error during Google Drive sync",
-			);
+					: "Network error during Google Drive sync";
+			toast.error(msg);
+			if (msg.includes("expired") || msg.includes("reconnect")) {
+				setGoogleStatus((prev) => ({ ...prev, connected: false }));
+			}
 		} finally {
 			setSyncingGoogle(false);
 		}
@@ -379,13 +388,22 @@ function SettingsContent() {
 				window.dispatchEvent(new CustomEvent("daypulse:refresh"));
 			} else {
 				toast.error(res.message || "Failed to restore from Google Drive");
+				if (
+					res.message?.includes("expired") ||
+					res.message?.includes("reconnect")
+				) {
+					setGoogleStatus((prev) => ({ ...prev, connected: false }));
+				}
 			}
 		} catch (error) {
-			toast.error(
+			const msg =
 				error instanceof Error
 					? error.message
-					: "Network error during Google Drive restore",
-			);
+					: "Network error during Google Drive restore";
+			toast.error(msg);
+			if (msg.includes("expired") || msg.includes("reconnect")) {
+				setGoogleStatus((prev) => ({ ...prev, connected: false }));
+			}
 		} finally {
 			setRestoringGoogle(false);
 		}

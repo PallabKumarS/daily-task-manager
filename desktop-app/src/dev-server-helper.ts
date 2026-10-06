@@ -74,9 +74,7 @@ function cleanStalePortProcesses(port = 3000): void {
 	}
 }
 
-export async function ensureDevServerReady(
-	targetUrl = "http://localhost:3000/dashboard",
-): Promise<void> {
+export async function ensureDevServerReady(): Promise<void> {
 	const healthUrl = "http://127.0.0.1:3000/api/health";
 	const alreadyUp = await isUrlResponding(healthUrl, 2000);
 	if (alreadyUp) {
@@ -168,7 +166,7 @@ export async function ensureDevServerReady(
 }
 
 export function stopDevServer(): void {
-	if (nextDevProcess && nextDevProcess.pid) {
+	if (nextDevProcess?.pid) {
 		console.log(
 			`[DayPulse Desktop] Terminating Next.js process tree (PID ${nextDevProcess.pid})...`,
 		);
@@ -185,4 +183,6 @@ export function stopDevServer(): void {
 		}
 		nextDevProcess = null;
 	}
+	cleanStalePortProcesses(3000);
+	cleanStalePortProcesses(5000);
 }

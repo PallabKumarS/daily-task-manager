@@ -1,13 +1,14 @@
 {
   "name": "desktop-app",
+  "productName": "DayPulse",
   "version": "1.0.0",
   "description": "DayPulse Standalone Desktop App",
   "main": "dist/main.js",
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",
-    "start": "tsc && electron .",
-    "dev": "tsc && electron .",
+    "start": "node scripts/brand-electron.mjs && tsc && electron .",
+    "dev": "node scripts/brand-electron.mjs && tsc && electron .",
     "pack:exe": "tsc && electron-builder --win"
   },
   "build": {
