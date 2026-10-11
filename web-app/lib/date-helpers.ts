@@ -1,3 +1,5 @@
+import * as React from "react";
+
 export function getTodayDateString(): string {
 	const now = new Date();
 	const year = now.getFullYear();
@@ -82,4 +84,86 @@ export function calculateNewStreak(
 		return currentStreak + 1;
 	}
 	return 1;
+}
+
+// Reactive zero-cost midnight rollover subscription
+let cachedTodayStr = getTodayDateString();
+let cachedReadable = formatReadableDate(new Date());
+let cachedDate = new Date();
+
+const dateSubscribers = new Set<() => void>();
+
+function notifyDateSubscribers(): void {
+	cachedTodayStr = getTodayDateString();
+	cachedReadable = formatReadableDate(new Date());
+	cachedDate = new Date();
+	for (const sub of dateSubscribers) {
+		sub();
+	}
+}
+
+function checkDateRollover(): void {
+	const currentStr = getTodayDateString();
+	if (currentStr !== cachedTodayStr) {
+		notifyDateSubscribers();
+		if (typeof window !== "undefined") {
+			window.dispatchEvent(
+				new CustomEvent("daypulse:date-changed", { detail: { date: currentStr } }),
+			);
+			window.dispatchEvent(new CustomEvent("daypulse:refresh"));
+		}
+	}
+}
+
+let rolloverTimer: ReturnType<typeof setTimeout> | null = null;
+
+function scheduleNextMinuteCheck(): void {
+	if (typeof window === "undefined") return;
+	if (rolloverTimer) clearTimeout(rolloverTimer);
+
+	const now = new Date();
+	const msUntilNextMinute = (60 - now.getSeconds()) * 1000 - now.getMilliseconds() + 50;
+
+	rolloverTimer = setTimeout(() => {
+		checkDateRollover();
+		scheduleNextMinuteCheck();
+	}, msUntilNextMinute);
+}
+
+if (typeof window !== "undefined") {
+	scheduleNextMinuteCheck();
+	document.addEventListener("visibilitychange", () => {
+		if (document.visibilityState === "visible") {
+			checkDateRollover();
+		}
+	});
+	window.addEventListener("focus", () => {
+		checkDateRollover();
+	});
+}
+
+export function useTodayDate(): {
+	todayDateString: string;
+	readableDate: string;
+	now: Date;
+} {
+	const dateSnapshot = React.useSyncExternalStore(
+		(callback) => {
+			dateSubscribers.add(callback);
+			return () => {
+				dateSubscribers.delete(callback);
+			};
+		},
+		() => cachedTodayStr,
+		() => getTodayDateString(),
+	);
+
+	return React.useMemo(
+		() => ({
+			todayDateString: dateSnapshot,
+			readableDate: cachedReadable,
+			now: cachedDate,
+		}),
+		[dateSnapshot],
+	);
 }

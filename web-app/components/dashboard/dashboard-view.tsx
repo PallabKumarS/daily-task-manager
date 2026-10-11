@@ -35,6 +35,7 @@ import { Button } from "@/components/ui/button";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { api } from "@/lib/api-client";
 import { formatCurrency } from "@/lib/currency-symbols";
+import { useTodayDate } from "@/lib/date-helpers";
 
 interface DashboardViewProps {
 	onOpenRoutineModal: (routine?: RoutineItem | null) => void;
@@ -51,6 +52,7 @@ export function DashboardView({
 }: DashboardViewProps) {
 	const { user } = useAuth();
 	const confirm = useConfirm();
+	const { todayDateString: todayStr } = useTodayDate();
 
 	const [routines, setRoutines] = React.useState<RoutineItem[]>([]);
 	const [tasks, setTasks] = React.useState<TaskItem[]>([]);
@@ -89,8 +91,10 @@ export function DashboardView({
 
 		const onGlobalRefresh = () => fetchData();
 		window.addEventListener("daypulse:refresh", onGlobalRefresh);
+		window.addEventListener("daypulse:date-changed", onGlobalRefresh);
 		return () => {
 			window.removeEventListener("daypulse:refresh", onGlobalRefresh);
+			window.removeEventListener("daypulse:date-changed", onGlobalRefresh);
 		};
 	}, [fetchData]);
 
@@ -434,7 +438,6 @@ export function DashboardView({
 		.filter((t) => t.type === "EXPENSE")
 		.reduce((sum, t) => sum + t.amount, 0);
 
-	const todayStr = new Date().toLocaleDateString("en-CA");
 	const pendingTasks = tasks.filter(
 		(t) => t.status !== "COMPLETED" && (!t.isRecurring || t.lastCompletedDate !== todayStr),
 	);

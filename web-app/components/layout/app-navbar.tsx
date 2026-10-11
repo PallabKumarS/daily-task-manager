@@ -2,6 +2,7 @@
 
 import {
 	Activity,
+	BellRing,
 	Calculator,
 	Calendar,
 	CheckSquare,
@@ -13,20 +14,16 @@ import {
 import Link from "next/link";
 import * as React from "react";
 import { NotificationCenter } from "@/components/layout/notification-center";
-import { formatReadableDate } from "@/lib/date-helpers";
+import { useTodayDate } from "@/lib/date-helpers";
 
 interface AppNavbarProps {
-	onQuickAdd?: (type: "routine" | "task" | "transaction" | "tracker") => void;
+	onQuickAdd?: (type: "routine" | "task" | "transaction" | "tracker" | "alarm") => void;
 }
 
 export function AppNavbar({ onQuickAdd }: AppNavbarProps) {
-	const [currentDateText, setCurrentDateText] = React.useState("");
+	const { readableDate } = useTodayDate();
 	const [isQuickLogOpen, setIsQuickLogOpen] = React.useState(false);
 	const menuRef = React.useRef<HTMLDivElement>(null);
-
-	React.useEffect(() => {
-		setCurrentDateText(formatReadableDate(new Date()));
-	}, []);
 
 	// Close dropdown on click outside
 	React.useEffect(() => {
@@ -58,7 +55,7 @@ export function AppNavbar({ onQuickAdd }: AppNavbarProps) {
 				{/* Date on Tablet/Desktop */}
 				<div className="hidden sm:flex items-center gap-2 text-xs text-slate-400">
 					<Calendar className="w-4 h-4 text-emerald-400" />
-					<span>{currentDateText || "Today"}</span>
+					<span>{readableDate || "Today"}</span>
 				</div>
 			</div>
 
@@ -99,6 +96,20 @@ export function AppNavbar({ onQuickAdd }: AppNavbarProps) {
 									type="button"
 									onClick={() => {
 										setIsQuickLogOpen(false);
+										onQuickAdd("alarm");
+									}}
+									className="flex items-center gap-2.5 w-full text-left px-3 py-2 text-xs font-medium text-slate-200 hover:text-white hover:bg-slate-800/80 rounded-xl transition cursor-pointer"
+								>
+									<div className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400">
+										<BellRing className="w-3.5 h-3.5" />
+									</div>
+									<span>New Alarm / Alert</span>
+								</button>
+
+								<button
+									type="button"
+									onClick={() => {
+										setIsQuickLogOpen(false);
 										onQuickAdd("task");
 									}}
 									className="flex items-center gap-2.5 w-full text-left px-3 py-2 text-xs font-medium text-slate-200 hover:text-white hover:bg-slate-800/80 rounded-xl transition cursor-pointer"
@@ -106,7 +117,7 @@ export function AppNavbar({ onQuickAdd }: AppNavbarProps) {
 									<div className="flex h-6 w-6 items-center justify-center rounded-lg bg-blue-500/10 text-blue-400">
 										<CheckSquare className="w-3.5 h-3.5" />
 									</div>
-									<span>New Task / Event</span>
+									<span>New Task</span>
 								</button>
 
 								<button

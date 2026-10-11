@@ -8,7 +8,7 @@ export function triggerDesktopAlarm(
 	payload: AlarmNotificationPayload,
 ): void {
 	// 1. Play background chime audio
-	playAlarmSound();
+	playAlarmSound(payload.ringCount, payload.ringIntervalSeconds);
 
 	// 2. Display native OS notification
 	if (Notification.isSupported()) {

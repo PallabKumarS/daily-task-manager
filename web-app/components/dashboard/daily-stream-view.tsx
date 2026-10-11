@@ -20,6 +20,7 @@ import type { TaskItem } from "@/components/tasks/task-list";
 import type { DailyTrackerItem } from "@/components/trackers/tracker-types";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/currency-symbols";
+import { useTodayDate } from "@/lib/date-helpers";
 import { useRecentAdditions } from "@/lib/recent-activity-store";
 
 interface DailyStreamViewProps {
@@ -70,7 +71,7 @@ export function DailyStreamView({
 	const { activeAdditionId } = useRecentAdditions();
 	const [filter, setFilter] = React.useState<StreamFilter>("ALL");
 
-	const todayStr = React.useMemo(() => new Date().toLocaleDateString("en-CA"), []);
+	const { todayDateString: todayStr } = useTodayDate();
 
 	// Unify today's items into stream
 	const streamItems: StreamItem[] = React.useMemo(() => {

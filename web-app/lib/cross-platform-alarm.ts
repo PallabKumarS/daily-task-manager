@@ -1,6 +1,6 @@
 import { Capacitor } from "@capacitor/core";
 import { LocalNotifications } from "@capacitor/local-notifications";
-import { playNotificationChime } from "./audio-chime";
+import { playNotificationChime, startAlarmRinging } from "./audio-chime";
 import { showSystemNotification } from "./web-notification";
 
 export interface UnifiedAlarmPayload {
@@ -10,6 +10,8 @@ export interface UnifiedAlarmPayload {
 	type: "task" | "event" | "routine" | "system";
 	leadMinutes?: number;
 	scheduledTime?: Date;
+	ringCount?: number;
+	ringIntervalSeconds?: number;
 }
 
 let channelInitialized = false;
@@ -107,12 +109,22 @@ export async function dispatchUnifiedAlarm(payload: UnifiedAlarmPayload): Promis
 			message: payload.message,
 			type: payload.type,
 			leadMinutes: payload.leadMinutes,
+			ringCount: payload.ringCount,
+			ringIntervalSeconds: payload.ringIntervalSeconds,
 		});
 		return;
 	}
 
 	// 3. Fallback Web Browser Environment
-	playNotificationChime();
+	if (payload.ringCount !== undefined && payload.ringCount !== 1) {
+		startAlarmRinging({
+			ringCount: payload.ringCount,
+			intervalSeconds: payload.ringIntervalSeconds || 10,
+		});
+	} else {
+		playNotificationChime();
+	}
+
 	showSystemNotification(payload.title, {
 		body: payload.message,
 		tag: payload.id,

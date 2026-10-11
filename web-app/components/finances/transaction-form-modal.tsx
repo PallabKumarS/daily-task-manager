@@ -14,7 +14,12 @@ import { Modal } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/lib/api-client";
-import { EXPENSE_CATEGORIES, formatCurrency, getCurrencySymbol, INCOME_CATEGORIES } from "@/lib/currency-symbols";
+import {
+	EXPENSE_CATEGORIES,
+	formatCurrency,
+	getCurrencySymbol,
+	INCOME_CATEGORIES,
+} from "@/lib/currency-symbols";
 import { recordRecentAddition } from "@/lib/recent-activity-store";
 import { DAY_NAMES_SHORT, useWorkweekPreferences } from "@/lib/workweek-preferences";
 
@@ -50,6 +55,7 @@ interface TransactionFormModalProps {
 		date: string | Date;
 	} | null;
 	defaultType?: "EXPENSE" | "INCOME";
+	defaultDate?: string;
 }
 
 export function TransactionFormModal({
@@ -58,6 +64,7 @@ export function TransactionFormModal({
 	onSuccess,
 	initialData,
 	defaultType = "EXPENSE",
+	defaultDate,
 }: TransactionFormModalProps) {
 	const { user } = useAuth();
 	const { weekdays, weekendDays } = useWorkweekPreferences();
@@ -159,10 +166,10 @@ export function TransactionFormModal({
 				category: defaultType === "EXPENSE" ? EXPENSE_CATEGORIES[0] : INCOME_CATEGORIES[0],
 				description: "",
 				paymentMethod: "Cash",
-				date: new Date().toISOString().slice(0, 10),
+				date: defaultDate || new Date().toISOString().slice(0, 10),
 			});
 		}
-	}, [initialData, defaultType, reset, isOpen, weekdays]);
+	}, [initialData, defaultType, defaultDate, reset, isOpen, weekdays]);
 
 	const handleTypeToggle = (type: "EXPENSE" | "INCOME") => {
 		setValue("type", type);

@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Calendar, Clock, Plus, Repeat, X } from "lucide-react";
+import { BellRing, Calendar, CheckSquare, Clock, Plus, Repeat, X } from "lucide-react";
 import * as React from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -11,6 +11,12 @@ import { CustomSelect, type SelectOption } from "@/components/ui/custom-select";
 import { Modal } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+	formatAlarmDescription,
+	parseAlarmConfig,
+	RING_COUNT_OPTIONS,
+	RING_INTERVAL_OPTIONS,
+} from "@/lib/alarm-settings";
 import { api } from "@/lib/api-client";
 import { TASK_CATEGORIES } from "@/lib/currency-symbols";
 import { recordRecentAddition } from "@/lib/recent-activity-store";
@@ -126,6 +132,11 @@ export function TaskFormModal({
 	const [extraTimes, setExtraTimes] = React.useState<string[]>([]);
 	const [newTimeInput, setNewTimeInput] = React.useState<string>("");
 	const [showAddTimeInput, setShowAddTimeInput] = React.useState(false);
+	const [modalMode, setModalMode] = React.useState<"ALARM" | "TASK">(
+		defaultType === "EVENT" ? "ALARM" : "TASK",
+	);
+	const [ringCount, setRingCount] = React.useState<number>(3);
+	const [ringInterval, setRingInterval] = React.useState<number>(10);
 
 	const {
 		register,
@@ -185,6 +196,12 @@ export function TaskFormModal({
 	// biome-ignore lint/correctness/useExhaustiveDependencies: reset form on modal open
 	React.useEffect(() => {
 		if (initialData) {
+			const isAlarm = initialData.type === "EVENT" || initialData.category === "Alarm";
+			setModalMode(isAlarm ? "ALARM" : "TASK");
+			const { config, userNotes } = parseAlarmConfig(initialData.description);
+			setRingCount(config.ringCount);
+			setRingInterval(config.ringIntervalSeconds);
+
 			let formattedDue = "";
 			if (initialData.dueDate) {
 				const d = new Date(initialData.dueDate);
@@ -221,10 +238,12 @@ export function TaskFormModal({
 
 			reset({
 				title: initialData.title,
-				description: initialData.description || "",
-				type: (initialData.type as "TASK" | "EVENT") || "TASK",
-				category: initialData.category || "General",
-				priority: (initialData.priority as "LOW" | "MEDIUM" | "HIGH" | "URGENT") || "MEDIUM",
+				description: userNotes,
+				type: (initialData.type as "TASK" | "EVENT") || (isAlarm ? "EVENT" : "TASK"),
+				category: initialData.category || (isAlarm ? "Alarm" : "General"),
+				priority:
+					(initialData.priority as "LOW" | "MEDIUM" | "HIGH" | "URGENT") ||
+					(isAlarm ? "HIGH" : "MEDIUM"),
 				startDate: formattedStart,
 				dueDate: formattedDue,
 				remindBeforeMinutes: initialData.remindBeforeMinutes ?? 0,
@@ -240,6 +259,11 @@ export function TaskFormModal({
 				repeatUntil: formattedUntil,
 			});
 		} else {
+			const isAlarm = defaultType === "EVENT";
+			setModalMode(isAlarm ? "ALARM" : "TASK");
+			setRingCount(3);
+			setRingInterval(10);
+
 			const now = new Date();
 			const todayStr = now.toISOString().slice(0, 10);
 			now.setHours(now.getHours() + 1, 0, 0, 0);
@@ -250,12 +274,12 @@ export function TaskFormModal({
 				title: "",
 				description: "",
 				type: defaultType,
-				category: "General",
-				priority: "MEDIUM",
+				category: isAlarm ? "Alarm" : "General",
+				priority: isAlarm ? "HIGH" : "MEDIUM",
 				startDate: todayStr,
 				dueDate: defaultDueStr,
 				remindBeforeMinutes: 0,
-				isRecurring: defaultType === "EVENT",
+				isRecurring: isAlarm,
 				repeatFrequency: "DAILY",
 				repeatInterval: 1,
 				repeatDaysOfWeek: "0,1,2,3,4,5,6",
@@ -311,8 +335,20 @@ export function TaskFormModal({
 			const allTimes = [data.repeatTime, ...extraTimes].filter(Boolean);
 			const finalRepeatTime = allTimes.join(",");
 
+			const isAlarmMode = modalMode === "ALARM";
+			const finalDescription = isAlarmMode
+				? formatAlarmDescription(data.description || "", {
+						ringCount,
+						ringIntervalSeconds: ringInterval,
+					})
+				: data.description || "";
+
 			const payload = {
 				...data,
+				type: isAlarmMode ? "EVENT" : data.type,
+				category: isAlarmMode ? "Alarm" : data.category,
+				priority: isAlarmMode ? "HIGH" : data.priority,
+				description: finalDescription,
 				repeatTime: finalRepeatTime,
 			};
 
@@ -326,16 +362,20 @@ export function TaskFormModal({
 
 				recordRecentAddition({
 					id: createdId,
-					type: data.type as "TASK" | "EVENT",
+					type: (isAlarmMode ? "EVENT" : data.type) as "TASK" | "EVENT",
 					title: data.title,
-					category: data.category,
-					priority: data.priority,
+					category: isAlarmMode ? "Alarm" : data.category,
+					priority: isAlarmMode ? "HIGH" : data.priority,
 					date: data.startDate || data.dueDate || new Date().toISOString(),
 				});
 
-				const typeLabel = data.type === "EVENT" ? "Event" : "Task";
+				const typeLabel = isAlarmMode ? "Alarm" : data.type === "EVENT" ? "Event" : "Task";
+				const descInfo = isAlarmMode
+					? `Rings: ${ringCount === 0 ? "Continuous" : `${ringCount}x`} • Every ${ringInterval}s`
+					: `${data.category} • Priority: ${data.priority}${data.dueDate ? ` • Due: ${data.dueDate.slice(0, 10)}` : ""}`;
+
 				toast.success(`${typeLabel} "${data.title}" saved`, {
-					description: `${data.category} • Priority: ${data.priority}${data.dueDate ? ` • Due: ${data.dueDate.slice(0, 10)}` : ""}`,
+					description: descInfo,
 				});
 				onSuccess();
 				onClose();
@@ -354,21 +394,67 @@ export function TaskFormModal({
 			onClose={onClose}
 			title={
 				initialData
-					? `Edit ${selectedType === "EVENT" ? "Event" : "Task"}`
-					: `Create ${selectedType === "EVENT" ? "Event" : "Task"}`
+					? modalMode === "ALARM"
+						? "Edit Alarm & Reminder"
+						: "Edit Task Item"
+					: modalMode === "ALARM"
+						? "Set Alarm & Reminder"
+						: "Create Task Item"
 			}
-			description="Schedule one-time or recurring events with audio chimes and system notifications"
+			description={
+				modalMode === "ALARM"
+					? "Configure target time, advance alert notice, and audio ringing frequency"
+					: "Schedule priority actions with due dates and status tracking"
+			}
 			maxWidth="lg"
 		>
 			<form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+				{/* Mode Switcher */}
+				<div className="grid grid-cols-2 gap-2 p-1 rounded-2xl bg-slate-950 border border-slate-800">
+					<button
+						type="button"
+						onClick={() => {
+							setModalMode("ALARM");
+							setValue("type", "EVENT");
+							setValue("category", "Alarm");
+							setValue("priority", "HIGH");
+						}}
+						className={`flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+							modalMode === "ALARM"
+								? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-sm"
+								: "text-slate-400 hover:text-white"
+						}`}
+					>
+						<BellRing className="w-3.5 h-3.5 text-emerald-400" />
+						<span>Alarm & Reminder</span>
+					</button>
+					<button
+						type="button"
+						onClick={() => {
+							setModalMode("TASK");
+							setValue("type", "TASK");
+							setValue("category", "General");
+							setValue("priority", "MEDIUM");
+						}}
+						className={`flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+							modalMode === "TASK"
+								? "bg-sky-500/20 text-sky-400 border border-sky-500/40 shadow-sm"
+								: "text-slate-400 hover:text-white"
+						}`}
+					>
+						<CheckSquare className="w-3.5 h-3.5 text-sky-400" />
+						<span>Task Action Item</span>
+					</button>
+				</div>
+
 				{/* Title */}
 				<div className="space-y-1.5">
-					<Label htmlFor="title">Title</Label>
+					<Label htmlFor="title">{modalMode === "ALARM" ? "Alarm Label" : "Title"}</Label>
 					<Input
 						id="title"
 						placeholder={
-							selectedType === "EVENT"
-								? "e.g. Daily Evening Log & Expense Entry"
+							modalMode === "ALARM"
+								? "e.g. Morning Wakeup, Exercise, Medicine"
 								: "e.g. Review Weekly Sprint Milestones"
 						}
 						{...register("title")}
@@ -376,77 +462,119 @@ export function TaskFormModal({
 					{errors.title && <p className="text-xs text-red-400">{errors.title.message}</p>}
 				</div>
 
-				{/* Type & Priority */}
-				<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-					<CustomSelect
-						label="Type"
-						value={selectedType}
-						group="TASK_TYPE"
-						onChange={(val) =>
-							setValue("type", val as "TASK" | "EVENT", {
-								shouldValidate: true,
-							})
-						}
-						options={TYPE_OPTIONS}
-					/>
+				{/* Category & Priority only shown for Standard Task mode */}
+				{modalMode === "TASK" && (
+					<>
+						<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+							<CustomSelect
+								label="Type"
+								value={selectedType}
+								group="TASK_TYPE"
+								onChange={(val) =>
+									setValue("type", val as "TASK" | "EVENT", {
+										shouldValidate: true,
+									})
+								}
+								options={TYPE_OPTIONS}
+							/>
 
-					<CustomSelect
-						label="Priority"
-						value={selectedPriority}
-						group="TASK_PRIORITY"
-						onChange={(val) =>
-							setValue("priority", val as "LOW" | "MEDIUM" | "HIGH" | "URGENT", {
-								shouldValidate: true,
-							})
-						}
-						options={PRIORITY_OPTIONS}
-					/>
-				</div>
-
-				{/* Category & Single Due Date (if not recurring) */}
-				<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-					<CustomSelect
-						label="Category"
-						value={selectedCategory}
-						group="TASK_CATEGORY"
-						onChange={(val) => setValue("category", val, { shouldValidate: true })}
-						options={categoryOptions}
-					/>
-
-					{!isRecurring ? (
-						<div className="space-y-1.5">
-							<div className="flex items-center justify-between">
-								<Label htmlFor="dueDate">Target Date & Time</Label>
-								<span className="text-[11px] text-emerald-400 font-medium flex items-center gap-1">
-									<Calendar className="w-3 h-3" />
-									<span>Click box to pick</span>
-								</span>
-							</div>
-							<Input
-								id="dueDate"
-								type="datetime-local"
-								className="h-11 font-medium"
-								{...register("dueDate")}
+							<CustomSelect
+								label="Priority"
+								value={selectedPriority}
+								group="TASK_PRIORITY"
+								onChange={(val) =>
+									setValue("priority", val as "LOW" | "MEDIUM" | "HIGH" | "URGENT", {
+										shouldValidate: true,
+									})
+								}
+								options={PRIORITY_OPTIONS}
 							/>
 						</div>
-					) : (
-						<div className="space-y-1.5">
-							<div className="flex items-center justify-between">
-								<Label htmlFor="startDate">From When (Start Date)</Label>
-								<span className="text-[11px] text-emerald-400 font-medium flex items-center gap-1">
-									<Calendar className="w-3 h-3" />
-									<span>Click box to pick</span>
-								</span>
-							</div>
-							<Input
-								id="startDate"
-								type="date"
-								className="h-11 font-medium"
-								{...register("startDate")}
+
+						<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+							<CustomSelect
+								label="Category"
+								value={selectedCategory}
+								group="TASK_CATEGORY"
+								onChange={(val) => setValue("category", val, { shouldValidate: true })}
+								options={categoryOptions}
 							/>
+
+							{!isRecurring ? (
+								<div className="space-y-1.5">
+									<div className="flex items-center justify-between">
+										<Label htmlFor="dueDate">Target Date & Time</Label>
+										<span className="text-[11px] text-emerald-400 font-medium flex items-center gap-1">
+											<Calendar className="w-3 h-3" />
+											<span>Click box to pick</span>
+										</span>
+									</div>
+									<Input
+										id="dueDate"
+										type="datetime-local"
+										className="h-11 font-medium"
+										{...register("dueDate")}
+									/>
+								</div>
+							) : (
+								<div className="space-y-1.5">
+									<div className="flex items-center justify-between">
+										<Label htmlFor="startDate">From When (Start Date)</Label>
+										<span className="text-[11px] text-emerald-400 font-medium flex items-center gap-1">
+											<Calendar className="w-3 h-3" />
+											<span>Click box to pick</span>
+										</span>
+									</div>
+									<Input
+										id="startDate"
+										type="date"
+										className="h-11 font-medium"
+										{...register("startDate")}
+									/>
+								</div>
+							)}
 						</div>
-					)}
-				</div>
+					</>
+				)}
+
+				{/* Alarm mode: Direct Date/Time Target (No Category/Priority clutter) */}
+				{modalMode === "ALARM" && (
+					<div>
+						{!isRecurring ? (
+							<div className="space-y-1.5">
+								<div className="flex items-center justify-between">
+									<Label htmlFor="dueDate">Alarm Target Date & Time</Label>
+									<span className="text-[11px] text-emerald-400 font-medium flex items-center gap-1">
+										<Calendar className="w-3 h-3" />
+										<span>Click box to pick</span>
+									</span>
+								</div>
+								<Input
+									id="dueDate"
+									type="datetime-local"
+									className="h-11 font-medium"
+									{...register("dueDate")}
+								/>
+							</div>
+						) : (
+							<div className="space-y-1.5">
+								<div className="flex items-center justify-between">
+									<Label htmlFor="startDate">Start Date</Label>
+									<span className="text-[11px] text-emerald-400 font-medium flex items-center gap-1">
+										<Calendar className="w-3 h-3" />
+										<span>Click box to pick</span>
+									</span>
+								</div>
+								<Input
+									id="startDate"
+									type="date"
+									className="h-11 font-medium"
+									{...register("startDate")}
+								/>
+							</div>
+						)}
+					</div>
+				)}
 
 				{/* Recurrence Toggle Switch */}
 				<div className="rounded-2xl border border-slate-800 bg-gradient-to-r from-slate-900/90 via-slate-900/70 to-slate-950/80 p-3.5 transition">
@@ -825,19 +953,54 @@ export function TaskFormModal({
 					)}
 				</div>
 
-				{/* Advance Alert Notice Dropdown */}
-				<CustomSelect
-					label="Advance Notification & Audio Chime Alert"
-					value={String(selectedRemind ?? 0)}
-					group="REMINDER_TIME"
-					onChange={(val) => {
-						const parsed = Number.parseInt(val, 10);
-						setValue("remindBeforeMinutes", Number.isNaN(parsed) ? 0 : parsed, {
-							shouldValidate: true,
-						});
-					}}
-					options={REMINDER_OPTIONS}
-				/>
+				{/* Ring count & Frequency options (Alarm mode) */}
+				{modalMode === "ALARM" ? (
+					<>
+						<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+							<CustomSelect
+								label="How Many Times to Ring Alarm"
+								value={String(ringCount)}
+								group="RING_COUNT"
+								onChange={(val) => setRingCount(Number.parseInt(val, 10))}
+								options={RING_COUNT_OPTIONS}
+							/>
+
+							<CustomSelect
+								label="Ring Frequency / Interval Between Rings"
+								value={String(ringInterval)}
+								group="RING_INTERVAL"
+								onChange={(val) => setRingInterval(Number.parseInt(val, 10))}
+								options={RING_INTERVAL_OPTIONS}
+							/>
+						</div>
+
+						<CustomSelect
+							label="When to Show Notification (Advance Notice)"
+							value={String(selectedRemind ?? 0)}
+							group="REMINDER_TIME"
+							onChange={(val) => {
+								const parsed = Number.parseInt(val, 10);
+								setValue("remindBeforeMinutes", Number.isNaN(parsed) ? 0 : parsed, {
+									shouldValidate: true,
+								});
+							}}
+							options={REMINDER_OPTIONS}
+						/>
+					</>
+				) : (
+					<CustomSelect
+						label="Advance Notification & Audio Chime Alert"
+						value={String(selectedRemind ?? 0)}
+						group="REMINDER_TIME"
+						onChange={(val) => {
+							const parsed = Number.parseInt(val, 10);
+							setValue("remindBeforeMinutes", Number.isNaN(parsed) ? 0 : parsed, {
+								shouldValidate: true,
+							});
+						}}
+						options={REMINDER_OPTIONS}
+					/>
+				)}
 
 				{/* Description / Instructions */}
 				<div className="space-y-1.5">
@@ -846,7 +1009,11 @@ export function TaskFormModal({
 						id="description"
 						rows={2}
 						className="flex w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-500/30 focus-visible:border-emerald-500 transition duration-150"
-						placeholder="e.g. Remind me to log meals, record expenses, or review daily habit progress"
+						placeholder={
+							modalMode === "ALARM"
+								? "e.g. Turn on water heater, take morning vitamins"
+								: "e.g. Review sprint milestones and check pull requests"
+						}
 						{...register("description")}
 					/>
 				</div>
@@ -861,7 +1028,9 @@ export function TaskFormModal({
 							? "Saving..."
 							: initialData
 								? "Save Changes"
-								: `Create ${selectedType === "EVENT" ? "Event" : "Task"}`}
+								: modalMode === "ALARM"
+									? "Set Alarm"
+									: "Create Task"}
 					</Button>
 				</div>
 			</form>

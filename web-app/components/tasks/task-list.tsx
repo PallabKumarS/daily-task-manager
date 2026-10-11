@@ -1,13 +1,27 @@
 "use client";
 
 import confetti from "canvas-confetti";
-import { Bell, Calendar, Check, Clock, Edit2, Plus, Repeat, Trash2 } from "lucide-react";
+import {
+	Bell,
+	BellRing,
+	Calendar,
+	Check,
+	Clock,
+	Edit2,
+	Plus,
+	Repeat,
+	Trash2,
+	Volume2,
+} from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useConfirm } from "@/components/ui/confirm-dialog";
+import { formatTriggeredTime, parseAlarmConfig } from "@/lib/alarm-settings";
 import { api } from "@/lib/api-client";
+import { startAlarmRinging, stopCurrentAlarm } from "@/lib/audio-chime";
+import { useTodayDate } from "@/lib/date-helpers";
 import { useRecentAdditions } from "@/lib/recent-activity-store";
 
 export interface TaskItem {
@@ -127,7 +141,37 @@ export function TaskList({ tasks, onToggleStatus, onEdit, onRefresh, onAddNew }:
 		}
 	};
 
-	const todayStr = React.useMemo(() => new Date().toLocaleDateString("en-CA"), []);
+	const { todayDateString: todayStr } = useTodayDate();
+
+	const handleTestAlarm = async (item: TaskItem) => {
+		const { config: alarmConfig } = parseAlarmConfig(item.description);
+		const nowIso = new Date().toISOString();
+
+		// 1. Start multi-ring chime audio
+		startAlarmRinging({
+			ringCount: alarmConfig.ringCount,
+			intervalSeconds: alarmConfig.ringIntervalSeconds,
+		});
+
+		// 2. Display notification with stop button
+		toast.info(`Test Alarm: "${item.title}"`, {
+			description: `Ringing ${alarmConfig.ringCount === 0 ? "continuously" : `${alarmConfig.ringCount} times`} every ${alarmConfig.ringIntervalSeconds}s.`,
+			action: {
+				label: "Stop Alarm",
+				onClick: () => stopCurrentAlarm(),
+			},
+		});
+
+		// 3. Persist lastTriggeredDate to local database and refresh view
+		try {
+			await api.patch(`/tasks/${item.id}`, {
+				lastTriggeredDate: nowIso,
+			});
+			onRefresh();
+		} catch {
+			onRefresh();
+		}
+	};
 
 	const handleToggle = async (item: TaskItem) => {
 		const isCurrentlyCompleted = item.isRecurring
@@ -344,6 +388,7 @@ export function TaskList({ tasks, onToggleStatus, onEdit, onRefresh, onAddNew }:
 							: item.status === "COMPLETED";
 						const dueInfo = formatDue(item.dueDate);
 						const isJustAdded = activeAdditionId === item.id;
+						const { config: alarmConfig, userNotes } = parseAlarmConfig(item.description);
 
 						return (
 							<div
@@ -391,7 +436,7 @@ export function TaskList({ tasks, onToggleStatus, onEdit, onRefresh, onAddNew }:
 											{getPriorityBadge(item.priority)}
 											{item.type === "EVENT" && (
 												<span className="rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 text-[10px] font-semibold">
-													Event
+													Event / Alarm
 												</span>
 											)}
 											{item.isRecurring && (
@@ -417,11 +462,19 @@ export function TaskList({ tasks, onToggleStatus, onEdit, onRefresh, onAddNew }:
 											)}
 										</div>
 
-										{item.description && (
-											<p className="text-xs text-slate-400 mt-1 line-clamp-2">{item.description}</p>
+										{userNotes && (
+											<p className="text-xs text-slate-400 mt-1 line-clamp-2">{userNotes}</p>
 										)}
 
-										<div className="flex flex-wrap items-center gap-3 mt-2.5 text-[11px] text-slate-400">
+										<div className="flex flex-wrap items-center gap-2.5 mt-2.5 text-[11px] text-slate-400">
+											{/* Last Triggered Badge */}
+											{item.lastTriggeredDate && (
+												<div className="flex items-center gap-1.5 text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 rounded-md px-2 py-0.5 text-[11px] font-semibold">
+													<BellRing className="w-3 h-3 text-emerald-400" />
+													<span>Ran: {formatTriggeredTime(item.lastTriggeredDate)}</span>
+												</div>
+											)}
+
 											{dueInfo && !item.isRecurring && (
 												<div
 													className={`flex items-center gap-1 rounded-md px-2 py-0.5 font-medium ${
@@ -448,10 +501,23 @@ export function TaskList({ tasks, onToggleStatus, onEdit, onRefresh, onAddNew }:
 												</div>
 											)}
 
+											{/* Multi-ring configuration details */}
+											{(item.type === "EVENT" || item.category === "Alarm") && (
+												<div className="flex items-center gap-1 text-slate-300 bg-slate-800/80 border border-slate-700/60 rounded-md px-2 py-0.5 font-medium">
+													<Volume2 className="w-3 h-3 text-emerald-400" />
+													<span>
+														{alarmConfig.ringCount === 0
+															? "Continuous Ring"
+															: `${alarmConfig.ringCount}x rings`}{" "}
+														(every {alarmConfig.ringIntervalSeconds}s)
+													</span>
+												</div>
+											)}
+
 											{item.remindBeforeMinutes > 0 ? (
 												<div className="flex items-center gap-1 text-slate-400">
 													<Bell className="w-3 h-3 text-emerald-400" />
-													<span>{item.remindBeforeMinutes}m reminder</span>
+													<span>{item.remindBeforeMinutes}m advance notice</span>
 												</div>
 											) : (
 												<div className="flex items-center gap-1 text-slate-400">
@@ -463,7 +529,18 @@ export function TaskList({ tasks, onToggleStatus, onEdit, onRefresh, onAddNew }:
 									</div>
 								</div>
 
-								<div className="flex items-center gap-1 ml-3 shrink-0">
+								<div className="flex items-center gap-2 ml-3 shrink-0">
+									{/* Test Alarm Button */}
+									<button
+										type="button"
+										onClick={() => handleTestAlarm(item)}
+										className="flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 transition cursor-pointer active:scale-95"
+										title="Test Alarm Audio & Log Execution"
+									>
+										<BellRing className="w-3.5 h-3.5 text-emerald-400" />
+										<span className="hidden sm:inline">Test Alarm</span>
+									</button>
+
 									<button
 										type="button"
 										onClick={() => onEdit(item)}
