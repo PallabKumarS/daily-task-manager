@@ -11,6 +11,7 @@ import { Modal } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/lib/api-client";
+import { recordRecentAddition } from "@/lib/recent-activity-store";
 
 const TIME_SLOT_OPTIONS: SelectOption[] = [
 	{
@@ -171,7 +172,20 @@ export function RoutineFormModal({
 				: await api.post(endpoint, payload);
 
 			if (res.success) {
-				toast.success(res.message || "Routine saved");
+				const routineData = (res.data as { id?: string }) || {};
+				const createdId = routineData.id || initialData?.id || String(Date.now());
+
+				recordRecentAddition({
+					id: createdId,
+					type: "ROUTINE",
+					title: data.title,
+					category: data.timeSlot.toUpperCase(),
+					date: new Date().toISOString(),
+				});
+
+				toast.success(`Routine "${data.title}" saved`, {
+					description: `Scheduled for ${data.timeSlot} at ${data.targetTime || "custom time"}`,
+				});
 				onSuccess();
 				onClose();
 			} else {

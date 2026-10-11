@@ -32,7 +32,9 @@ export async function isUrlResponding(url: string, timeoutMs = 3000): Promise<bo
 	});
 }
 
-function cleanStalePortProcesses(port = 3000): void {
+const DEFAULT_DEV_PORT = process.env.DEV_PORT || process.env.PORT || "3005";
+
+function cleanStalePortProcesses(port = Number(DEFAULT_DEV_PORT)): void {
 	if (process.platform !== "win32") return;
 	try {
 		const stdout = execSync(`netstat -ano | findstr ":${port}"`, {
@@ -63,14 +65,14 @@ function cleanStalePortProcesses(port = 3000): void {
 }
 
 export async function ensureDevServerReady(): Promise<void> {
-	const healthUrl = "http://127.0.0.1:3000/api/health";
+	const healthUrl = `http://127.0.0.1:${DEFAULT_DEV_PORT}/api/health`;
 	const alreadyUp = await isUrlResponding(healthUrl, 2000);
 	if (alreadyUp) {
 		console.log(`[DayPulse Desktop] UI server verified at ${healthUrl}`);
 		return;
 	}
 
-	cleanStalePortProcesses(3000);
+	cleanStalePortProcesses(Number(DEFAULT_DEV_PORT));
 
 	const webDirCandidates = [
 		path.resolve(process.cwd(), "web-app"),
@@ -92,7 +94,7 @@ export async function ensureDevServerReady(): Promise<void> {
 		return;
 	}
 
-	console.log(`[DayPulse Desktop] Auto-spawning Next.js dev server in: ${webDir}`);
+	console.log(`[DayPulse Desktop] Auto-spawning Next.js dev server in: ${webDir} on port ${DEFAULT_DEV_PORT}`);
 
 	const isWin = process.platform === "win32";
 	const npmCmd = isWin ? "npm.cmd" : "npm";
@@ -101,7 +103,7 @@ export async function ensureDevServerReady(): Promise<void> {
 		cwd: webDir,
 		env: {
 			...process.env,
-			PORT: "3000",
+			PORT: String(DEFAULT_DEV_PORT),
 		},
 		stdio: ["ignore", "pipe", "pipe"],
 		shell: isWin,
@@ -154,6 +156,6 @@ export function stopDevServer(): void {
 		}
 		nextDevProcess = null;
 	}
-	cleanStalePortProcesses(3000);
+	cleanStalePortProcesses(Number(DEFAULT_DEV_PORT));
 	cleanStalePortProcesses(5000);
 }

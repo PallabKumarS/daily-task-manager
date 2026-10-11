@@ -14,7 +14,8 @@ import { Modal } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/lib/api-client";
-import { EXPENSE_CATEGORIES, getCurrencySymbol, INCOME_CATEGORIES } from "@/lib/currency-symbols";
+import { EXPENSE_CATEGORIES, formatCurrency, getCurrencySymbol, INCOME_CATEGORIES } from "@/lib/currency-symbols";
+import { recordRecentAddition } from "@/lib/recent-activity-store";
 import { DAY_NAMES_SHORT, useWorkweekPreferences } from "@/lib/workweek-preferences";
 
 const formSchema = z.object({
@@ -249,7 +250,26 @@ export function TransactionFormModal({
 				: await api.post(endpoint, payload);
 
 			if (res.success) {
-				toast.success(res.message || `${data.type === "INCOME" ? "Income" : "Expense"} recorded`);
+				const txData = (res.data as { id?: string }) || {};
+				const createdId = txData.id || initialData?.id || String(Date.now());
+
+				recordRecentAddition({
+					id: createdId,
+					type: data.type,
+					title: data.description?.trim() || `${data.category} Transaction`,
+					amount: data.amount,
+					category: data.category,
+					paymentMethod: data.paymentMethod,
+					date: data.date,
+				});
+
+				const formattedAmt = formatCurrency(data.amount, user?.currency || "USD");
+				toast.success(
+					`${data.type === "INCOME" ? "Income" : "Expense"} of ${formattedAmt} recorded`,
+					{
+						description: `${data.category} • ${data.paymentMethod}${data.description ? ` • "${data.description}"` : ""}`,
+					},
+				);
 				onSuccess();
 				onClose();
 			} else {

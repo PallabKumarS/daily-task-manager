@@ -43,7 +43,7 @@ export function AppSidebar() {
 	};
 
 	return (
-		<aside className="hidden md:flex flex-col w-64 h-screen max-h-screen sticky top-0 border-r border-slate-800 bg-slate-950/70 p-4 shrink-0 select-none overflow-hidden">
+		<aside className="hidden md:flex flex-col w-64 h-screen max-h-screen sticky top-0 border-r border-border/80 bg-background/80 p-4 shrink-0 select-none overflow-hidden">
 			{/* Fixed Brand Header */}
 			<div className="flex items-center gap-3 px-2 py-1 mb-5 shrink-0">
 				<div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 text-slate-950 shadow-lg shadow-emerald-500/20 shrink-0">
