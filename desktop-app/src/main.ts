@@ -129,7 +129,7 @@ app.whenReady().then(async () => {
 	startLocalScheduler(mainWindow);
 	startDailySyncScheduler(mainWindow);
 
-	const targetUrl = process.env.APP_URL || "http://localhost:3000/dashboard";
+	const targetUrl = process.env.APP_URL || "http://localhost:3005/dashboard";
 	if (process.env.NODE_ENV !== "production") {
 		await ensureDevServerReady();
 	}

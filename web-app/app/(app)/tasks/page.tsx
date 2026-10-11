@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { RecentlyAddedBanner } from "@/components/dashboard/recently-added-banner";
 import { TaskFormModal } from "@/components/tasks/task-form-modal";
 import { type TaskItem, TaskList } from "@/components/tasks/task-list";
 import { api } from "@/lib/api-client";
@@ -100,6 +101,8 @@ export default function TasksPage() {
 
 	return (
 		<div className="space-y-6">
+			<RecentlyAddedBanner />
+
 			<div>
 				<h1 className="text-2xl font-bold tracking-tight text-white">Tasks & Calendar Events</h1>
 				<p className="text-xs text-slate-400 mt-1">

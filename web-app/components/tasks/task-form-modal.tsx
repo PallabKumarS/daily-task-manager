@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/lib/api-client";
 import { TASK_CATEGORIES } from "@/lib/currency-symbols";
+import { recordRecentAddition } from "@/lib/recent-activity-store";
 
 const TYPE_OPTIONS: SelectOption[] = [
 	{ label: "Task (Action item)", value: "TASK" },
@@ -320,9 +321,22 @@ export function TaskFormModal({
 				: await api.post(endpoint, payload);
 
 			if (res.success) {
-				toast.success(
-					res.message || `${data.type === "EVENT" ? "Event" : "Task"} saved successfully`,
-				);
+				const taskData = (res.data as { id?: string }) || {};
+				const createdId = taskData.id || initialData?.id || String(Date.now());
+
+				recordRecentAddition({
+					id: createdId,
+					type: data.type as "TASK" | "EVENT",
+					title: data.title,
+					category: data.category,
+					priority: data.priority,
+					date: data.startDate || data.dueDate || new Date().toISOString(),
+				});
+
+				const typeLabel = data.type === "EVENT" ? "Event" : "Task";
+				toast.success(`${typeLabel} "${data.title}" saved`, {
+					description: `${data.category} • Priority: ${data.priority}${data.dueDate ? ` • Due: ${data.dueDate.slice(0, 10)}` : ""}`,
+				});
 				onSuccess();
 				onClose();
 			} else {

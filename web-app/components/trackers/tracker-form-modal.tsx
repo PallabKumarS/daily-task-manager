@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/lib/api-client";
 import { CURRENCIES } from "@/lib/currency-symbols";
+import { recordRecentAddition } from "@/lib/recent-activity-store";
 import type { DailyTrackerItem } from "./tracker-types";
 
 const formSchema = z.object({
@@ -126,10 +127,29 @@ export function TrackerFormModal({
 		try {
 			if (initialData) {
 				await api.patch(`/trackers/${initialData.id}`, data);
-				toast.success("Tracker updated successfully");
+				recordRecentAddition({
+					id: initialData.id,
+					type: "TRACKER",
+					title: data.name,
+					category: data.category,
+					amount: data.unitPrice ?? undefined,
+					date: new Date().toISOString(),
+				});
+				toast.success(`Tracker "${data.name}" updated`);
 			} else {
-				await api.post("/trackers", data);
-				toast.success("Tracker created successfully");
+				const res = await api.post<DailyTrackerItem>("/trackers", data);
+				const createdId = res.data?.id || String(Date.now());
+				recordRecentAddition({
+					id: createdId,
+					type: "TRACKER",
+					title: data.name,
+					category: data.category,
+					amount: data.unitPrice ?? undefined,
+					date: new Date().toISOString(),
+				});
+				toast.success(`Tracker "${data.name}" created`, {
+					description: `Target: ${data.defaultTarget} ${data.unitName}/day • ${data.category}`,
+				});
 			}
 			onSuccess();
 			onClose();

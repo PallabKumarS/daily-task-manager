@@ -3,6 +3,7 @@
 import { ChevronLeft, ChevronRight, Plus, Tag } from "lucide-react";
 import * as React from "react";
 import { CategoryManagerModal } from "@/components/categories/category-manager-modal";
+import { RecentlyAddedBanner } from "@/components/dashboard/recently-added-banner";
 import { CategoryBreakdown } from "@/components/finances/category-breakdown";
 import { CumulativeChart } from "@/components/finances/cumulative-chart";
 import { FinanceSummaryCards } from "@/components/finances/finance-summary-cards";
@@ -176,6 +177,8 @@ export default function FinancesPage() {
 
 	return (
 		<div className="space-y-6">
+			<RecentlyAddedBanner />
+
 			{/* Top Header & Controls */}
 			<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
 				<div>

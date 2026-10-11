@@ -2,24 +2,24 @@
 
 :root {
 	color-scheme: dark;
-	--background: #090d16;
-	--foreground: #f1f5f9;
-	--card: #0f172a;
-	--card-foreground: #f8fafc;
-	--popover: #0f172a;
-	--popover-foreground: #f8fafc;
+	--background: #09090b;
+	--foreground: #fafafa;
+	--card: #111218;
+	--card-foreground: #fafafa;
+	--popover: #111218;
+	--popover-foreground: #fafafa;
 	--primary: #10b981;
-	--primary-foreground: #042f2e;
-	--secondary: #1e293b;
-	--secondary-foreground: #f8fafc;
-	--muted: #1e293b;
-	--muted-foreground: #94a3b8;
+	--primary-foreground: #022c22;
+	--secondary: #181922;
+	--secondary-foreground: #f4f4f5;
+	--muted: #181922;
+	--muted-foreground: #a1a1aa;
 	--accent: #059669;
-	--accent-foreground: #ecfdf5;
-	--destructive: #ef4444;
-	--destructive-foreground: #fef2f2;
-	--border: #334155;
-	--input: #1e293b;
+	--accent-foreground: #f0fdf4;
+	--destructive: #f43f5e;
+	--destructive-foreground: #fff1f2;
+	--border: #27272a;
+	--input: #181922;
 	--ring: #10b981;
 }
 
@@ -55,6 +55,7 @@ body {
 	font-feature-settings:
 		"rlig" 1,
 		"calt" 1;
+	-webkit-font-smoothing: antialiased;
 }
 
 /* Custom Scrollbar */
@@ -68,12 +69,12 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-	background: #334155;
+	background: #27272a;
 	border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-	background: #475569;
+	background: #3f3f46;
 }
 
 /* High-Visibility Date & Time Picker Indicators */

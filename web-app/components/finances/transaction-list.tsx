@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { api } from "@/lib/api-client";
 import { formatCurrency } from "@/lib/currency-symbols";
+import { useRecentAdditions } from "@/lib/recent-activity-store";
 
 export interface TransactionItem {
 	id: string;
@@ -32,6 +33,7 @@ export function TransactionList({
 	onRefresh,
 }: TransactionListProps) {
 	const confirm = useConfirm();
+	const { activeAdditionId } = useRecentAdditions();
 	const [filterType, setFilterType] = React.useState<"ALL" | "EXPENSE" | "INCOME">("ALL");
 	const [duplicatingId, setDuplicatingId] = React.useState<string | null>(null);
 
@@ -188,10 +190,16 @@ export function TransactionList({
 							? item.description.replace(/\[Recurring:\s*[^\]]+\]/i, "").trim()
 							: "";
 
+						const isJustAdded = activeAdditionId === item.id;
+
 						return (
 							<div
 								key={item.id}
-								className="flex items-center justify-between py-3.5 hover:bg-slate-800/30 px-2 rounded-xl transition"
+								className={`flex items-center justify-between py-3.5 px-3 rounded-xl transition-all duration-300 ${
+									isJustAdded
+										? "ring-2 ring-emerald-500/70 bg-emerald-500/10 shadow-lg shadow-emerald-500/10"
+										: "hover:bg-slate-800/30"
+								}`}
 							>
 								<div className="flex items-center gap-3 min-w-0">
 									<div
@@ -209,6 +217,11 @@ export function TransactionList({
 									</div>
 									<div className="min-w-0">
 										<div className="flex items-center gap-2 flex-wrap">
+											{isJustAdded && (
+												<span className="rounded-md bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-bold text-emerald-300 border border-emerald-500/40 animate-pulse">
+													Just Added
+												</span>
+											)}
 											<p className="text-xs font-semibold text-slate-100 truncate">
 												{cleanDesc || item.category}
 											</p>

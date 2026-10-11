@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { api } from "@/lib/api-client";
+import { useRecentAdditions } from "@/lib/recent-activity-store";
 
 export interface TaskItem {
 	id: string;
@@ -100,6 +101,7 @@ const formatRecurrenceSchedule = (item: TaskItem): string => {
 
 export function TaskList({ tasks, onToggleStatus, onEdit, onRefresh, onAddNew }: TaskListProps) {
 	const confirm = useConfirm();
+	const { activeAdditionId } = useRecentAdditions();
 	const [filterType, setFilterType] = React.useState<"ALL" | "TASK" | "EVENT" | "RECURRING">("ALL");
 	const [filterStatus, setFilterStatus] = React.useState<"ALL" | "PENDING" | "COMPLETED">("ALL");
 
@@ -341,14 +343,17 @@ export function TaskList({ tasks, onToggleStatus, onEdit, onRefresh, onAddNew }:
 							? item.lastCompletedDate === todayStr
 							: item.status === "COMPLETED";
 						const dueInfo = formatDue(item.dueDate);
+						const isJustAdded = activeAdditionId === item.id;
 
 						return (
 							<div
 								key={item.id}
-								className={`flex items-start justify-between p-4 rounded-2xl border transition-all ${
-									isCompleted
-										? "border-slate-800/40 bg-slate-900/30 opacity-70"
-										: "border-slate-800 bg-slate-900/70 hover:border-slate-700 shadow-sm"
+								className={`flex items-start justify-between p-4 rounded-2xl border transition-all duration-300 ${
+									isJustAdded
+										? "ring-2 ring-sky-500/80 border-sky-500/50 bg-sky-500/10 shadow-lg shadow-sky-500/10"
+										: isCompleted
+											? "border-slate-800/40 bg-slate-900/30 opacity-70"
+											: "border-slate-800 bg-slate-900/70 hover:border-slate-700 shadow-sm"
 								}`}
 							>
 								<div className="flex items-start gap-3 min-w-0 flex-1">
@@ -366,6 +371,11 @@ export function TaskList({ tasks, onToggleStatus, onEdit, onRefresh, onAddNew }:
 
 									<div className="min-w-0 flex-1">
 										<div className="flex flex-wrap items-center gap-2">
+											{isJustAdded && (
+												<span className="rounded-md bg-sky-500/20 px-1.5 py-0.5 text-[10px] font-bold text-sky-300 border border-sky-500/40 animate-pulse">
+													Just Added
+												</span>
+											)}
 											<h4
 												className={`text-sm font-semibold truncate ${
 													isCompleted && !item.isRecurring

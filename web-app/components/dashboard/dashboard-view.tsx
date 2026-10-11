@@ -12,6 +12,8 @@ import {
 	ChevronRight,
 	Clock,
 	Flame,
+	LayoutGrid,
+	ListFilter,
 	Minus,
 	Pencil,
 	Plus,
@@ -22,6 +24,8 @@ import {
 import Link from "next/link";
 import * as React from "react";
 import { toast } from "sonner";
+import { DailyStreamView } from "@/components/dashboard/daily-stream-view";
+import { RecentlyAddedBanner } from "@/components/dashboard/recently-added-banner";
 import type { TransactionItem } from "@/components/finances/transaction-list";
 import { useAuth } from "@/components/providers/auth-provider";
 import type { RoutineItem } from "@/components/routines/routine-list";
@@ -52,6 +56,7 @@ export function DashboardView({
 	const [tasks, setTasks] = React.useState<TaskItem[]>([]);
 	const [transactions, setTransactions] = React.useState<TransactionItem[]>([]);
 	const [trackers, setTrackers] = React.useState<DailyTrackerItem[]>([]);
+	const [viewMode, setViewMode] = React.useState<"OVERVIEW" | "STREAM">("STREAM");
 
 	const fetchData = React.useCallback(async () => {
 		try {
@@ -436,6 +441,8 @@ export function DashboardView({
 
 	return (
 		<div className="space-y-6">
+			<RecentlyAddedBanner />
+
 			{/* Welcome Banner */}
 			<div className="rounded-3xl border border-slate-800 bg-gradient-to-br from-slate-900 via-slate-900/90 to-emerald-950/30 p-6 sm:p-8 backdrop-blur-xl relative overflow-hidden">
 				<div className="relative z-10 max-w-2xl">
@@ -613,533 +620,591 @@ export function DashboardView({
 				</div>
 			</div>
 
-			{/* 4 Cards: Routines, Trackers, Tasks & Transactions */}
-			<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-				{/* 1. Today's Habits & Routines */}
-				<div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 backdrop-blur-xl flex flex-col justify-between">
-					<div>
-						<div className="flex items-center justify-between pb-3 border-b border-slate-800">
-							<h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
-								<CalendarCheck className="w-4 h-4 text-emerald-400" />
-								<span>Today Habits & Routines</span>
-							</h3>
-							<div className="flex items-center gap-2">
-								{routines.length > 0 && (
-									<button
-										type="button"
-										onClick={handleClearAllRoutines}
-										className="text-[11px] text-slate-500 hover:text-rose-400 flex items-center gap-1 transition cursor-pointer"
-										title="Delete all routines"
-									>
-										<Trash2 className="w-3 h-3" />
-										<span>Clear All</span>
-									</button>
-								)}
-								<button
-									type="button"
-									onClick={() => onOpenRoutineModal()}
-									className="text-xs text-emerald-400 hover:underline font-semibold cursor-pointer"
-								>
-									+ Add
-								</button>
-							</div>
-						</div>
-
-						<div className="mt-3 space-y-2 max-h-80 overflow-y-auto pr-1">
-							{routines.length === 0 ? (
-								<div className="py-10 text-center text-xs text-slate-500">
-									<p>No habits or routines created yet.</p>
-									<Button
-										variant="outline"
-										size="sm"
-										onClick={() => onOpenRoutineModal()}
-										className="mt-3 text-xs border-slate-700 hover:bg-slate-800"
-									>
-										<Plus className="w-3.5 h-3.5 mr-1" />
-										<span>Add Your First Routine</span>
-									</Button>
-								</div>
-							) : (
-								routines.map((routine) => (
-									<div
-										key={routine.id}
-										className={`group flex items-center justify-between p-3 rounded-xl border transition ${
-											routine.isCompletedToday
-												? "border-emerald-500/20 bg-emerald-950/10 text-slate-400"
-												: "border-slate-800/80 bg-slate-900/80 text-slate-200"
-										}`}
-									>
-										<div className="flex items-center gap-3 min-w-0">
-											<button
-												type="button"
-												onClick={() => handleToggleRoutine(routine.id, routine.isCompletedToday)}
-												className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition cursor-pointer ${
-													routine.isCompletedToday
-														? "bg-emerald-500 border-emerald-400 text-slate-950"
-														: "border-slate-700 bg-slate-950 text-transparent hover:border-emerald-400"
-												}`}
-											>
-												<Check className="w-3.5 h-3.5 stroke-[3]" />
-											</button>
-											<div className="min-w-0">
-												<p
-													className={`text-xs font-semibold truncate ${
-														routine.isCompletedToday
-															? "line-through text-slate-400"
-															: "text-slate-100"
-													}`}
-												>
-													{routine.title}
-												</p>
-												<p className="text-[10px] text-slate-400 flex items-center gap-1.5 mt-0.5">
-													<span className="capitalize">{routine.timeSlot}</span>
-													{routine.targetTime && <span>• {routine.targetTime}</span>}
-												</p>
-											</div>
-										</div>
-
-										<div className="flex items-center gap-2 shrink-0">
-											{routine.streakCount > 0 && (
-												<div className="flex items-center gap-1 rounded-md bg-orange-500/10 px-2 py-0.5 text-[10px] font-bold text-orange-400">
-													<Flame className="w-3 h-3 fill-orange-400 text-orange-400" />
-													<span>{routine.streakCount}d</span>
-												</div>
-											)}
-
-											<div className="flex items-center gap-1 opacity-70 group-hover:opacity-100 transition">
-												<button
-													type="button"
-													onClick={() => onOpenRoutineModal(routine)}
-													className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
-													title="Edit Routine"
-												>
-													<Pencil className="w-3.5 h-3.5" />
-												</button>
-												<button
-													type="button"
-													onClick={() => handleDeleteRoutine(routine.id, routine.title)}
-													className="p-1 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer"
-													title="Delete Routine"
-												>
-													<Trash2 className="w-3.5 h-3.5" />
-												</button>
-											</div>
-										</div>
-									</div>
-								))
-							)}
-						</div>
-					</div>
-					<Link
-						href="/routines"
-						className="mt-3 pt-3 border-t border-slate-800/80 text-[11px] text-slate-400 hover:text-emerald-400 flex items-center justify-between"
-					>
-						<span>View routine habits tracker</span>
-						<ChevronRight className="w-3.5 h-3.5" />
-					</Link>
+			{/* View Mode Switcher */}
+			<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+				<div>
+					<h3 className="text-base font-extrabold text-white">
+						{viewMode === "STREAM" ? "Today's Agenda & Activity Stream" : "Overview Hub"}
+					</h3>
+					<p className="text-xs text-slate-400 mt-0.5">
+						{viewMode === "STREAM"
+							? "Unified chronological stream of today's logged expenses, tasks, habits, and meters"
+							: "Consolidated modular cards for habits, monitors, tasks, and financial flow"}
+					</p>
 				</div>
+				<div className="flex items-center rounded-xl bg-slate-950 p-1 border border-slate-800 self-start sm:self-auto">
+					<button
+						type="button"
+						onClick={() => setViewMode("STREAM")}
+						className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+							viewMode === "STREAM"
+								? "bg-slate-800 text-white shadow-sm"
+								: "text-slate-400 hover:text-white"
+						}`}
+					>
+						<ListFilter className="w-3.5 h-3.5 text-emerald-400" />
+						<span>Today's Stream</span>
+					</button>
+					<button
+						type="button"
+						onClick={() => setViewMode("OVERVIEW")}
+						className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+							viewMode === "OVERVIEW"
+								? "bg-slate-800 text-white shadow-sm"
+								: "text-slate-400 hover:text-white"
+						}`}
+					>
+						<LayoutGrid className="w-3.5 h-3.5 text-slate-400" />
+						<span>Overview Hub</span>
+					</button>
+				</div>
+			</div>
 
-				{/* 2. Daily Trackers & Deliveries */}
-				<div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 backdrop-blur-xl flex flex-col justify-between">
-					<div>
-						<div className="flex items-center justify-between pb-3 border-b border-slate-800">
-							<h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
-								<Calculator className="w-4 h-4 text-purple-400" />
-								<span>Daily Trackers & Monitors</span>
-							</h3>
-							<div className="flex items-center gap-2">
-								{trackers.length > 0 && (
+			{viewMode === "STREAM" ? (
+				<DailyStreamView
+					routines={routines}
+					tasks={tasks}
+					transactions={transactions}
+					trackers={trackers}
+					onOpenRoutineModal={onOpenRoutineModal}
+					onOpenTaskModal={onOpenTaskModal}
+					onOpenTransactionModal={onOpenTransactionModal}
+					onOpenTrackerModal={onOpenTrackerModal}
+					onToggleRoutine={handleToggleRoutine}
+					onToggleTask={handleToggleTask}
+					onAdjustTracker={handleAdjustTracker}
+				/>
+			) : (
+				/* 4 Cards: Routines, Trackers, Tasks & Transactions */
+				<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+					{/* 1. Today's Habits & Routines */}
+					<div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 backdrop-blur-xl flex flex-col justify-between">
+						<div>
+							<div className="flex items-center justify-between pb-3 border-b border-slate-800">
+								<h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
+									<CalendarCheck className="w-4 h-4 text-emerald-400" />
+									<span>Today Habits & Routines</span>
+								</h3>
+								<div className="flex items-center gap-2">
+									{routines.length > 0 && (
+										<button
+											type="button"
+											onClick={handleClearAllRoutines}
+											className="text-[11px] text-slate-500 hover:text-rose-400 flex items-center gap-1 transition cursor-pointer"
+											title="Delete all routines"
+										>
+											<Trash2 className="w-3 h-3" />
+											<span>Clear All</span>
+										</button>
+									)}
 									<button
 										type="button"
-										onClick={handleClearAllTrackers}
-										className="text-[11px] text-slate-500 hover:text-rose-400 flex items-center gap-1 transition cursor-pointer"
-										title="Delete all trackers"
-									>
-										<Trash2 className="w-3 h-3" />
-										<span>Clear All</span>
-									</button>
-								)}
-								{onOpenTrackerModal && (
-									<button
-										type="button"
-										onClick={() => onOpenTrackerModal()}
-										className="text-xs text-purple-400 hover:underline font-semibold cursor-pointer"
+										onClick={() => onOpenRoutineModal()}
+										className="text-xs text-emerald-400 hover:underline font-semibold cursor-pointer"
 									>
 										+ Add
 									</button>
-								)}
+								</div>
 							</div>
-						</div>
 
-						<div className="mt-3 space-y-2 max-h-80 overflow-y-auto pr-1">
-							{trackers.length === 0 ? (
-								<div className="py-10 text-center text-xs text-slate-500">
-									<p>No daily monitors configured yet.</p>
-									{onOpenTrackerModal && (
+							<div className="mt-3 space-y-2 max-h-80 overflow-y-auto pr-1">
+								{routines.length === 0 ? (
+									<div className="py-10 text-center text-xs text-slate-500">
+										<p>No habits or routines created yet.</p>
 										<Button
 											variant="outline"
 											size="sm"
-											onClick={() => onOpenTrackerModal()}
+											onClick={() => onOpenRoutineModal()}
 											className="mt-3 text-xs border-slate-700 hover:bg-slate-800"
 										>
 											<Plus className="w-3.5 h-3.5 mr-1" />
-											<span>Create Your First Tracker</span>
+											<span>Add Your First Routine</span>
 										</Button>
-									)}
-								</div>
-							) : (
-								trackers.map((t) => {
-									const currentVal = t.todayLog ? t.todayLog.value : 0;
-									const isCancelled = t.todayLog?.status === "CANCELLED" && currentVal === 0;
-									const hasUnitPrice = typeof t.unitPrice === "number" && t.unitPrice > 0;
-									const costToday = hasUnitPrice ? currentVal * (t.unitPrice || 0) : 0;
-
-									return (
+									</div>
+								) : (
+									routines.map((routine) => (
 										<div
-											key={t.id}
-											className="group flex items-center justify-between p-3 rounded-xl border border-slate-800/80 bg-slate-900/80 hover:border-slate-700 transition"
+											key={routine.id}
+											className={`group flex items-center justify-between p-3 rounded-xl border transition ${
+												routine.isCompletedToday
+													? "border-emerald-500/20 bg-emerald-950/10 text-slate-400"
+													: "border-slate-800/80 bg-slate-900/80 text-slate-200"
+											}`}
 										>
-											<div className="min-w-0 pr-2">
-												<div className="flex items-center gap-1.5">
-													<p className="text-xs font-semibold text-slate-100 truncate">{t.name}</p>
-													{isCancelled && (
-														<span className="text-[9px] font-bold text-rose-400 bg-rose-500/10 px-1.5 py-0.2 rounded border border-rose-500/20">
-															Cancelled
-														</span>
-													)}
+											<div className="flex items-center gap-3 min-w-0">
+												<button
+													type="button"
+													onClick={() => handleToggleRoutine(routine.id, routine.isCompletedToday)}
+													className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition cursor-pointer ${
+														routine.isCompletedToday
+															? "bg-emerald-500 border-emerald-400 text-slate-950"
+															: "border-slate-700 bg-slate-950 text-transparent hover:border-emerald-400"
+													}`}
+												>
+													<Check className="w-3.5 h-3.5 stroke-[3]" />
+												</button>
+												<div className="min-w-0">
+													<p
+														className={`text-xs font-semibold truncate ${
+															routine.isCompletedToday
+																? "line-through text-slate-400"
+																: "text-slate-100"
+														}`}
+													>
+														{routine.title}
+													</p>
+													<p className="text-[10px] text-slate-400 flex items-center gap-1.5 mt-0.5">
+														<span className="capitalize">{routine.timeSlot}</span>
+														{routine.targetTime && <span>• {routine.targetTime}</span>}
+													</p>
 												</div>
-												<p className="text-[10px] text-slate-400 mt-0.5 truncate">
-													{hasUnitPrice ? (
-														isCancelled ? (
-															<span className="line-through text-rose-400">
-																{formatCurrency(costToday, t.currency)}
-															</span>
-														) : (
-															`${formatCurrency(costToday, t.currency)} today`
-														)
-													) : (
-														`${t.category}`
-													)}
-													{t.todayLog?.notes ? ` • "${t.todayLog.notes}"` : ""}
-												</p>
 											</div>
 
 											<div className="flex items-center gap-2 shrink-0">
-												<div className="flex items-center gap-1.5">
+												{routine.streakCount > 0 && (
+													<div className="flex items-center gap-1 rounded-md bg-orange-500/10 px-2 py-0.5 text-[10px] font-bold text-orange-400">
+														<Flame className="w-3 h-3 fill-orange-400 text-orange-400" />
+														<span>{routine.streakCount}d</span>
+													</div>
+												)}
+
+												<div className="flex items-center gap-1 opacity-70 group-hover:opacity-100 transition">
 													<button
 														type="button"
-														onClick={() => handleAdjustTracker(t.id, -1)}
-														disabled={currentVal <= 0}
-														className="h-6 w-6 rounded-lg bg-slate-950 border border-slate-700 text-slate-400 hover:text-white hover:bg-slate-800 flex items-center justify-center disabled:opacity-30 cursor-pointer"
-														title="Minus 1"
-													>
-														<Minus className="w-3 h-3" />
-													</button>
-
-													<span className="w-7 text-center font-bold text-xs text-white">
-														{currentVal}
-													</span>
-
-													<button
-														type="button"
-														onClick={() => handleAdjustTracker(t.id, 1)}
-														className="h-6 w-6 rounded-lg bg-emerald-600 border border-emerald-500 text-white hover:bg-emerald-500 flex items-center justify-center cursor-pointer shadow-sm"
-														title="Plus 1"
-													>
-														<Plus className="w-3 h-3" />
-													</button>
-
-													<button
-														type="button"
-														onClick={() => handleCancelTrackerToday(t.id)}
-														title={isCancelled ? "Restore normal count" : "Cancel for today"}
-														className={`h-6 w-6 rounded-lg flex items-center justify-center transition cursor-pointer ${
-															isCancelled
-																? "bg-rose-500/20 text-rose-300 border border-rose-500/40"
-																: "bg-slate-950 border border-slate-800 text-slate-500 hover:text-rose-400 hover:bg-slate-800"
-														}`}
-													>
-														<Ban className="w-3 h-3" />
-													</button>
-												</div>
-
-												<div className="flex items-center gap-1 opacity-70 group-hover:opacity-100 transition pl-1 border-l border-slate-800">
-													{onOpenTrackerModal && (
-														<button
-															type="button"
-															onClick={() => onOpenTrackerModal(t)}
-															className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
-															title="Edit Tracker"
-														>
-															<Pencil className="w-3.5 h-3.5" />
-														</button>
-													)}
-													<button
-														type="button"
-														onClick={() => handleDeleteTracker(t.id, t.name)}
-														className="p-1 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer"
-														title="Delete Tracker"
-													>
-														<Trash2 className="w-3.5 h-3.5" />
-													</button>
-												</div>
-											</div>
-										</div>
-									);
-								})
-							)}
-						</div>
-					</div>
-					<Link
-						href="/trackers"
-						className="mt-3 pt-3 border-t border-slate-800/80 text-[11px] text-slate-400 hover:text-purple-400 flex items-center justify-between"
-					>
-						<span>View monthly tracker logs & settlements</span>
-						<ChevronRight className="w-3.5 h-3.5" />
-					</Link>
-				</div>
-
-				{/* 3. Tasks & Events */}
-				<div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 backdrop-blur-xl flex flex-col justify-between">
-					<div>
-						<div className="flex items-center justify-between pb-3 border-b border-slate-800">
-							<h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
-								<CheckSquare className="w-4 h-4 text-blue-400" />
-								<span>Tasks & Calendar Events</span>
-							</h3>
-							<div className="flex items-center gap-2">
-								{tasks.length > 0 && (
-									<button
-										type="button"
-										onClick={handleClearAllTasks}
-										className="text-[11px] text-slate-500 hover:text-rose-400 flex items-center gap-1 transition cursor-pointer"
-										title="Delete all tasks"
-									>
-										<Trash2 className="w-3 h-3" />
-										<span>Clear All</span>
-									</button>
-								)}
-								<button
-									type="button"
-									onClick={() => onOpenTaskModal()}
-									className="text-xs text-blue-400 hover:underline font-semibold cursor-pointer"
-								>
-									+ Add
-								</button>
-							</div>
-						</div>
-
-						<div className="mt-3 space-y-2 max-h-80 overflow-y-auto pr-1">
-							{pendingTasks.length === 0 ? (
-								<div className="py-10 text-center text-xs text-slate-500">
-									<p>No pending tasks scheduled right now.</p>
-									<Button
-										variant="outline"
-										size="sm"
-										onClick={() => onOpenTaskModal()}
-										className="mt-3 text-xs border-slate-700 hover:bg-slate-800"
-									>
-										<Plus className="w-3.5 h-3.5 mr-1" />
-										<span>Add Priority Task / Event</span>
-									</Button>
-								</div>
-							) : (
-								pendingTasks.map((task) => (
-									<div
-										key={task.id}
-										className="group flex items-center justify-between p-3 rounded-xl border border-slate-800/80 bg-slate-900/80 hover:border-slate-700 transition"
-									>
-										<div className="flex items-center gap-3 min-w-0">
-											<button
-												type="button"
-												onClick={() => handleToggleTask(task)}
-												className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-slate-700 bg-slate-950 text-transparent hover:border-emerald-400 transition cursor-pointer"
-											>
-												<Check className="w-3.5 h-3.5 stroke-[3]" />
-											</button>
-											<div className="min-w-0">
-												<p className="text-xs font-semibold text-slate-100 truncate">
-													{task.title}
-												</p>
-												<p className="text-[10px] text-slate-400 mt-0.5">
-													{task.category} • Priority: {task.priority}
-												</p>
-											</div>
-										</div>
-
-										<div className="flex items-center gap-2 shrink-0">
-											{task.dueDate && (
-												<div className="flex items-center gap-1 text-[11px] text-slate-400 bg-slate-800 px-2 py-0.5 rounded-md">
-													<Clock className="w-3 h-3 text-emerald-400" />
-													<span>
-														{new Date(task.dueDate).toLocaleTimeString([], {
-															hour: "2-digit",
-															minute: "2-digit",
-														})}
-													</span>
-												</div>
-											)}
-
-											<div className="flex items-center gap-1 opacity-70 group-hover:opacity-100 transition pl-1 border-l border-slate-800">
-												<button
-													type="button"
-													onClick={() => onOpenTaskModal(task)}
-													className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
-													title="Edit Task"
-												>
-													<Pencil className="w-3.5 h-3.5" />
-												</button>
-												<button
-													type="button"
-													onClick={() => handleDeleteTask(task.id, task.title)}
-													className="p-1 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer"
-													title="Delete Task"
-												>
-													<Trash2 className="w-3.5 h-3.5" />
-												</button>
-											</div>
-										</div>
-									</div>
-								))
-							)}
-						</div>
-					</div>
-					<Link
-						href="/tasks"
-						className="mt-3 pt-3 border-t border-slate-800/80 text-[11px] text-slate-400 hover:text-blue-400 flex items-center justify-between"
-					>
-						<span>View all tasks & calendar items</span>
-						<ChevronRight className="w-3.5 h-3.5" />
-					</Link>
-				</div>
-
-				{/* 4. Recent Transactions */}
-				<div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 backdrop-blur-xl flex flex-col justify-between">
-					<div>
-						<div className="flex items-center justify-between pb-3 border-b border-slate-800">
-							<h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
-								<TrendingUp className="w-4 h-4 text-emerald-400" />
-								<span>Recent Ledger & Transactions</span>
-							</h3>
-							<div className="flex items-center gap-2">
-								{transactions.length > 0 && (
-									<button
-										type="button"
-										onClick={handleClearAllTransactions}
-										className="text-[11px] text-slate-500 hover:text-rose-400 flex items-center gap-1 transition cursor-pointer"
-										title="Delete all transactions"
-									>
-										<Trash2 className="w-3 h-3" />
-										<span>Clear All</span>
-									</button>
-								)}
-								<button
-									type="button"
-									onClick={() => onOpenTransactionModal()}
-									className="text-xs text-emerald-400 hover:underline font-semibold cursor-pointer"
-								>
-									+ Record
-								</button>
-							</div>
-						</div>
-
-						<div className="mt-3 space-y-2 max-h-80 overflow-y-auto pr-1">
-							{transactions.length === 0 ? (
-								<div className="py-10 text-center text-xs text-slate-500">
-									<p>No transactions logged yet.</p>
-									<Button
-										variant="outline"
-										size="sm"
-										onClick={() => onOpenTransactionModal()}
-										className="mt-3 text-xs border-slate-700 hover:bg-slate-800"
-									>
-										<Plus className="w-3.5 h-3.5 mr-1" />
-										<span>Record First Transaction</span>
-									</Button>
-								</div>
-							) : (
-								transactions.slice(0, 8).map((tx) => {
-									const isIncome = tx.type === "INCOME";
-									const dateStr = new Date(tx.date).toLocaleDateString("en-US", {
-										month: "short",
-										day: "numeric",
-									});
-
-									return (
-										<div
-											key={tx.id}
-											className="group flex items-center justify-between p-3 rounded-xl border border-slate-800/80 bg-slate-900/80 hover:border-slate-700 transition"
-										>
-											<div className="flex items-center gap-3 min-w-0 pr-2">
-												<div
-													className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
-														isIncome
-															? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-															: "bg-red-500/10 text-red-400 border border-red-500/20"
-													}`}
-												>
-													{isIncome ? (
-														<ArrowUpRight className="w-4 h-4" />
-													) : (
-														<ArrowDownRight className="w-4 h-4" />
-													)}
-												</div>
-												<div className="min-w-0">
-													<p className="text-xs font-semibold text-slate-100 truncate">
-														{tx.description || tx.category}
-													</p>
-													<p className="text-[10px] text-slate-400 mt-0.5 truncate">
-														{dateStr} • {tx.category} • {tx.paymentMethod}
-													</p>
-												</div>
-											</div>
-
-											<div className="flex items-center gap-3 shrink-0">
-												<span
-													className={`text-xs font-bold ${
-														isIncome ? "text-emerald-400" : "text-red-400"
-													}`}
-												>
-													{isIncome ? "+" : "-"}
-													{formatCurrency(tx.amount, user?.currency || "USD")}
-												</span>
-
-												<div className="flex items-center gap-1 opacity-70 group-hover:opacity-100 transition pl-1 border-l border-slate-800">
-													<button
-														type="button"
-														onClick={() => onOpenTransactionModal(tx)}
+														onClick={() => onOpenRoutineModal(routine)}
 														className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
-														title="Edit Transaction"
+														title="Edit Routine"
 													>
 														<Pencil className="w-3.5 h-3.5" />
 													</button>
 													<button
 														type="button"
-														onClick={() =>
-															handleDeleteTransaction(tx.id, tx.description || tx.category)
-														}
+														onClick={() => handleDeleteRoutine(routine.id, routine.title)}
 														className="p-1 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer"
-														title="Delete Transaction"
+														title="Delete Routine"
 													>
 														<Trash2 className="w-3.5 h-3.5" />
 													</button>
 												</div>
 											</div>
 										</div>
-									);
-								})
-							)}
+									))
+								)}
+							</div>
 						</div>
+						<Link
+							href="/routines"
+							className="mt-3 pt-3 border-t border-slate-800/80 text-[11px] text-slate-400 hover:text-emerald-400 flex items-center justify-between"
+						>
+							<span>View routine habits tracker</span>
+							<ChevronRight className="w-3.5 h-3.5" />
+						</Link>
 					</div>
-					<Link
-						href="/finances"
-						className="mt-3 pt-3 border-t border-slate-800/80 text-[11px] text-slate-400 hover:text-emerald-400 flex items-center justify-between"
-					>
-						<span>View full financial ledger & graphs</span>
-						<ChevronRight className="w-3.5 h-3.5" />
-					</Link>
+
+					{/* 2. Daily Trackers & Deliveries */}
+					<div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 backdrop-blur-xl flex flex-col justify-between">
+						<div>
+							<div className="flex items-center justify-between pb-3 border-b border-slate-800">
+								<h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
+									<Calculator className="w-4 h-4 text-purple-400" />
+									<span>Daily Trackers & Monitors</span>
+								</h3>
+								<div className="flex items-center gap-2">
+									{trackers.length > 0 && (
+										<button
+											type="button"
+											onClick={handleClearAllTrackers}
+											className="text-[11px] text-slate-500 hover:text-rose-400 flex items-center gap-1 transition cursor-pointer"
+											title="Delete all trackers"
+										>
+											<Trash2 className="w-3 h-3" />
+											<span>Clear All</span>
+										</button>
+									)}
+									{onOpenTrackerModal && (
+										<button
+											type="button"
+											onClick={() => onOpenTrackerModal()}
+											className="text-xs text-purple-400 hover:underline font-semibold cursor-pointer"
+										>
+											+ Add
+										</button>
+									)}
+								</div>
+							</div>
+
+							<div className="mt-3 space-y-2 max-h-80 overflow-y-auto pr-1">
+								{trackers.length === 0 ? (
+									<div className="py-10 text-center text-xs text-slate-500">
+										<p>No daily monitors configured yet.</p>
+										{onOpenTrackerModal && (
+											<Button
+												variant="outline"
+												size="sm"
+												onClick={() => onOpenTrackerModal()}
+												className="mt-3 text-xs border-slate-700 hover:bg-slate-800"
+											>
+												<Plus className="w-3.5 h-3.5 mr-1" />
+												<span>Create Your First Tracker</span>
+											</Button>
+										)}
+									</div>
+								) : (
+									trackers.map((t) => {
+										const currentVal = t.todayLog ? t.todayLog.value : 0;
+										const isCancelled = t.todayLog?.status === "CANCELLED" && currentVal === 0;
+										const hasUnitPrice = typeof t.unitPrice === "number" && t.unitPrice > 0;
+										const costToday = hasUnitPrice ? currentVal * (t.unitPrice || 0) : 0;
+
+										return (
+											<div
+												key={t.id}
+												className="group flex items-center justify-between p-3 rounded-xl border border-slate-800/80 bg-slate-900/80 hover:border-slate-700 transition"
+											>
+												<div className="min-w-0 pr-2">
+													<div className="flex items-center gap-1.5">
+														<p className="text-xs font-semibold text-slate-100 truncate">
+															{t.name}
+														</p>
+														{isCancelled && (
+															<span className="text-[9px] font-bold text-rose-400 bg-rose-500/10 px-1.5 py-0.2 rounded border border-rose-500/20">
+																Cancelled
+															</span>
+														)}
+													</div>
+													<p className="text-[10px] text-slate-400 mt-0.5 truncate">
+														{hasUnitPrice ? (
+															isCancelled ? (
+																<span className="line-through text-rose-400">
+																	{formatCurrency(costToday, t.currency)}
+																</span>
+															) : (
+																`${formatCurrency(costToday, t.currency)} today`
+															)
+														) : (
+															`${t.category}`
+														)}
+														{t.todayLog?.notes ? ` • "${t.todayLog.notes}"` : ""}
+													</p>
+												</div>
+
+												<div className="flex items-center gap-2 shrink-0">
+													<div className="flex items-center gap-1.5">
+														<button
+															type="button"
+															onClick={() => handleAdjustTracker(t.id, -1)}
+															disabled={currentVal <= 0}
+															className="h-6 w-6 rounded-lg bg-slate-950 border border-slate-700 text-slate-400 hover:text-white hover:bg-slate-800 flex items-center justify-center disabled:opacity-30 cursor-pointer"
+															title="Minus 1"
+														>
+															<Minus className="w-3 h-3" />
+														</button>
+
+														<span className="w-7 text-center font-bold text-xs text-white">
+															{currentVal}
+														</span>
+
+														<button
+															type="button"
+															onClick={() => handleAdjustTracker(t.id, 1)}
+															className="h-6 w-6 rounded-lg bg-emerald-600 border border-emerald-500 text-white hover:bg-emerald-500 flex items-center justify-center cursor-pointer shadow-sm"
+															title="Plus 1"
+														>
+															<Plus className="w-3 h-3" />
+														</button>
+
+														<button
+															type="button"
+															onClick={() => handleCancelTrackerToday(t.id)}
+															title={isCancelled ? "Restore normal count" : "Cancel for today"}
+															className={`h-6 w-6 rounded-lg flex items-center justify-center transition cursor-pointer ${
+																isCancelled
+																	? "bg-rose-500/20 text-rose-300 border border-rose-500/40"
+																	: "bg-slate-950 border border-slate-800 text-slate-500 hover:text-rose-400 hover:bg-slate-800"
+															}`}
+														>
+															<Ban className="w-3 h-3" />
+														</button>
+													</div>
+
+													<div className="flex items-center gap-1 opacity-70 group-hover:opacity-100 transition pl-1 border-l border-slate-800">
+														{onOpenTrackerModal && (
+															<button
+																type="button"
+																onClick={() => onOpenTrackerModal(t)}
+																className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+																title="Edit Tracker"
+															>
+																<Pencil className="w-3.5 h-3.5" />
+															</button>
+														)}
+														<button
+															type="button"
+															onClick={() => handleDeleteTracker(t.id, t.name)}
+															className="p-1 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer"
+															title="Delete Tracker"
+														>
+															<Trash2 className="w-3.5 h-3.5" />
+														</button>
+													</div>
+												</div>
+											</div>
+										);
+									})
+								)}
+							</div>
+						</div>
+						<Link
+							href="/trackers"
+							className="mt-3 pt-3 border-t border-slate-800/80 text-[11px] text-slate-400 hover:text-purple-400 flex items-center justify-between"
+						>
+							<span>View monthly tracker logs & settlements</span>
+							<ChevronRight className="w-3.5 h-3.5" />
+						</Link>
+					</div>
+
+					{/* 3. Tasks & Events */}
+					<div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 backdrop-blur-xl flex flex-col justify-between">
+						<div>
+							<div className="flex items-center justify-between pb-3 border-b border-slate-800">
+								<h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
+									<CheckSquare className="w-4 h-4 text-blue-400" />
+									<span>Tasks & Calendar Events</span>
+								</h3>
+								<div className="flex items-center gap-2">
+									{tasks.length > 0 && (
+										<button
+											type="button"
+											onClick={handleClearAllTasks}
+											className="text-[11px] text-slate-500 hover:text-rose-400 flex items-center gap-1 transition cursor-pointer"
+											title="Delete all tasks"
+										>
+											<Trash2 className="w-3 h-3" />
+											<span>Clear All</span>
+										</button>
+									)}
+									<button
+										type="button"
+										onClick={() => onOpenTaskModal()}
+										className="text-xs text-blue-400 hover:underline font-semibold cursor-pointer"
+									>
+										+ Add
+									</button>
+								</div>
+							</div>
+
+							<div className="mt-3 space-y-2 max-h-80 overflow-y-auto pr-1">
+								{pendingTasks.length === 0 ? (
+									<div className="py-10 text-center text-xs text-slate-500">
+										<p>No pending tasks scheduled right now.</p>
+										<Button
+											variant="outline"
+											size="sm"
+											onClick={() => onOpenTaskModal()}
+											className="mt-3 text-xs border-slate-700 hover:bg-slate-800"
+										>
+											<Plus className="w-3.5 h-3.5 mr-1" />
+											<span>Add Priority Task / Event</span>
+										</Button>
+									</div>
+								) : (
+									pendingTasks.map((task) => (
+										<div
+											key={task.id}
+											className="group flex items-center justify-between p-3 rounded-xl border border-slate-800/80 bg-slate-900/80 hover:border-slate-700 transition"
+										>
+											<div className="flex items-center gap-3 min-w-0">
+												<button
+													type="button"
+													onClick={() => handleToggleTask(task)}
+													className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-slate-700 bg-slate-950 text-transparent hover:border-emerald-400 transition cursor-pointer"
+												>
+													<Check className="w-3.5 h-3.5 stroke-[3]" />
+												</button>
+												<div className="min-w-0">
+													<p className="text-xs font-semibold text-slate-100 truncate">
+														{task.title}
+													</p>
+													<p className="text-[10px] text-slate-400 mt-0.5">
+														{task.category} • Priority: {task.priority}
+													</p>
+												</div>
+											</div>
+
+											<div className="flex items-center gap-2 shrink-0">
+												{task.dueDate && (
+													<div className="flex items-center gap-1 text-[11px] text-slate-400 bg-slate-800 px-2 py-0.5 rounded-md">
+														<Clock className="w-3 h-3 text-emerald-400" />
+														<span>
+															{new Date(task.dueDate).toLocaleTimeString([], {
+																hour: "2-digit",
+																minute: "2-digit",
+															})}
+														</span>
+													</div>
+												)}
+
+												<div className="flex items-center gap-1 opacity-70 group-hover:opacity-100 transition pl-1 border-l border-slate-800">
+													<button
+														type="button"
+														onClick={() => onOpenTaskModal(task)}
+														className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+														title="Edit Task"
+													>
+														<Pencil className="w-3.5 h-3.5" />
+													</button>
+													<button
+														type="button"
+														onClick={() => handleDeleteTask(task.id, task.title)}
+														className="p-1 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer"
+														title="Delete Task"
+													>
+														<Trash2 className="w-3.5 h-3.5" />
+													</button>
+												</div>
+											</div>
+										</div>
+									))
+								)}
+							</div>
+						</div>
+						<Link
+							href="/tasks"
+							className="mt-3 pt-3 border-t border-slate-800/80 text-[11px] text-slate-400 hover:text-blue-400 flex items-center justify-between"
+						>
+							<span>View all tasks & calendar items</span>
+							<ChevronRight className="w-3.5 h-3.5" />
+						</Link>
+					</div>
+
+					{/* 4. Recent Transactions */}
+					<div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 backdrop-blur-xl flex flex-col justify-between">
+						<div>
+							<div className="flex items-center justify-between pb-3 border-b border-slate-800">
+								<h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
+									<TrendingUp className="w-4 h-4 text-emerald-400" />
+									<span>Recent Ledger & Transactions</span>
+								</h3>
+								<div className="flex items-center gap-2">
+									{transactions.length > 0 && (
+										<button
+											type="button"
+											onClick={handleClearAllTransactions}
+											className="text-[11px] text-slate-500 hover:text-rose-400 flex items-center gap-1 transition cursor-pointer"
+											title="Delete all transactions"
+										>
+											<Trash2 className="w-3 h-3" />
+											<span>Clear All</span>
+										</button>
+									)}
+									<button
+										type="button"
+										onClick={() => onOpenTransactionModal()}
+										className="text-xs text-emerald-400 hover:underline font-semibold cursor-pointer"
+									>
+										+ Record
+									</button>
+								</div>
+							</div>
+
+							<div className="mt-3 space-y-2 max-h-80 overflow-y-auto pr-1">
+								{transactions.length === 0 ? (
+									<div className="py-10 text-center text-xs text-slate-500">
+										<p>No transactions logged yet.</p>
+										<Button
+											variant="outline"
+											size="sm"
+											onClick={() => onOpenTransactionModal()}
+											className="mt-3 text-xs border-slate-700 hover:bg-slate-800"
+										>
+											<Plus className="w-3.5 h-3.5 mr-1" />
+											<span>Record First Transaction</span>
+										</Button>
+									</div>
+								) : (
+									transactions.slice(0, 8).map((tx) => {
+										const isIncome = tx.type === "INCOME";
+										const dateStr = new Date(tx.date).toLocaleDateString("en-US", {
+											month: "short",
+											day: "numeric",
+										});
+
+										return (
+											<div
+												key={tx.id}
+												className="group flex items-center justify-between p-3 rounded-xl border border-slate-800/80 bg-slate-900/80 hover:border-slate-700 transition"
+											>
+												<div className="flex items-center gap-3 min-w-0 pr-2">
+													<div
+														className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+															isIncome
+																? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+																: "bg-red-500/10 text-red-400 border border-red-500/20"
+														}`}
+													>
+														{isIncome ? (
+															<ArrowUpRight className="w-4 h-4" />
+														) : (
+															<ArrowDownRight className="w-4 h-4" />
+														)}
+													</div>
+													<div className="min-w-0">
+														<p className="text-xs font-semibold text-slate-100 truncate">
+															{tx.description || tx.category}
+														</p>
+														<p className="text-[10px] text-slate-400 mt-0.5 truncate">
+															{dateStr} • {tx.category} • {tx.paymentMethod}
+														</p>
+													</div>
+												</div>
+
+												<div className="flex items-center gap-3 shrink-0">
+													<span
+														className={`text-xs font-bold ${
+															isIncome ? "text-emerald-400" : "text-red-400"
+														}`}
+													>
+														{isIncome ? "+" : "-"}
+														{formatCurrency(tx.amount, user?.currency || "USD")}
+													</span>
+
+													<div className="flex items-center gap-1 opacity-70 group-hover:opacity-100 transition pl-1 border-l border-slate-800">
+														<button
+															type="button"
+															onClick={() => onOpenTransactionModal(tx)}
+															className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+															title="Edit Transaction"
+														>
+															<Pencil className="w-3.5 h-3.5" />
+														</button>
+														<button
+															type="button"
+															onClick={() =>
+																handleDeleteTransaction(tx.id, tx.description || tx.category)
+															}
+															className="p-1 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer"
+															title="Delete Transaction"
+														>
+															<Trash2 className="w-3.5 h-3.5" />
+														</button>
+													</div>
+												</div>
+											</div>
+										);
+									})
+								)}
+							</div>
+						</div>
+						<Link
+							href="/finances"
+							className="mt-3 pt-3 border-t border-slate-800/80 text-[11px] text-slate-400 hover:text-emerald-400 flex items-center justify-between"
+						>
+							<span>View full financial ledger & graphs</span>
+							<ChevronRight className="w-3.5 h-3.5" />
+						</Link>
+					</div>
 				</div>
-			</div>
+			)}
 		</div>
 	);
 }
