@@ -24,6 +24,8 @@ model User {
   categoryOptions  CategoryOption[]
   dailyTrackers    DailyTracker[]
   dailyTrackerLogs DailyTrackerLog[]
+  debtsLoans       DebtLoan[]
+  debtLoanRepayments DebtLoanRepayment[]
 }
 
 model GoogleConnection {
@@ -191,5 +193,47 @@ model DailyTrackerLog {
   @@unique([trackerId, date])
   @@index([userId, date])
   @@index([trackerId, date])
+}
+
+model DebtLoan {
+  id                   String              @id @default(cuid())
+  userId               String
+  type                 String              // "DEBT" | "LOAN"
+  personName           String
+  amount               Float
+  paidAmount           Float               @default(0)
+  status               String              @default("ACTIVE") // "ACTIVE" | "SETTLED"
+  date                 DateTime            @default(now())
+  dueDate              DateTime?
+  description          String?
+  initialTransactionId String?
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+
+  user                 User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  repayments           DebtLoanRepayment[]
+
+  @@index([userId, type])
+  @@index([userId, status])
+  @@index([userId, date])
+}
+
+model DebtLoanRepayment {
+  id            String    @id @default(cuid())
+  debtLoanId    String
+  userId        String
+  amount        Float
+  date          DateTime  @default(now())
+  paymentMethod String    @default("Cash")
+  notes         String?
+  transactionId String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  debtLoan      DebtLoan  @relation(fields: [debtLoanId], references: [id], onDelete: Cascade)
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([debtLoanId])
+  @@index([userId, date])
 }
 

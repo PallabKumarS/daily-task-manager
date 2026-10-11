@@ -160,6 +160,45 @@ CREATE TABLE IF NOT EXISTS "DailyTrackerLog" (
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS "DailyTrackerLog_trackerId_date_key" ON "DailyTrackerLog"("trackerId", "date");
+
+CREATE TABLE IF NOT EXISTS "DebtLoan" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "userId" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    "personName" TEXT NOT NULL,
+    "amount" REAL NOT NULL,
+    "paidAmount" REAL NOT NULL DEFAULT 0,
+    "status" TEXT NOT NULL DEFAULT 'ACTIVE',
+    "date" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "dueDate" DATETIME,
+    "description" TEXT,
+    "initialTransactionId" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS "DebtLoan_userId_type_idx" ON "DebtLoan"("userId", "type");
+CREATE INDEX IF NOT EXISTS "DebtLoan_userId_status_idx" ON "DebtLoan"("userId", "status");
+CREATE INDEX IF NOT EXISTS "DebtLoan_userId_date_idx" ON "DebtLoan"("userId", "date");
+
+CREATE TABLE IF NOT EXISTS "DebtLoanRepayment" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "debtLoanId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "amount" REAL NOT NULL,
+    "date" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "paymentMethod" TEXT NOT NULL DEFAULT 'Cash',
+    "notes" TEXT,
+    "transactionId" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY ("debtLoanId") REFERENCES "DebtLoan" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS "DebtLoanRepayment_debtLoanId_idx" ON "DebtLoanRepayment"("debtLoanId");
+CREATE INDEX IF NOT EXISTS "DebtLoanRepayment_userId_date_idx" ON "DebtLoanRepayment"("userId", "date");
 `;
 
 export function getDatabasePath(): string {
