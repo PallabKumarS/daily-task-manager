@@ -225,7 +225,15 @@ export function TransactionList({
 											<p className="text-xs font-semibold text-slate-100 truncate">
 												{cleanDesc || item.category}
 											</p>
-											<span className="rounded-md bg-slate-800 px-1.5 py-0.5 text-[10px] text-slate-400 border border-slate-700/60">
+											<span
+												className={`rounded-md px-1.5 py-0.5 text-[10px] border ${
+													item.category === "Debt / Borrowed" || item.category === "Debt Repayment"
+														? "bg-amber-500/15 text-amber-300 border-amber-500/30"
+														: item.category === "Loan Given" || item.category === "Loan Return"
+															? "bg-cyan-500/15 text-cyan-300 border-cyan-500/30"
+															: "bg-slate-800 text-slate-400 border-slate-700/60"
+												}`}
+											>
 												{item.category}
 											</span>
 											{recurringMatch && (

@@ -67,7 +67,7 @@ export const sendToUser = (userId: string, event: string, data: unknown): void =
 
 export const broadcastSyncUpdate = (
 	userId: string,
-	entityType: "routine" | "task" | "transaction" | "drive_sync" | "sync" | "tracker",
+	entityType: "routine" | "task" | "transaction" | "drive_sync" | "sync" | "tracker" | "debtLoan",
 	action:
 		| "create"
 		| "update"

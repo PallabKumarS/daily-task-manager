@@ -236,7 +236,15 @@ export function WeekTimelineView({
 													<div className="flex items-start justify-between gap-1.5">
 														<div className="min-w-0 flex-1">
 															<div className="flex items-center gap-1.5 flex-wrap">
-																<span className="rounded bg-zinc-800 px-1.5 py-0.5 text-[9px] font-medium text-zinc-300 border border-zinc-700/60 truncate">
+																<span
+																	className={`rounded px-1.5 py-0.5 text-[9px] font-medium border truncate ${
+																		tx.category === "Debt / Borrowed" || tx.category === "Debt Repayment"
+																			? "bg-amber-500/15 text-amber-300 border-amber-500/30"
+																			: tx.category === "Loan Given" || tx.category === "Loan Return"
+																				? "bg-cyan-500/15 text-cyan-300 border-cyan-500/30"
+																				: "bg-zinc-800 text-zinc-300 border-zinc-700/60"
+																	}`}
+																>
 																	{tx.category}
 																</span>
 																{isJustAdded && (

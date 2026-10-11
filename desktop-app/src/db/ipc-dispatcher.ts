@@ -15,6 +15,7 @@ import {
 	summarizeMergeReport,
 } from "./backup-merge.js";
 import { handleCategoryRoute } from "./category-handlers.js";
+import { handleDebtLoanRoute } from "./debt-loan-handlers.js";
 import { calculateFinanceAnalytics } from "./finance-analytics.js";
 import {
 	clearLatestGoogleRestoreLoginResult,
@@ -1463,6 +1464,19 @@ export async function handleIpcApiDispatch(req: IpcApiRequest): Promise<IpcApiRe
 				body,
 			);
 			if (categoryResult) return categoryResult;
+		}
+
+		// ================= DEBTS & LOANS ROUTES =================
+		if (pathname === "/debts-loans" || pathname.startsWith("/debts-loans/")) {
+			const debtLoanResult = await handleDebtLoanRoute(
+				prisma,
+				userId,
+				method,
+				pathname,
+				query,
+				body,
+			);
+			if (debtLoanResult) return debtLoanResult;
 		}
 
 		// ================= SYNC & BACKUP ROUTES =================
