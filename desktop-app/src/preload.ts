@@ -7,6 +7,38 @@ const api: ElectronBridgeApi = {
 	minimizeToTray: () => {
 		ipcRenderer.send("window:minimize-to-tray");
 	},
+	minimize: () => {
+		ipcRenderer.send("window:minimize");
+	},
+	maximize: () => {
+		ipcRenderer.send("window:maximize");
+	},
+	toggleFullScreen: () => {
+		ipcRenderer.send("window:toggle-fullscreen");
+	},
+	close: () => {
+		ipcRenderer.send("window:close");
+	},
+	isMaximized: async () => {
+		return ipcRenderer.invoke("window:is-maximized");
+	},
+	isFullScreen: async () => {
+		return ipcRenderer.invoke("window:is-fullscreen");
+	},
+	onWindowStateChange: (
+		callback: (state: { isMaximized: boolean; isFullScreen: boolean }) => void,
+	) => {
+		const listener = (
+			_event: Electron.IpcRendererEvent,
+			state: { isMaximized: boolean; isFullScreen: boolean },
+		) => {
+			callback(state);
+		};
+		ipcRenderer.on("window:state-changed", listener);
+		return () => {
+			ipcRenderer.removeListener("window:state-changed", listener);
+		};
+	},
 	triggerAlarm: (payload: AlarmNotificationPayload) => {
 		ipcRenderer.send("alarm:trigger", payload);
 	},

@@ -13,6 +13,15 @@ export interface ElectronBridgeApi {
 	isElectron: boolean;
 	platform: string;
 	minimizeToTray: () => void;
+	minimize?: () => void;
+	maximize?: () => void;
+	toggleFullScreen?: () => void;
+	close?: () => void;
+	isMaximized?: () => Promise<boolean>;
+	isFullScreen?: () => Promise<boolean>;
+	onWindowStateChange?: (
+		callback: (state: { isMaximized: boolean; isFullScreen: boolean }) => void,
+	) => () => void;
 	triggerAlarm: (payload: AlarmNotificationPayload) => void;
 	onAlarmReceived: (callback: (payload: AlarmNotificationPayload) => void) => () => void;
 	syncNow: () => Promise<boolean>;

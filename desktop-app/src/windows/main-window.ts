@@ -18,6 +18,8 @@ export function createMainWindow(onCloseHide: () => void): BrowserWindow {
 		icon: !windowIcon.isEmpty() ? windowIcon : iconPath || undefined,
 		backgroundColor: "#09090b",
 		autoHideMenuBar: true,
+		frame: false,
+		titleBarStyle: "hidden",
 		webPreferences: {
 			preload: preloadPath,
 			contextIsolation: true,
@@ -31,6 +33,20 @@ export function createMainWindow(onCloseHide: () => void): BrowserWindow {
 	} else if (iconPath) {
 		win.setIcon(iconPath);
 	}
+
+	const emitWindowState = () => {
+		if (!win.isDestroyed()) {
+			win.webContents.send("window:state-changed", {
+				isMaximized: win.isMaximized(),
+				isFullScreen: win.isFullScreen(),
+			});
+		}
+	};
+
+	win.on("maximize", emitWindowState);
+	win.on("unmaximize", emitWindowState);
+	win.on("enter-full-screen", emitWindowState);
+	win.on("leave-full-screen", emitWindowState);
 
 	// Directly load splash.html inside mainWindow matching krishan-traders pattern
 	const splashPath = getAssetPath("splash.html");
