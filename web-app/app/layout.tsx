@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
+import { DesktopTitlebar } from "@/components/layout/desktop-titlebar";
 import { AuthProvider } from "@/components/providers/auth-provider";
 import { NotificationProvider } from "@/components/providers/notification-provider";
 import { ConfirmProvider } from "@/components/ui/confirm-dialog";
@@ -45,6 +46,7 @@ export default function RootLayout({
 			className={`${geistSans.variable} ${geistMono.variable} h-full dark antialiased`}
 		>
 			<body className="min-h-full flex flex-col bg-slate-950 text-slate-100 selection:bg-emerald-500/30 selection:text-emerald-300">
+				<DesktopTitlebar />
 				<AuthProvider>
 					<NotificationProvider>
 						<ConfirmProvider>

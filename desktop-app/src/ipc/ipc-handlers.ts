@@ -12,6 +12,42 @@ export function registerIpcHandlers(getMainWindow: () => BrowserWindow | null): 
 		win?.hide();
 	});
 
+	ipcMain.on("window:minimize", () => {
+		const win = getMainWindow();
+		win?.minimize();
+	});
+
+	ipcMain.on("window:maximize", () => {
+		const win = getMainWindow();
+		if (!win) return;
+		if (win.isMaximized()) {
+			win.unmaximize();
+		} else {
+			win.maximize();
+		}
+	});
+
+	ipcMain.on("window:toggle-fullscreen", () => {
+		const win = getMainWindow();
+		if (!win) return;
+		win.setFullScreen(!win.isFullScreen());
+	});
+
+	ipcMain.on("window:close", () => {
+		const win = getMainWindow();
+		win?.hide();
+	});
+
+	ipcMain.handle("window:is-maximized", () => {
+		const win = getMainWindow();
+		return win ? win.isMaximized() : false;
+	});
+
+	ipcMain.handle("window:is-fullscreen", () => {
+		const win = getMainWindow();
+		return win ? win.isFullScreen() : false;
+	});
+
 	ipcMain.on("alarm:trigger", (_event, payload: AlarmNotificationPayload) => {
 		const win = getMainWindow();
 		if (win) {

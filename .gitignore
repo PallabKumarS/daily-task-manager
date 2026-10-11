@@ -42,3 +42,9 @@ next-env.d.ts
 **/*.db-journal
 .playwright-mcp/
 
+# binary releases & installers
+release/
+**/release/
+*.apk
+*.exe
+

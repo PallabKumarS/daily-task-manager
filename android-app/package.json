@@ -5,6 +5,7 @@
 	"type": "module",
 	"scripts": {
 		"build": "node scripts/build.js",
+		"build:apk": "node scripts/build-apk.js",
 		"cap:sync": "cap sync",
 		"cap:open": "cap open android",
 		"cap:add": "cap add android",

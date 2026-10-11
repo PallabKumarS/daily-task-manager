@@ -15,6 +15,7 @@
 			"desktop-app/src/**/*",
 			"desktop-app/scripts/**/*",
 			"android-app/src/**/*",
+			"android-app/scripts/**/*",
 			"scripts/**/*",
 			"*.json",
 			"*.js",
