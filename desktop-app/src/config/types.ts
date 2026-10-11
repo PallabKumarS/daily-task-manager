@@ -5,6 +5,8 @@ export interface AlarmNotificationPayload {
 	type: "task" | "event" | "routine" | "system";
 	leadMinutes?: number;
 	timestamp?: string;
+	ringCount?: number;
+	ringIntervalSeconds?: number;
 }
 
 export interface ElectronBridgeApi {

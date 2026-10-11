@@ -2,8 +2,9 @@
 
 import * as React from "react";
 import { toast } from "sonner";
+import { parseAlarmConfig } from "@/lib/alarm-settings";
 import { api, getAuthToken } from "@/lib/api-client";
-import { playNotificationChime } from "@/lib/audio-chime";
+import { playNotificationChime, stopCurrentAlarm } from "@/lib/audio-chime";
 import { dispatchUnifiedAlarm } from "@/lib/cross-platform-alarm";
 import { getSocket } from "@/lib/socket-client";
 import {
@@ -37,6 +38,8 @@ interface NotificationContextType {
 		title: string;
 		message: string;
 		type?: "task" | "event" | "routine" | "system";
+		ringCount?: number;
+		ringIntervalSeconds?: number;
 	}) => void;
 }
 
@@ -85,11 +88,15 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 			title,
 			message,
 			type = "system",
+			ringCount,
+			ringIntervalSeconds,
 		}: {
 			id?: string;
 			title: string;
 			message: string;
 			type?: "task" | "event" | "routine" | "system";
+			ringCount?: number;
+			ringIntervalSeconds?: number;
 		}) => {
 			const alertId = id || `alert_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
@@ -104,6 +111,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 					title,
 					message,
 					type,
+					ringCount,
+					ringIntervalSeconds,
 				});
 			} else {
 				showSystemNotification(title, {
@@ -112,8 +121,15 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 				});
 			}
 
+			const isAlarmType = ringCount !== undefined && ringCount !== 1;
 			toast(title, {
 				description: message,
+				action: isAlarmType
+					? {
+							label: "Stop Alarm",
+							onClick: () => stopCurrentAlarm(),
+						}
+					: undefined,
 			});
 
 			const newNotification: AppNotification = {
@@ -242,6 +258,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 								priority: string;
 								type: string;
 								remindBeforeMinutes: number;
+								description?: string | null;
 							}>
 						>("/tasks?upcoming=true")
 						.catch(() => null),
@@ -278,13 +295,25 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 								const isEvent = task.type === "EVENT";
 								const leadDesc =
 									task.remindBeforeMinutes > 0 ? `in ${task.remindBeforeMinutes} minutes` : "now";
+								const { config } = parseAlarmConfig(task.description);
 
 								triggerNotification({
 									id: uniqueKey,
 									title: `${isEvent ? "Event Reminder" : "Upcoming Task"}: ${task.title}`,
-									message: `${task.title} is scheduled ${leadDesc}. Priority: ${task.priority}`,
+									message: `${task.title} is scheduled ${leadDesc}.`,
 									type: isEvent ? "event" : "task",
+									ringCount: config.ringCount,
+									ringIntervalSeconds: config.ringIntervalSeconds,
 								});
+
+								api
+									.patch(`/tasks/${task.id}`, {
+										lastTriggeredDate: new Date().toISOString(),
+									})
+									.then(() => {
+										window.dispatchEvent(new CustomEvent("daypulse:refresh"));
+									})
+									.catch(() => {});
 							}
 						}
 					}

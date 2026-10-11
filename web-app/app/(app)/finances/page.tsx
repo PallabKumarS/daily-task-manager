@@ -7,8 +7,9 @@ import { RecentlyAddedBanner } from "@/components/dashboard/recently-added-banne
 import { CategoryBreakdown } from "@/components/finances/category-breakdown";
 import { CumulativeChart } from "@/components/finances/cumulative-chart";
 import { FinanceSummaryCards } from "@/components/finances/finance-summary-cards";
+import { TransactionTimelineView } from "@/components/finances/timeline/transaction-timeline-view";
 import { TransactionFormModal } from "@/components/finances/transaction-form-modal";
-import { type TransactionItem, TransactionList } from "@/components/finances/transaction-list";
+import type { TransactionItem } from "@/components/finances/transaction-list";
 import { useAuth } from "@/components/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api-client";
@@ -57,6 +58,7 @@ export default function FinancesPage() {
 	const [loading, setLoading] = React.useState(true);
 	const [modalOpen, setModalOpen] = React.useState(false);
 	const [editingTransaction, setEditingTransaction] = React.useState<TransactionItem | null>(null);
+	const [defaultFormDate, setDefaultFormDate] = React.useState<string | undefined>(undefined);
 	const [categoryManagerOpen, setCategoryManagerOpen] = React.useState(false);
 
 	const dateRange = React.useMemo(() => {
@@ -99,10 +101,16 @@ export default function FinancesPage() {
 		fetchData();
 
 		const onGlobalRefresh = () => fetchData();
+		const onDateChanged = () => {
+			setCurrentDate(new Date());
+			fetchData();
+		};
 		window.addEventListener("daypulse:refresh", onGlobalRefresh);
+		window.addEventListener("daypulse:date-changed", onDateChanged);
 		window.addEventListener("daypulse:categories-updated", onGlobalRefresh);
 		return () => {
 			window.removeEventListener("daypulse:refresh", onGlobalRefresh);
+			window.removeEventListener("daypulse:date-changed", onDateChanged);
 			window.removeEventListener("daypulse:categories-updated", onGlobalRefresh);
 		};
 	}, [fetchData]);
@@ -162,9 +170,16 @@ export default function FinancesPage() {
 		setModalOpen(true);
 	};
 
-	const handleAddNew = () => {
+	const handleAddNew = (dateStr?: string) => {
 		setEditingTransaction(null);
+		setDefaultFormDate(dateStr);
 		setModalOpen(true);
+	};
+
+	const handleSelectMonth = (monthIndex: number) => {
+		const next = new Date(currentDate.getFullYear(), monthIndex, 1);
+		setCurrentDate(next);
+		setPeriod("month");
 	};
 
 	if (loading && transactions.length === 0) {
@@ -201,7 +216,7 @@ export default function FinancesPage() {
 						<span>Categories</span>
 					</Button>
 
-					<Button variant="emerald" size="sm" onClick={handleAddNew} className="gap-1.5">
+					<Button variant="emerald" size="sm" onClick={() => handleAddNew()} className="gap-1.5">
 						<Plus className="w-4 h-4" />
 						<span>Record Transaction</span>
 					</Button>
@@ -288,19 +303,27 @@ export default function FinancesPage() {
 				currency={user?.currency || "USD"}
 			/>
 
-			{/* Main Focus: Transaction History for Selected Period */}
-			<TransactionList
+			{/* Main Focus: Transaction Timeline History for Selected Period */}
+			<TransactionTimelineView
+				period={period}
+				currentDate={currentDate}
 				transactions={transactions}
 				currency={user?.currency || "USD"}
+				startOfWeek={startOfWeek}
 				onEdit={handleEdit}
+				onAddNew={handleAddNew}
+				onPrev={handlePrev}
+				onNext={handleNext}
+				onResetToday={handleResetToday}
+				onSelectMonth={handleSelectMonth}
 				onRefresh={fetchData}
 			/>
 
 			{/* Secondary Section Placed Below: Cumulative Trajectory & Category Breakdown */}
 			<div className="space-y-4 pt-2">
 				<div className="pb-1">
-					<h3 className="text-sm font-bold text-slate-200">Cashflow Analytics & Breakdown</h3>
-					<p className="text-xs text-slate-400">
+					<h3 className="text-sm font-bold text-white">Cashflow Analytics & Breakdown</h3>
+					<p className="text-xs text-zinc-400">
 						Visual trajectory and category proportions for {formatPeriodLabel()}
 					</p>
 				</div>
@@ -325,6 +348,7 @@ export default function FinancesPage() {
 				onClose={() => setModalOpen(false)}
 				onSuccess={fetchData}
 				initialData={editingTransaction}
+				defaultDate={defaultFormDate}
 			/>
 
 			<CategoryManagerModal

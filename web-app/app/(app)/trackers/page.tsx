@@ -70,9 +70,19 @@ export default function TrackersPage() {
 		fetchTrackers();
 
 		const onGlobalRefresh = () => fetchTrackers();
+		const onDateChanged = (e: Event) => {
+			const customEvent = e as CustomEvent<{ date: string }>;
+			if (customEvent.detail?.date) {
+				setSelectedDate(customEvent.detail.date);
+			} else {
+				setSelectedDate(getTodayDateString());
+			}
+		};
 		window.addEventListener("daypulse:refresh", onGlobalRefresh);
+		window.addEventListener("daypulse:date-changed", onDateChanged);
 		return () => {
 			window.removeEventListener("daypulse:refresh", onGlobalRefresh);
+			window.removeEventListener("daypulse:date-changed", onDateChanged);
 		};
 	}, [fetchTrackers]);
 

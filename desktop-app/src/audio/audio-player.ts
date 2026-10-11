@@ -9,6 +9,8 @@ const audioHtml = `
 <body>
 <script>
 let audioCtx = null;
+let activeAlarmTimer = null;
+
 function getAudioContext() {
   if (!audioCtx) {
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
@@ -20,7 +22,7 @@ function getAudioContext() {
   return audioCtx;
 }
 
-window.playChime = function() {
+function playSingleChime() {
   try {
     const ctx = getAudioContext();
     const now = ctx.currentTime;
@@ -63,6 +65,43 @@ window.playChime = function() {
   } catch (err) {
     console.error('Audio synthesizer error:', err);
   }
+}
+
+window.playChime = function() {
+  playSingleChime();
+};
+
+window.startAlarm = function(ringCount, intervalSeconds) {
+  if (activeAlarmTimer) {
+    clearInterval(activeAlarmTimer);
+    activeAlarmTimer = null;
+  }
+
+  const count = ringCount !== undefined ? ringCount : 3;
+  const intervalSec = Math.max(2, intervalSeconds || 10);
+  const isContinuous = count === 0;
+  const maxRings = isContinuous ? 60 : count;
+
+  playSingleChime();
+  let ringsDone = 1;
+
+  if (maxRings <= 1) return;
+
+  activeAlarmTimer = setInterval(() => {
+    ringsDone += 1;
+    playSingleChime();
+    if (!isContinuous && ringsDone >= maxRings) {
+      clearInterval(activeAlarmTimer);
+      activeAlarmTimer = null;
+    }
+  }, intervalSec * 1000);
+};
+
+window.stopAlarm = function() {
+  if (activeAlarmTimer) {
+    clearInterval(activeAlarmTimer);
+    activeAlarmTimer = null;
+  }
 };
 </script>
 </body>
@@ -84,11 +123,18 @@ export function initAudioPlayer(): void {
 	audioWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(audioHtml)}`);
 }
 
-export function playAlarmSound(): void {
+export function playAlarmSound(ringCount = 3, intervalSeconds = 10): void {
 	if (!audioWindow || audioWindow.isDestroyed()) {
 		initAudioPlayer();
 	}
-	audioWindow?.webContents.executeJavaScript("window.playChime();").catch(() => {});
+	const js = `window.startAlarm(${ringCount}, ${intervalSeconds});`;
+	audioWindow?.webContents.executeJavaScript(js).catch(() => {});
+}
+
+export function stopAlarmSound(): void {
+	if (audioWindow && !audioWindow.isDestroyed()) {
+		audioWindow.webContents.executeJavaScript("window.stopAlarm();").catch(() => {});
+	}
 }
 
 export function destroyAudioPlayer(): void {

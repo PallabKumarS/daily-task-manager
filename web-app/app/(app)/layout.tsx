@@ -17,6 +17,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
 	const [routineModalOpen, setRoutineModalOpen] = React.useState(false);
 	const [taskModalOpen, setTaskModalOpen] = React.useState(false);
+	const [taskModalType, setTaskModalType] = React.useState<"TASK" | "EVENT">("TASK");
 	const [transactionModalOpen, setTransactionModalOpen] = React.useState(false);
 	const [trackerModalOpen, setTrackerModalOpen] = React.useState(false);
 
@@ -26,9 +27,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 		}
 	}, [user, loading, router]);
 
-	const handleQuickAdd = (type: "routine" | "task" | "transaction" | "tracker") => {
+	const handleQuickAdd = (type: "routine" | "task" | "transaction" | "tracker" | "alarm") => {
 		if (type === "routine") setRoutineModalOpen(true);
-		if (type === "task") setTaskModalOpen(true);
+		if (type === "alarm") {
+			setTaskModalType("EVENT");
+			setTaskModalOpen(true);
+		}
+		if (type === "task") {
+			setTaskModalType("TASK");
+			setTaskModalOpen(true);
+		}
 		if (type === "transaction") setTransactionModalOpen(true);
 		if (type === "tracker") setTrackerModalOpen(true);
 	};
@@ -67,9 +75,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 			<div className="flex-1 flex flex-col min-w-0">
 				<AppNavbar onQuickAdd={handleQuickAdd} />
 
-				<main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto pb-24 md:pb-12">
-					{children}
-				</main>
+				<main className="flex-1 p-4 sm:p-6 lg:p-8 w-full pb-24 md:pb-12">{children}</main>
 
 				<BottomDock />
 			</div>
@@ -84,6 +90,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 				isOpen={taskModalOpen}
 				onClose={() => setTaskModalOpen(false)}
 				onSuccess={handleRefresh}
+				defaultType={taskModalType}
 			/>
 			<TransactionFormModal
 				isOpen={transactionModalOpen}

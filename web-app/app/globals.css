@@ -2,24 +2,24 @@
 
 :root {
 	color-scheme: dark;
-	--background: #09090b;
-	--foreground: #fafafa;
-	--card: #111218;
-	--card-foreground: #fafafa;
-	--popover: #111218;
-	--popover-foreground: #fafafa;
+	--background: #090a10;
+	--foreground: #ffffff;
+	--card: #11131e;
+	--card-foreground: #ffffff;
+	--popover: #11131e;
+	--popover-foreground: #ffffff;
 	--primary: #10b981;
 	--primary-foreground: #022c22;
-	--secondary: #181922;
-	--secondary-foreground: #f4f4f5;
-	--muted: #181922;
-	--muted-foreground: #a1a1aa;
+	--secondary: #161928;
+	--secondary-foreground: #f8fafc;
+	--muted: #161928;
+	--muted-foreground: #94a3b8;
 	--accent: #059669;
-	--accent-foreground: #f0fdf4;
+	--accent-foreground: #ecfdf5;
 	--destructive: #f43f5e;
 	--destructive-foreground: #fff1f2;
-	--border: #27272a;
-	--input: #181922;
+	--border: #1f2336;
+	--input: #161928;
 	--ring: #10b981;
 }
 
@@ -69,12 +69,12 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-	background: #27272a;
+	background: #23273c;
 	border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-	background: #3f3f46;
+	background: #363c5a;
 }
 
 /* High-Visibility Date & Time Picker Indicators */
