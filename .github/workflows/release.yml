@@ -40,7 +40,7 @@ jobs:
 
   build-android:
     name: Build Android APKs
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -62,34 +62,15 @@ jobs:
           npm ci
           npx prisma generate --schema=web-app/prisma/schema.prisma
 
-      - name: Export web-app for Android
-        working-directory: web-app
-        run: npm run export:android
-
-      - name: Generate launcher icons
-        run: node android-app/scripts/generate-icons.mjs
-
-      - name: Sync Capacitor
+      - name: Build Android APKs
         working-directory: android-app
-        run: npx cap sync android
-
-      - name: Assemble APKs
-        working-directory: android-app/android
-        run: |
-          chmod +x gradlew
-          ./gradlew assembleDebug assembleRelease
-
-      - name: Collect APKs
-        run: |
-          mkdir -p release-apks
-          cp android-app/android/app/build/outputs/apk/release/app-release.apk release-apks/DayPulse-release.apk
-          cp android-app/android/app/build/outputs/apk/debug/app-debug.apk release-apks/DayPulse-debug.apk
+        run: node scripts/build-apk.js
 
       - name: Upload Android Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: DayPulse-Android-APKs
-          path: release-apks/*.apk
+          path: android-app/release/*.apk
 
   publish-release:
     name: Publish GitHub Release

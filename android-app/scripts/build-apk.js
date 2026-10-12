@@ -95,13 +95,31 @@ const unsignedReleaseApk = path.join(
 );
 
 function findApkSigner() {
-	const candidates = [
-		path.join(process.env.LOCALAPPDATA || "", "Android/Sdk/build-tools/35.0.0/apksigner.bat"),
-		path.join(process.env.LOCALAPPDATA || "", "Android/Sdk/build-tools/34.0.0/apksigner.bat"),
-		path.join(process.env.ANDROID_HOME || "", "build-tools/35.0.0/apksigner.bat"),
-		path.join(process.env.ANDROID_HOME || "", "build-tools/34.0.0/apksigner.bat"),
-	];
-	return candidates.find((p) => fs.existsSync(p));
+	const sdkCandidates = [
+		process.env.ANDROID_HOME,
+		process.env.ANDROID_SDK_ROOT,
+		path.join(process.env.LOCALAPPDATA || "", "Android", "Sdk"),
+		"C:\\Program Files (x86)\\Android\\android-sdk",
+		"C:\\Android\\android-sdk",
+	].filter(Boolean);
+
+	for (const sdk of sdkCandidates) {
+		const buildToolsDir = path.join(sdk, "build-tools");
+		if (fs.existsSync(buildToolsDir)) {
+			const versions = fs.readdirSync(buildToolsDir).sort().reverse();
+			for (const version of versions) {
+				const candidate = path.join(
+					buildToolsDir,
+					version,
+					process.platform === "win32" ? "apksigner.bat" : "apksigner",
+				);
+				if (fs.existsSync(candidate)) {
+					return candidate;
+				}
+			}
+		}
+	}
+	return undefined;
 }
 
 if (fs.existsSync(debugApk)) {
