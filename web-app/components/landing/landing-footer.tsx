@@ -17,7 +17,7 @@ export function LandingFooter() {
 					</div>
 				</div>
 
-				<div className="flex items-center gap-6 text-xs text-slate-400">
+				<div className="flex flex-wrap items-center gap-6 text-xs text-slate-400">
 					<Link href="/dashboard" className="hover:text-emerald-400 transition">
 						Dashboard
 					</Link>
@@ -32,6 +32,12 @@ export function LandingFooter() {
 					</Link>
 					<Link href="/settings" className="hover:text-emerald-400 transition">
 						Sync & Backup
+					</Link>
+					<Link href="/privacy" className="hover:text-emerald-400 transition">
+						Privacy Policy
+					</Link>
+					<Link href="/terms" className="hover:text-emerald-400 transition">
+						Terms of Service
 					</Link>
 				</div>
 

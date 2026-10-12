@@ -26,6 +26,9 @@ export const metadata: Metadata = {
 		icon: [{ url: "/icon.png", type: "image/png" }, { url: "/favicon.ico" }],
 		apple: [{ url: "/apple-icon.png", type: "image/png" }],
 	},
+	verification: {
+		google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || undefined,
+	},
 };
 
 export const viewport: Viewport = {
