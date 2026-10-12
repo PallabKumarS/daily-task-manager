@@ -1,4 +1,4 @@
-const { BrowserWindow } = require("electron");
+const { BrowserWindow, shell } = require("electron");
 const path = require("path");
 const fs = require("fs");
 
@@ -23,8 +23,27 @@ function createWindow() {
 			nodeIntegration: false,
 			contextIsolation: true,
 			webSecurity: false,
+			backgroundThrottling: true,
 			preload: fs.existsSync(preloadPath) ? preloadPath : undefined,
 		},
+	});
+
+	mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+		if (url.startsWith("http://") || url.startsWith("https://")) {
+			shell.openExternal(url);
+		}
+		return { action: "deny" };
+	});
+
+	mainWindow.webContents.on("will-navigate", (event, url) => {
+		if (
+			!url.startsWith("http://localhost:") &&
+			!url.startsWith("http://127.0.0.1:") &&
+			!url.startsWith("file://")
+		) {
+			event.preventDefault();
+			shell.openExternal(url);
+		}
 	});
 
 	if (fs.existsSync(splashPath)) {

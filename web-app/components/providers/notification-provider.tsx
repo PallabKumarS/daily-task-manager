@@ -10,6 +10,7 @@ import {
 	requestPlatformNotificationPermissions,
 } from "@/lib/cross-platform-alarm";
 import { getSocket } from "@/lib/socket-client";
+import { initSyncScheduler } from "@/lib/sync-scheduler";
 import { showSystemNotification } from "@/lib/web-notification";
 
 export interface AppNotification {
@@ -69,6 +70,11 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 		} catch {
 			// Ignore local storage error
 		}
+
+		const cleanupScheduler = initSyncScheduler();
+		return () => {
+			cleanupScheduler();
+		};
 	}, []);
 
 	const saveNotifications = React.useCallback((items: AppNotification[]) => {

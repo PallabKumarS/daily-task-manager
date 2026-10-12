@@ -1,4 +1,4 @@
-const { ipcMain, BrowserWindow, app, Tray, Menu, nativeImage } = require("electron");
+const { ipcMain, BrowserWindow, app, Tray, Menu, nativeImage, shell } = require("electron");
 const path = require("path");
 const fs = require("fs");
 
@@ -120,6 +120,14 @@ function setupIpcHandlers(mainWindow) {
 	ipcMain.handle("window:is-fullscreen", (event) => {
 		const win = BrowserWindow.fromWebContents(event.sender);
 		return win && !win.isDestroyed() ? win.isFullScreen() : false;
+	});
+
+	ipcMain.handle("shell:open-external", async (_event, url) => {
+		if (typeof url === "string" && (url.startsWith("http://") || url.startsWith("https://"))) {
+			await shell.openExternal(url);
+			return true;
+		}
+		return false;
 	});
 }
 

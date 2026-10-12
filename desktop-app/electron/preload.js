@@ -16,6 +16,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	},
 	isMaximized: () => ipcRenderer.invoke("window:is-maximized"),
 	isFullScreen: () => ipcRenderer.invoke("window:is-fullscreen"),
+	openExternal: (url) => ipcRenderer.invoke("shell:open-external", url),
 	onWindowStateChange: (callback) => {
 		const listener = (_event, state) => {
 			if (typeof callback === "function") {

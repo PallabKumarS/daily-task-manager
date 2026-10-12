@@ -1,7 +1,7 @@
 const { app } = require("electron");
 const path = require("path");
 const fs = require("fs");
-const { fork } = require("child_process");
+const { fork, spawn, execSync } = require("child_process");
 const http = require("http");
 
 let backendProcess = null;
@@ -11,7 +11,40 @@ function startServer(mainWindow) {
 
 	if (isDev) {
 		const devUrl = process.env.APP_URL || "http://localhost:3005/dashboard";
-		mainWindow.loadURL(devUrl);
+		const devPort = 3005;
+		const checkUrl = `http://127.0.0.1:${devPort}/dashboard`;
+		let retryCount = 0;
+		let spawned = false;
+
+		const tryLoadDev = () => {
+			http
+				.get(checkUrl, (_res) => {
+					mainWindow.loadURL(devUrl);
+					mainWindow.focus();
+				})
+				.on("error", () => {
+					if (!spawned) {
+						spawned = true;
+						const webAppDir = path.resolve(__dirname, "../../web-app");
+						if (fs.existsSync(path.join(webAppDir, "package.json"))) {
+							const npmCmd = process.platform === "win32" ? "npm.cmd" : "npm";
+							backendProcess = spawn(npmCmd, ["run", "dev"], {
+								cwd: webAppDir,
+								stdio: "inherit",
+								shell: true,
+							});
+						}
+					}
+					retryCount++;
+					if (retryCount < 120) {
+						setTimeout(tryLoadDev, 1000);
+					} else {
+						console.error("[DayPulse Desktop] Dev server startup timed out after 120s");
+					}
+				});
+		};
+
+		tryLoadDev();
 		return;
 	}
 
@@ -83,7 +116,13 @@ function startServer(mainWindow) {
 function stopServer() {
 	if (backendProcess) {
 		try {
-			backendProcess.kill();
+			if (process.platform === "win32" && backendProcess.pid) {
+				try {
+					execSync(`taskkill /pid ${backendProcess.pid} /T /F`);
+				} catch {}
+			} else {
+				backendProcess.kill();
+			}
 		} catch {}
 		backendProcess = null;
 	}

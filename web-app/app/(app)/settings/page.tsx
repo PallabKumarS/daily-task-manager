@@ -26,6 +26,7 @@ import { toast } from "sonner";
 import { CategoryManagerModal } from "@/components/categories/category-manager-modal";
 import { useAuth } from "@/components/providers/auth-provider";
 import { useNotifications } from "@/components/providers/notification-provider";
+import { SyncScheduleCard } from "@/components/settings/sync-schedule-card";
 import { WorkweekSettingsCard } from "@/components/settings/workweek-settings-card";
 import { Button } from "@/components/ui/button";
 import { useConfirm } from "@/components/ui/confirm-dialog";
@@ -457,6 +458,8 @@ function SettingsContent() {
 					backups.
 				</p>
 			</div>
+
+			<SyncScheduleCard />
 
 			{/* Google Drive Cloud Sync Hub */}
 			<div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-xl space-y-5">
