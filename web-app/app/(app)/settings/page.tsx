@@ -30,9 +30,11 @@ import { useConfirm } from "@/components/ui/confirm-dialog";
 import { CustomSelect, type SelectOption } from "@/components/ui/custom-select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { api } from "@/lib/api-client";
+import { api, isCapacitorNative } from "@/lib/api-client";
 import { extractManifestFromZip, fileToBase64, triggerDownloadArchive } from "@/lib/backup-archive";
+import { saveClientGoogleTokens } from "@/lib/client-google-sync";
 import { CURRENCIES } from "@/lib/currency-symbols";
+import { signInWithNativeGoogle } from "@/lib/native-google-auth";
 
 const CURRENCY_SELECT_OPTIONS: SelectOption[] = CURRENCIES.map((c) => ({
 	label: `${c.name} (${c.code})`,
@@ -350,6 +352,32 @@ function SettingsContent() {
 
 	// Google Sync Actions
 	const handleConnectGoogle = async () => {
+		if (isCapacitorNative()) {
+			setSyncingGoogle(true);
+			try {
+				const nativeUser = await signInWithNativeGoogle();
+				if (!nativeUser?.accessToken) {
+					throw new Error("No authorization token received from Google Play Services");
+				}
+
+				saveClientGoogleTokens({
+					accessToken: nativeUser.accessToken,
+					email: nativeUser.email,
+					expiresIn: 3600,
+				});
+
+				toast.success(`Google Account connected: ${nativeUser.email}`);
+				fetchGoogleStatus();
+			} catch (error) {
+				const message =
+					error instanceof Error ? error.message : "Google Play Services sign-in failed";
+				toast.error(message);
+			} finally {
+				setSyncingGoogle(false);
+			}
+			return;
+		}
+
 		try {
 			const res = await api.get<{ url: string }>("/sync/auth-url").catch((err) => ({
 				success: false,

@@ -17,7 +17,9 @@ import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { api, setAuthToken } from "@/lib/api-client";
+import { api, isCapacitorNative, setAuthToken } from "@/lib/api-client";
+import { restoreGoogleDriveBackup, saveClientGoogleTokens } from "@/lib/client-google-sync";
+import { signInWithNativeGoogle } from "@/lib/native-google-auth";
 
 interface GoogleRestoreModalProps {
 	isOpen: boolean;
@@ -177,6 +179,50 @@ export function GoogleRestoreModal({
 
 	const handleStartGoogleRestore = async () => {
 		setErrorMessage(null);
+
+		if (isCapacitorNative()) {
+			setStatus("authorizing");
+			setStatusText("Opening Google Play Services...");
+			try {
+				const nativeUser = await signInWithNativeGoogle();
+				if (!nativeUser?.accessToken) {
+					throw new Error("No authorization token received from Google Play Services");
+				}
+
+				saveClientGoogleTokens({
+					accessToken: nativeUser.accessToken,
+					email: nativeUser.email,
+					expiresIn: 3600,
+				});
+
+				setStatus("restoring");
+				setStatusText("Locating and downloading backup from Google Drive...");
+
+				const restoreRes = await restoreGoogleDriveBackup(nativeUser.accessToken);
+				setStatus("success");
+				setStatusText("Restored successfully. Finalizing session...");
+
+				if (restoreRes.token) {
+					setAuthToken(restoreRes.token);
+				}
+				await refreshUser();
+
+				toast.success(restoreRes.message || "Workspace restored from Google Drive successfully");
+
+				setTimeout(() => {
+					handleModalClose();
+					router.push("/dashboard");
+				}, 1200);
+				return;
+			} catch (err: unknown) {
+				const msg = err instanceof Error ? err.message : "Google Play Services sign-in failed";
+				setErrorMessage(msg);
+				setStatus("idle");
+				toast.error(msg);
+				return;
+			}
+		}
+
 		setStatus("authorizing");
 		setStatusText("Opening Google Sign-In...");
 
@@ -312,7 +358,7 @@ export function GoogleRestoreModal({
 							</div>
 						)}
 
-						{isConfigured === false && !errorMessage && (
+						{isConfigured === false && !errorMessage && !isCapacitorNative() && (
 							<div className="rounded-xl border border-amber-900/40 bg-amber-950/15 p-3 space-y-2 text-xs text-amber-200/90">
 								<div className="flex items-start gap-2">
 									<AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
@@ -351,7 +397,7 @@ export function GoogleRestoreModal({
 							</div>
 						)}
 
-						{(showConfigForm || isConfigured === false) && (
+						{(showConfigForm || (isConfigured === false && !isCapacitorNative())) && (
 							<form
 								onSubmit={handleSaveCredentials}
 								className="rounded-2xl border border-slate-800 bg-slate-950 p-3.5 sm:p-4 space-y-3"
@@ -401,8 +447,9 @@ export function GoogleRestoreModal({
 						<div className="rounded-xl border border-slate-800 bg-slate-950/40 p-3 flex items-start gap-2 text-xs text-slate-400">
 							<AlertCircle className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
 							<p className="leading-relaxed">
-								A browser window will open for authorization. No Google Drive files outside of
-								DayPulse backups are accessed.
+								{isCapacitorNative()
+									? "A native Google Play Services prompt will open to select your Google Account. No files outside of DayPulse backups are accessed."
+									: "A browser window will open for authorization. No Google Drive files outside of DayPulse backups are accessed."}
 							</p>
 						</div>
 
