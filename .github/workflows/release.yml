@@ -1,0 +1,128 @@
+name: Release Builds
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-desktop:
+    name: Build Desktop Windows Installer
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Install web-app dependencies and generate Prisma
+        working-directory: web-app
+        run: |
+          npm ci
+          npx prisma generate
+
+      - name: Install desktop-app dependencies
+        working-directory: desktop-app
+        run: npm ci
+
+      - name: Build Desktop Application
+        working-directory: desktop-app
+        run: npm run pack:exe
+
+      - name: Upload Desktop Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DayPulse-Windows-Installer
+          path: desktop-app/release/DayPulse Setup *.exe
+
+  build-android:
+    name: Build Android APKs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: 21
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          cd web-app && npm ci && npx prisma generate
+          cd ../android-app && npm ci
+
+      - name: Export web-app for Android
+        working-directory: web-app
+        run: npm run export:android
+
+      - name: Sync Capacitor
+        working-directory: android-app
+        run: npx cap sync android
+
+      - name: Assemble APKs
+        working-directory: android-app/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug assembleRelease
+
+      - name: Collect APKs
+        run: |
+          mkdir -p release-apks
+          cp android-app/android/app/build/outputs/apk/release/app-release.apk release-apks/DayPulse-release.apk
+          cp android-app/android/app/build/outputs/apk/debug/app-debug.apk release-apks/DayPulse-debug.apk
+
+      - name: Upload Android Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: DayPulse-Android-APKs
+          path: release-apks/*.apk
+
+  publish-release:
+    name: Publish GitHub Release
+    needs: [build-desktop, build-android]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download Desktop Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: DayPulse-Windows-Installer
+          path: dist
+
+      - name: Download Android Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: DayPulse-Android-APKs
+          path: dist
+
+      - name: Create or Update GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          tag_name: ${{ github.ref_name }}
+          name: DayPulse ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
