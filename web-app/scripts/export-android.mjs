@@ -13,6 +13,11 @@ console.log("[DayPulse] Exporting Web Application for Android...");
 
 let didStashApi = false;
 try {
+	const nextCacheDir = path.join(webAppDir, ".next");
+	if (fs.existsSync(nextCacheDir)) {
+		fs.rmSync(nextCacheDir, { recursive: true, force: true });
+	}
+
 	if (fs.existsSync(apiDir)) {
 		fs.renameSync(apiDir, apiTempDir);
 		didStashApi = true;

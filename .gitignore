@@ -50,4 +50,5 @@ server-dist/
 *.apk
 *.exe
 *.log
+*credentials.json
 

@@ -74,6 +74,9 @@ function SettingsContent() {
 	const [customClientId, setCustomClientId] = React.useState("");
 	const [customClientSecret, setCustomClientSecret] = React.useState("");
 	const [savingGoogleCreds, setSavingGoogleCreds] = React.useState(false);
+	const [showCodeInput, setShowCodeInput] = React.useState(false);
+	const [manualCodeInput, setManualCodeInput] = React.useState("");
+	const [connectingCode, setConnectingCode] = React.useState(false);
 
 	const handleSaveGoogleCredentials = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -99,6 +102,31 @@ function SettingsContent() {
 			toast.error("Failed to save credentials");
 		} finally {
 			setSavingGoogleCreds(false);
+		}
+	};
+
+	const handleExchangeCodeSettings = async (e: React.FormEvent) => {
+		e.preventDefault();
+		const trimmed = manualCodeInput.trim();
+		if (!trimmed) {
+			toast.error("Please enter or paste the authorization code or redirect URL");
+			return;
+		}
+		setConnectingCode(true);
+		try {
+			const res = await api.post("/sync/google/exchange-code", { code: trimmed });
+			if (res.success) {
+				toast.success("Google Account successfully connected");
+				setManualCodeInput("");
+				setShowCodeInput(false);
+				fetchGoogleStatus();
+			} else {
+				toast.error(res.message || "Failed to exchange authorization code");
+			}
+		} catch (err: unknown) {
+			toast.error(err instanceof Error ? err.message : "Failed to connect Google account");
+		} finally {
+			setConnectingCode(false);
 		}
 	};
 
@@ -511,15 +539,25 @@ function SettingsContent() {
 
 					<div className="flex flex-wrap items-center gap-2">
 						{!googleStatus.connected ? (
-							<Button
-								variant="emerald"
-								size="sm"
-								onClick={handleConnectGoogle}
-								className="gap-2 text-xs"
-							>
-								<KeyRound className="w-4 h-4" />
-								<span>Connect Google Drive</span>
-							</Button>
+							<>
+								<Button
+									variant="emerald"
+									size="sm"
+									onClick={handleConnectGoogle}
+									className="gap-2 text-xs"
+								>
+									<KeyRound className="w-4 h-4" />
+									<span>Connect Google Drive</span>
+								</Button>
+								<Button
+									variant="ghost"
+									size="sm"
+									onClick={() => setShowCodeInput(!showCodeInput)}
+									className="text-xs text-slate-400 hover:text-white"
+								>
+									<span>{showCodeInput ? "Hide Code Input" : "Paste Auth Code"}</span>
+								</Button>
+							</>
 						) : (
 							<>
 								<Button
@@ -556,6 +594,35 @@ function SettingsContent() {
 						)}
 					</div>
 				</div>
+
+				{showCodeInput && !googleStatus.connected && (
+					<form
+						onSubmit={handleExchangeCodeSettings}
+						className="rounded-2xl border border-slate-800 bg-slate-950 p-3.5 space-y-2.5"
+					>
+						<p className="text-xs text-slate-300 font-medium leading-relaxed">
+							If redirected to localhost in your browser after signing in, copy the address bar URL
+							or code and paste here:
+						</p>
+						<div className="flex flex-col sm:flex-row items-center gap-2">
+							<Input
+								placeholder="Paste redirect URL or authorization code..."
+								value={manualCodeInput}
+								onChange={(e) => setManualCodeInput(e.target.value)}
+								className="text-xs font-mono break-all h-9 w-full"
+							/>
+							<Button
+								type="submit"
+								variant="emerald"
+								size="sm"
+								disabled={connectingCode || !manualCodeInput.trim()}
+								className="w-full sm:w-auto shrink-0 h-9 text-xs font-medium"
+							>
+								{connectingCode ? "Connecting..." : "Connect Account"}
+							</Button>
+						</div>
+					</form>
+				)}
 
 				{/* Collapsible Setup Guide */}
 				<div className="pt-1">
@@ -616,7 +683,7 @@ function SettingsContent() {
 										placeholder="e.g. 123456789-xxx.apps.googleusercontent.com"
 										value={customClientId}
 										onChange={(e) => setCustomClientId(e.target.value)}
-										className="text-xs"
+										className="text-xs font-mono break-all h-9"
 									/>
 								</div>
 								<div className="space-y-1.5">
@@ -627,7 +694,7 @@ function SettingsContent() {
 										placeholder="e.g. GOCSPX-xxxxxx"
 										value={customClientSecret}
 										onChange={(e) => setCustomClientSecret(e.target.value)}
-										className="text-xs"
+										className="text-xs font-mono break-all h-9"
 									/>
 								</div>
 								<Button

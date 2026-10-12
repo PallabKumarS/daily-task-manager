@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { api, isCapacitorNative, isCustomServerSet, setAuthToken } from "@/lib/api-client";
+import { api, setAuthToken } from "@/lib/api-client";
 
 interface GoogleRestoreModalProps {
 	isOpen: boolean;
@@ -55,6 +55,8 @@ export function GoogleRestoreModal({
 	const [clientIdInput, setClientIdInput] = React.useState("");
 	const [clientSecretInput, setClientSecretInput] = React.useState("");
 	const [savingCredentials, setSavingCredentials] = React.useState(false);
+	const [authCodeInput, setAuthCodeInput] = React.useState("");
+	const [submittingCode, setSubmittingCode] = React.useState(false);
 
 	const pollTimerRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -70,6 +72,8 @@ export function GoogleRestoreModal({
 		setStatus("idle");
 		setStatusText("");
 		setErrorMessage(null);
+		setAuthCodeInput("");
+		setSubmittingCode(false);
 	}, [stopPolling]);
 
 	const handleModalClose = () => {
@@ -128,6 +132,49 @@ export function GoogleRestoreModal({
 		}
 	};
 
+	const handleExchangeCode = async (codeToSubmit: string) => {
+		const trimmed = codeToSubmit.trim();
+		if (!trimmed) {
+			toast.error("Please enter or paste the authorization code or redirect URL");
+			return;
+		}
+
+		setSubmittingCode(true);
+		stopPolling();
+		setStatus("restoring");
+		setStatusText("Exchanging authorization code and restoring backup...");
+
+		try {
+			const res = await api.post<GoogleRestoreResult>("/auth/google/restore-code", {
+				code: trimmed,
+			});
+
+			if (res.success && res.data?.token) {
+				setStatus("success");
+				setStatusText("Restored successfully. Finalizing session...");
+				setAuthToken(res.data.token);
+				await refreshUser();
+				toast.success(res.data.summary || "Workspace restored from Google Drive successfully");
+				setTimeout(() => {
+					handleModalClose();
+					router.push("/dashboard");
+				}, 1200);
+			} else {
+				const err = res.message || "Failed to restore using provided code";
+				setErrorMessage(err);
+				setStatus("idle");
+				toast.error(err);
+			}
+		} catch (err: unknown) {
+			const msg = err instanceof Error ? err.message : "Failed to complete restore";
+			setErrorMessage(msg);
+			setStatus("idle");
+			toast.error(msg);
+		} finally {
+			setSubmittingCode(false);
+		}
+	};
+
 	const handleStartGoogleRestore = async () => {
 		setErrorMessage(null);
 		setStatus("authorizing");
@@ -161,7 +208,7 @@ export function GoogleRestoreModal({
 			setStatusText("Waiting for Google authorization in browser...");
 
 			let pollCount = 0;
-			const maxPolls = 60; // 2 minutes max
+			const maxPolls = 60;
 
 			stopPolling();
 			pollTimerRef.current = setInterval(async () => {
@@ -196,7 +243,7 @@ export function GoogleRestoreModal({
 						}, 1200);
 					}
 				} catch {
-					// Network hiccup while polling; ignore and retry next interval
+					// Network retry during polling
 				}
 			}, 2000);
 		} catch (err) {
@@ -215,27 +262,27 @@ export function GoogleRestoreModal({
 			description="Import your cloud backup from Google Drive and restore your DayPulse workspace."
 			maxWidth="md"
 		>
-			<div className="space-y-4 py-2">
+			<div className="space-y-4 py-1 sm:py-2">
 				{status === "idle" && (
 					<>
-						<div className="rounded-2xl border border-slate-800 bg-slate-950/60 p-6 flex flex-col items-center justify-center text-center">
-							<div className="h-14 w-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-3 shadow-lg shadow-emerald-500/5">
-								<Cloud className="w-7 h-7" />
+						<div className="rounded-2xl border border-slate-800 bg-slate-950/60 p-4 sm:p-6 flex flex-col items-center justify-center text-center">
+							<div className="h-12 w-12 sm:h-14 sm:w-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-2.5 sm:mb-3 shadow-lg shadow-emerald-500/5">
+								<Cloud className="w-6 h-6 sm:w-7 sm:h-7" />
 							</div>
 							<h3 className="text-sm font-semibold text-white">Cloud Account Recovery</h3>
-							<p className="text-xs text-slate-400 mt-1.5 max-w-sm leading-relaxed">
-								DayPulse will securely connect to your Google Drive to locate your encrypted backup,
-								verify data integrity, and reconstruct your routines, finances, and tasks.
+							<p className="text-xs text-slate-400 mt-1 max-w-sm leading-relaxed">
+								DayPulse will securely connect to your Google Drive to locate your backup, verify
+								data integrity, and reconstruct your routines, finances, and tasks.
 							</p>
 						</div>
 
 						{errorMessage && (
-							<div className="rounded-xl border border-red-900/50 bg-red-950/20 p-3.5 space-y-2.5 text-xs text-red-300">
-								<div className="flex items-start gap-2.5">
+							<div className="rounded-xl border border-red-900/50 bg-red-950/20 p-3 space-y-2.5 text-xs text-red-300">
+								<div className="flex items-start gap-2">
 									<AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-									<span className="leading-relaxed">{errorMessage}</span>
+									<span className="leading-relaxed break-words">{errorMessage}</span>
 								</div>
-								<div className="flex items-center gap-2 pt-1 border-t border-red-900/40">
+								<div className="flex flex-wrap items-center gap-2 pt-1 border-t border-red-900/40">
 									{onOpenFileRestore && (
 										<Button
 											type="button"
@@ -248,7 +295,7 @@ export function GoogleRestoreModal({
 											className="gap-1.5 text-xs h-8 bg-slate-900 hover:bg-slate-800 text-slate-200"
 										>
 											<FileArchive className="w-3.5 h-3.5 text-emerald-400" />
-											<span>Restore from Local File Backup Instead</span>
+											<span>Use File Backup</span>
 										</Button>
 									)}
 									<Button
@@ -265,119 +312,93 @@ export function GoogleRestoreModal({
 							</div>
 						)}
 
-						{isCapacitorNative() && !isCustomServerSet() ? (
-							<div className="rounded-2xl border border-sky-500/20 bg-sky-950/20 p-4 space-y-3 text-xs text-slate-300">
-								<div className="flex items-start gap-2.5">
-									<Cloud className="w-4 h-4 text-sky-400 shrink-0 mt-0.5" />
-									<p className="leading-relaxed text-slate-300">
-										Direct Google Drive cloud sync connects via a DayPulse server instance. On
-										mobile standalone mode, you can restore your workspace instantly using{" "}
-										<strong className="text-white">File Backup (.zip / .json)</strong>.
+						{isConfigured === false && !errorMessage && (
+							<div className="rounded-xl border border-amber-900/40 bg-amber-950/15 p-3 space-y-2 text-xs text-amber-200/90">
+								<div className="flex items-start gap-2">
+									<AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+									<p className="leading-relaxed break-words">
+										Google Cloud OAuth credentials are not configured yet. You can restore directly
+										from a local backup file, or configure your Google Client ID below.
 									</p>
 								</div>
-								{onOpenFileRestore && (
+								<div className="flex flex-wrap items-center gap-2 pt-1 border-t border-amber-900/30">
+									{onOpenFileRestore && (
+										<Button
+											type="button"
+											variant="secondary"
+											size="sm"
+											onClick={() => {
+												handleModalClose();
+												onOpenFileRestore();
+											}}
+											className="gap-1.5 text-xs h-8 bg-slate-900 hover:bg-slate-800 text-slate-200"
+										>
+											<FileArchive className="w-3.5 h-3.5 text-emerald-400" />
+											<span>Use File Backup</span>
+										</Button>
+									)}
 									<Button
 										type="button"
-										variant="emerald"
+										variant="ghost"
 										size="sm"
-										onClick={() => {
-											handleModalClose();
-											onOpenFileRestore();
-										}}
-										className="w-full gap-2 text-xs h-9 mt-1"
+										onClick={() => setShowConfigForm(!showConfigForm)}
+										className="gap-1.5 text-xs h-8 text-amber-300 hover:text-amber-200 hover:bg-amber-950/30"
 									>
-										<FileArchive className="w-3.5 h-3.5" />
-										<span>Restore from Local File Backup (.zip)</span>
+										<KeyRound className="w-3.5 h-3.5" />
+										<span>{showConfigForm ? "Hide Form" : "Set Google Credentials"}</span>
 									</Button>
-								)}
+								</div>
 							</div>
-						) : (
-							<>
-								{isConfigured === false && !errorMessage && (
-									<div className="rounded-xl border border-amber-900/40 bg-amber-950/15 p-3.5 space-y-2 text-xs text-amber-200/90">
-										<div className="flex items-start gap-2.5">
-											<AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-											<p className="leading-relaxed">
-												Google Cloud OAuth credentials are not configured yet. You can restore
-												directly from a local backup file, or configure your Google Client ID below.
-											</p>
-										</div>
-										<div className="flex items-center gap-2 pt-1 border-t border-amber-900/30">
-											{onOpenFileRestore && (
-												<Button
-													type="button"
-													variant="secondary"
-													size="sm"
-													onClick={() => {
-														handleModalClose();
-														onOpenFileRestore();
-													}}
-													className="gap-1.5 text-xs h-8 bg-slate-900 hover:bg-slate-800 text-slate-200"
-												>
-													<FileArchive className="w-3.5 h-3.5 text-emerald-400" />
-													<span>Use File Backup (.zip / .json)</span>
-												</Button>
-											)}
-											<Button
-												type="button"
-												variant="ghost"
-												size="sm"
-												onClick={() => setShowConfigForm(!showConfigForm)}
-												className="gap-1.5 text-xs h-8 text-amber-300 hover:text-amber-200 hover:bg-amber-950/30"
-											>
-												<KeyRound className="w-3.5 h-3.5" />
-												<span>{showConfigForm ? "Hide Form" : "Set Google Credentials"}</span>
-											</Button>
-										</div>
-									</div>
-								)}
-
-								{showConfigForm && (
-									<form
-										onSubmit={handleSaveCredentials}
-										className="rounded-2xl border border-slate-800 bg-slate-950 p-4 space-y-3"
-									>
-										<div className="flex items-center gap-2 text-xs font-semibold text-slate-200">
-											<KeyRound className="w-4 h-4 text-emerald-400" />
-											<span>Configure Google OAuth Credentials</span>
-										</div>
-										<div className="space-y-1.5">
-											<Label htmlFor="google-client-id">Google Client ID</Label>
-											<Input
-												id="google-client-id"
-												placeholder="e.g. 123456789-xxx.apps.googleusercontent.com"
-												value={clientIdInput}
-												onChange={(e) => setClientIdInput(e.target.value)}
-												className="text-xs break-all"
-											/>
-										</div>
-										<div className="space-y-1.5">
-											<Label htmlFor="google-client-secret">Google Client Secret</Label>
-											<Input
-												id="google-client-secret"
-												type="password"
-												placeholder="e.g. GOCSPX-xxxxxx"
-												value={clientSecretInput}
-												onChange={(e) => setClientSecretInput(e.target.value)}
-												className="text-xs break-all"
-											/>
-										</div>
-										<Button
-											type="submit"
-											variant="emerald"
-											size="sm"
-											disabled={savingCredentials}
-											className="w-full gap-2 text-xs h-9 mt-1"
-										>
-											<span>{savingCredentials ? "Saving..." : "Save & Connect Google Drive"}</span>
-											<ExternalLink className="w-3.5 h-3.5" />
-										</Button>
-									</form>
-								)}
-							</>
 						)}
 
-						<div className="rounded-xl border border-slate-800 bg-slate-950/40 p-3.5 flex items-start gap-2.5 text-xs text-slate-400">
+						{(showConfigForm || isConfigured === false) && (
+							<form
+								onSubmit={handleSaveCredentials}
+								className="rounded-2xl border border-slate-800 bg-slate-950 p-3.5 sm:p-4 space-y-3"
+							>
+								<div className="flex items-center gap-2 text-xs font-semibold text-slate-200">
+									<KeyRound className="w-4 h-4 text-emerald-400 shrink-0" />
+									<span>Configure Google OAuth Credentials</span>
+								</div>
+								<div className="space-y-1">
+									<Label htmlFor="google-client-id" className="text-xs">
+										Google Client ID
+									</Label>
+									<Input
+										id="google-client-id"
+										placeholder="e.g. 123456789-xxx.apps.googleusercontent.com"
+										value={clientIdInput}
+										onChange={(e) => setClientIdInput(e.target.value)}
+										className="text-xs font-mono break-all h-9"
+									/>
+								</div>
+								<div className="space-y-1">
+									<Label htmlFor="google-client-secret" className="text-xs">
+										Google Client Secret
+									</Label>
+									<Input
+										id="google-client-secret"
+										type="password"
+										placeholder="e.g. GOCSPX-xxxxxx"
+										value={clientSecretInput}
+										onChange={(e) => setClientSecretInput(e.target.value)}
+										className="text-xs font-mono break-all h-9"
+									/>
+								</div>
+								<Button
+									type="submit"
+									variant="emerald"
+									size="sm"
+									disabled={savingCredentials}
+									className="w-full gap-2 text-xs h-9 mt-1"
+								>
+									<span>{savingCredentials ? "Saving..." : "Save & Connect Google Drive"}</span>
+									<ExternalLink className="w-3.5 h-3.5" />
+								</Button>
+							</form>
+						)}
+
+						<div className="rounded-xl border border-slate-800 bg-slate-950/40 p-3 flex items-start gap-2 text-xs text-slate-400">
 							<AlertCircle className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
 							<p className="leading-relaxed">
 								A browser window will open for authorization. No Google Drive files outside of
@@ -385,9 +406,14 @@ export function GoogleRestoreModal({
 							</p>
 						</div>
 
-						<div className="flex items-center justify-between pt-2">
-							<div className="flex items-center gap-2">
-								<Button variant="ghost" size="sm" onClick={handleModalClose}>
+						<div className="flex flex-wrap items-center justify-between gap-2 pt-2">
+							<div className="flex flex-wrap items-center gap-2">
+								<Button
+									variant="ghost"
+									size="sm"
+									onClick={handleModalClose}
+									className="text-xs h-8"
+								>
 									Cancel
 								</Button>
 								{onOpenFileRestore && (
@@ -398,7 +424,7 @@ export function GoogleRestoreModal({
 											handleModalClose();
 											onOpenFileRestore();
 										}}
-										className="gap-1.5 text-xs text-slate-300 hover:text-white"
+										className="gap-1.5 text-xs h-8 text-slate-300 hover:text-white"
 									>
 										<FileArchive className="w-3.5 h-3.5 text-emerald-400" />
 										<span>File Backup</span>
@@ -409,7 +435,7 @@ export function GoogleRestoreModal({
 								variant="emerald"
 								size="sm"
 								onClick={handleStartGoogleRestore}
-								className="gap-2"
+								className="gap-2 text-xs h-8 w-full sm:w-auto"
 							>
 								<span>Connect Google Drive</span>
 								<ExternalLink className="w-3.5 h-3.5" />
@@ -419,20 +445,45 @@ export function GoogleRestoreModal({
 				)}
 
 				{(status === "authorizing" || status === "restoring") && (
-					<div className="py-6 flex flex-col items-center justify-center text-center space-y-4">
-						<div className="h-14 w-14 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
-							<RefreshCw className="w-7 h-7 animate-spin" />
+					<div className="py-4 sm:py-6 flex flex-col items-center justify-center text-center space-y-4">
+						<div className="h-12 w-12 sm:h-14 sm:w-14 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+							<RefreshCw className="w-6 h-6 sm:w-7 sm:h-7 animate-spin" />
 						</div>
 						<div className="space-y-1">
 							<p className="text-sm font-semibold text-slate-200">{statusText}</p>
 							<p className="text-xs text-slate-400 max-w-xs leading-relaxed">
-								Please complete the Google authentication prompt in your browser tab. DayPulse will
-								automatically continue once authorized.
+								Please complete Google authentication in your browser. DayPulse will automatically
+								continue once authorized.
 							</p>
 						</div>
 
-						<div className="pt-2">
-							<Button variant="ghost" size="sm" onClick={resetState}>
+						<div className="rounded-xl border border-slate-800 bg-slate-950 p-3.5 space-y-2.5 w-full text-left">
+							<p className="text-xs text-slate-300 font-medium leading-relaxed">
+								If redirected to localhost in your browser, copy the address bar URL or code and
+								paste here:
+							</p>
+							<div className="flex flex-col sm:flex-row items-center gap-2">
+								<Input
+									placeholder="Paste redirect URL or authorization code..."
+									value={authCodeInput}
+									onChange={(e) => setAuthCodeInput(e.target.value)}
+									className="text-xs font-mono break-all h-9 w-full"
+								/>
+								<Button
+									type="button"
+									variant="emerald"
+									size="sm"
+									disabled={submittingCode || !authCodeInput.trim()}
+									onClick={() => handleExchangeCode(authCodeInput)}
+									className="w-full sm:w-auto shrink-0 h-9 text-xs"
+								>
+									{submittingCode ? "Restoring..." : "Complete Restore"}
+								</Button>
+							</div>
+						</div>
+
+						<div className="pt-1">
+							<Button variant="ghost" size="sm" onClick={resetState} className="text-xs h-8">
 								Cancel
 							</Button>
 						</div>
@@ -441,8 +492,8 @@ export function GoogleRestoreModal({
 
 				{status === "success" && (
 					<div className="py-6 flex flex-col items-center justify-center text-center space-y-3">
-						<div className="h-14 w-14 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
-							<CheckCircle2 className="w-7 h-7" />
+						<div className="h-12 w-12 sm:h-14 sm:w-14 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+							<CheckCircle2 className="w-6 h-6 sm:w-7 sm:h-7" />
 						</div>
 						<div className="space-y-1">
 							<p className="text-sm font-semibold text-emerald-300">Workspace Restored</p>

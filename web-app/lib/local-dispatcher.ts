@@ -1,4 +1,17 @@
 import type { ApiResponse } from "./api-client";
+import {
+	clearClientGoogleTokens,
+	exchangeClientCodeForTokens,
+	getClientGoogleAuthUrl,
+	getClientGoogleCredentials,
+	getClientGoogleStatus,
+	getClientGoogleTokens,
+	getLatestClientRestoreResult,
+	isClientGoogleConfigured,
+	restoreGoogleDriveBackup,
+	saveClientGoogleCredentials,
+	uploadBackupToGoogleDrive,
+} from "./client-google-sync";
 import { exportLocalArchive } from "./export-local-archive";
 import { restoreLocalArchive } from "./restore-local-archive";
 
@@ -754,8 +767,174 @@ export async function handleLocalClientDispatch<T = unknown>(
 		};
 	}
 
-	if (pathname === "/sync/restore" && method === "POST") {
-		const restoreRes = await restoreLocalArchive(undefined, body);
+	if (
+		(pathname === "/auth/google/credentials" || pathname === "/sync/google/credentials") &&
+		method === "GET"
+	) {
+		const configured = isClientGoogleConfigured();
+		const creds = getClientGoogleCredentials();
+		return {
+			statusCode: 200,
+			success: true,
+			data: {
+				configured,
+				clientId: creds?.clientId ? `${creds.clientId.slice(0, 12)}...` : "",
+			} as unknown as T,
+		};
+	}
+
+	if (
+		(pathname === "/auth/google/credentials" || pathname === "/sync/google/credentials") &&
+		method === "POST"
+	) {
+		const creds = body as { clientId?: string; clientSecret?: string };
+		if (!creds?.clientId || !creds?.clientSecret) {
+			return {
+				statusCode: 400,
+				success: false,
+				message: "Both Client ID and Client Secret are required.",
+				data: null as unknown as T,
+			};
+		}
+		saveClientGoogleCredentials(creds.clientId, creds.clientSecret);
+		return {
+			statusCode: 200,
+			success: true,
+			message: "Google Drive OAuth credentials saved successfully.",
+			data: { configured: true } as unknown as T,
+		};
+	}
+
+	if (
+		(pathname === "/auth/google/restore-url" || pathname === "/sync/auth-url") &&
+		method === "GET"
+	) {
+		if (!isClientGoogleConfigured()) {
+			return {
+				statusCode: 400,
+				success: false,
+				message:
+					"Google Drive sync is not configured. Provide your Google OAuth credentials or restore from a local backup file.",
+				data: null as unknown as T,
+			};
+		}
+		try {
+			const url = getClientGoogleAuthUrl();
+			return {
+				statusCode: 200,
+				success: true,
+				data: { url, authUrl: url } as unknown as T,
+			};
+		} catch (err: unknown) {
+			return {
+				statusCode: 400,
+				success: false,
+				message: err instanceof Error ? err.message : "Failed to obtain Google authorization URL",
+				data: null as unknown as T,
+			};
+		}
+	}
+
+	if (pathname === "/auth/google/restore-status" && method === "GET") {
+		const result = getLatestClientRestoreResult();
+		return {
+			statusCode: 200,
+			success: true,
+			data: result as unknown as T,
+		};
+	}
+
+	if (pathname === "/auth/google/restore-code" && method === "POST") {
+		const code = String(body.code || "");
+		if (!code) {
+			return {
+				statusCode: 400,
+				success: false,
+				message: "Authorization code is required.",
+				data: null as unknown as T,
+			};
+		}
+		try {
+			await exchangeClientCodeForTokens(code);
+			const restoreRes = await restoreGoogleDriveBackup();
+			return {
+				statusCode: 200,
+				success: true,
+				message: restoreRes.message,
+				data: getLatestClientRestoreResult() as unknown as T,
+			};
+		} catch (err: unknown) {
+			return {
+				statusCode: 400,
+				success: false,
+				message: err instanceof Error ? err.message : "Failed to restore from Google Drive",
+				data: null as unknown as T,
+			};
+		}
+	}
+
+	if (pathname === "/sync/google/exchange-code" && method === "POST") {
+		const code = String(body.code || "");
+		if (!code) {
+			return {
+				statusCode: 400,
+				success: false,
+				message: "Authorization code is required.",
+				data: null as unknown as T,
+			};
+		}
+		try {
+			const tokenRes = await exchangeClientCodeForTokens(code);
+			return {
+				statusCode: 200,
+				success: true,
+				message: "Google account successfully connected.",
+				data: tokenRes as unknown as T,
+			};
+		} catch (err: unknown) {
+			return {
+				statusCode: 400,
+				success: false,
+				message: err instanceof Error ? err.message : "Failed to exchange authorization code",
+				data: null as unknown as T,
+			};
+		}
+	}
+
+	if ((pathname === "/sync/restore" || pathname === "/sync/google/restore") && method === "POST") {
+		const hasPayload =
+			body &&
+			typeof body === "object" &&
+			(body.archiveBase64 ||
+				Array.isArray(body.tasks) ||
+				Array.isArray(body.routines) ||
+				Array.isArray(body.finances) ||
+				Array.isArray(body.transactions) ||
+				Array.isArray(body.trackers));
+
+		if (!hasPayload || pathname === "/sync/google/restore") {
+			try {
+				const restoreRes = await restoreGoogleDriveBackup();
+				return {
+					statusCode: 200,
+					success: true,
+					message: restoreRes.message,
+					data: { summary: restoreRes.message } as T,
+				};
+			} catch (err: unknown) {
+				return {
+					statusCode: 400,
+					success: false,
+					message: err instanceof Error ? err.message : "Failed to restore from Google Drive",
+					data: null as unknown as T,
+				};
+			}
+		}
+
+		const restoreRes = await restoreLocalArchive(
+			typeof body.archiveBase64 === "string" ? body.archiveBase64 : undefined,
+			body,
+		);
 		return {
 			statusCode: 200,
 			success: true,
@@ -764,31 +943,58 @@ export async function handleLocalClientDispatch<T = unknown>(
 		};
 	}
 
-	if (pathname === "/sync/auth-url" && method === "GET") {
-		return {
-			statusCode: 400,
-			success: false,
-			message:
-				"Google Drive cloud sync requires a running DayPulse server. Use 'Multi-Collection ZIP Archive & Offline Backup' for device backups.",
-			data: null as unknown as T,
-		};
+	if (pathname === "/sync/upload" && method === "POST") {
+		try {
+			const uploadRes = await uploadBackupToGoogleDrive();
+			return {
+				statusCode: 200,
+				success: true,
+				message: uploadRes.message,
+				data: { lastSyncAt: uploadRes.lastSyncAt } as T,
+			};
+		} catch (err: unknown) {
+			return {
+				statusCode: 500,
+				success: false,
+				message: err instanceof Error ? err.message : "Failed to backup to Google Drive",
+				data: null as unknown as T,
+			};
+		}
 	}
 
-	if (pathname === "/auth/google/restore-url") {
-		return {
-			statusCode: 400,
-			success: false,
-			message:
-				"Google Drive cloud recovery requires an online server connection. Use 'File Backup' to restore your data offline.",
-			data: null as unknown as T,
-		};
-	}
-
-	if (pathname === "/auth/google/credentials" || pathname === "/sync/google/credentials") {
+	if (pathname === "/sync/status" && method === "GET") {
+		const configured = isClientGoogleConfigured();
+		const tokens = getClientGoogleTokens();
+		const status = getClientGoogleStatus();
 		return {
 			statusCode: 200,
 			success: true,
-			data: { configured: false } as unknown as T,
+			data: {
+				isConfigured: configured,
+				configured,
+				isConnected: Boolean(tokens?.accessToken),
+				connected: Boolean(tokens?.accessToken),
+				email: tokens?.email || null,
+				googleEmail: tokens?.email || null,
+				lastSyncAt: status?.lastSyncAt || null,
+				lastGoogleSyncAt: status?.lastSyncAt || null,
+				stats: {
+					tasks: getList(STORAGE_KEYS.TASKS).length,
+					routines: getList(STORAGE_KEYS.ROUTINES).length,
+					transactions: getList(STORAGE_KEYS.FINANCES).length,
+					trackers: getList(STORAGE_KEYS.TRACKERS).length,
+				},
+			} as unknown as T,
+		};
+	}
+
+	if (pathname === "/sync/disconnect" && method === "POST") {
+		clearClientGoogleTokens();
+		return {
+			statusCode: 200,
+			success: true,
+			message: "Google account disconnected successfully",
+			data: null as unknown as T,
 		};
 	}
 
