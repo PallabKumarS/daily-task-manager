@@ -1,6 +1,6 @@
 {
 	"name": "android-app",
-	"version": "1.0.2",
+	"version": "1.0.3",
 	"description": "DayPulse Capacitor Android Client",
 	"type": "module",
 	"scripts": {
