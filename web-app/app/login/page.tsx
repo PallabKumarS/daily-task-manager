@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Activity, ArrowRight, Cloud, FileArchive, Lock, Mail } from "lucide-react";
+import { Activity, ArrowRight, Cloud, FileArchive, Lock, Mail, Server } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import * as React from "react";
@@ -9,10 +9,12 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { GoogleRestoreModal } from "@/components/auth/google-restore-modal";
 import { RestoreBackupModal } from "@/components/auth/restore-backup-modal";
+import { ServerConfigModal } from "@/components/auth/server-config-modal";
 import { useAuth } from "@/components/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { getApiBaseUrl, isCustomServerSet } from "@/lib/api-client";
 
 const loginSchema = z.object({
 	email: z.string().email("Invalid email address"),
@@ -27,6 +29,27 @@ export default function LoginPage() {
 
 	const [isRestoreModalOpen, setIsRestoreModalOpen] = React.useState(false);
 	const [isGoogleModalOpen, setIsGoogleModalOpen] = React.useState(false);
+	const [isServerModalOpen, setIsServerModalOpen] = React.useState(false);
+	const [serverBadge, setServerBadge] = React.useState("Default");
+
+	const updateServerBadge = React.useCallback(() => {
+		if (typeof window === "undefined") return;
+		if (isCustomServerSet()) {
+			const url = getApiBaseUrl().replace(/^https?:\/\//, "");
+			setServerBadge(url.length > 24 ? `${url.slice(0, 22)}...` : url);
+		} else {
+			setServerBadge("Default (:49275 / :5000)");
+		}
+	}, []);
+
+	React.useEffect(() => {
+		updateServerBadge();
+		const handleOpenServer = () => setIsServerModalOpen(true);
+		window.addEventListener("daypulse:configure-server", handleOpenServer);
+		return () => {
+			window.removeEventListener("daypulse:configure-server", handleOpenServer);
+		};
+	}, [updateServerBadge]);
 
 	const {
 		register,
@@ -140,11 +163,22 @@ export default function LoginPage() {
 						</Button>
 					</div>
 
-					<div className="mt-6 text-center text-xs text-slate-400">
-						Don&apos;t have an account?{" "}
-						<Link href="/register" className="text-emerald-400 font-semibold hover:underline">
-							Create an account
-						</Link>
+					<div className="mt-6 flex flex-col items-center gap-3">
+						<div className="text-center text-xs text-slate-400">
+							Don&apos;t have an account?{" "}
+							<Link href="/register" className="text-emerald-400 font-semibold hover:underline">
+								Create an account
+							</Link>
+						</div>
+
+						<button
+							type="button"
+							onClick={() => setIsServerModalOpen(true)}
+							className="inline-flex items-center gap-1.5 text-[11px] text-slate-400 hover:text-slate-200 transition-colors py-1 px-3 rounded-full border border-slate-800 bg-slate-950/60"
+						>
+							<Server className="w-3 h-3 text-emerald-400" />
+							<span>Server: {serverBadge}</span>
+						</button>
 					</div>
 				</div>
 			</div>
@@ -155,6 +189,12 @@ export default function LoginPage() {
 			/>
 
 			<GoogleRestoreModal isOpen={isGoogleModalOpen} onClose={() => setIsGoogleModalOpen(false)} />
+
+			<ServerConfigModal
+				isOpen={isServerModalOpen}
+				onClose={() => setIsServerModalOpen(false)}
+				onSaved={updateServerBadge}
+			/>
 		</div>
 	);
 }

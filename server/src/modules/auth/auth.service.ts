@@ -2,6 +2,8 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import config from "../../config/index.js";
 import { AppError } from "../../errors/AppError.js";
+import { processRestorePayloadIntoDB } from "../../utils/backup-restore.js";
+import { getGoogleAuthUrl, isGoogleConfigured } from "../../utils/googleDrive.js";
 import { prisma } from "../../utils/prisma.js";
 import type { IAuthResponse, ILoginUser, IRegisterUser } from "./auth.interface.js";
 
@@ -118,4 +120,66 @@ export const updateProfileInDB = async (
 	});
 
 	return updatedUser;
+};
+
+export interface IGoogleRestoreLoginResult {
+	user: {
+		id: string;
+		email: string;
+		name: string;
+		currency: string;
+	};
+	token: string;
+	summary: string;
+	restoredAt: string;
+}
+
+let latestRestoreLoginResult: IGoogleRestoreLoginResult | null = null;
+
+export const setLatestRestoreLoginResult = (result: IGoogleRestoreLoginResult | null) => {
+	latestRestoreLoginResult = result;
+};
+
+export const getLatestRestoreLoginResult = (): IGoogleRestoreLoginResult | null => {
+	return latestRestoreLoginResult;
+};
+
+export const clearLatestRestoreLoginResult = () => {
+	latestRestoreLoginResult = null;
+};
+
+export const getGoogleRestoreUrl = (): { url: string } => {
+	if (!isGoogleConfigured()) {
+		throw new AppError(
+			400,
+			"Google Drive sync is not configured on the server. Please define GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in .env.",
+		);
+	}
+	clearLatestRestoreLoginResult();
+	const url = getGoogleAuthUrl("restore_onboarding");
+	return { url };
+};
+
+export const restoreBackupArchiveIntoDB = async (payload: {
+	archiveBase64?: string;
+	backup?: Record<string, unknown>;
+	password?: string;
+}): Promise<IAuthResponse & { summary: string }> => {
+	const result = await processRestorePayloadIntoDB(payload);
+	const token = generateToken({
+		userId: result.user.id,
+		email: result.user.email,
+	});
+
+	return {
+		user: {
+			id: result.user.id,
+			name: result.user.name,
+			email: result.user.email,
+			currency: result.user.currency,
+			createdAt: result.user.createdAt,
+		},
+		token,
+		summary: result.summary,
+	};
 };

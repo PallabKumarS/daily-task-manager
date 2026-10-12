@@ -1,17 +1,19 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Activity, ArrowRight, Lock, Mail, User } from "lucide-react";
+import { Activity, ArrowRight, Lock, Mail, Server, User } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
+import { ServerConfigModal } from "@/components/auth/server-config-modal";
 import { useAuth } from "@/components/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 import { CustomSelect, type SelectOption } from "@/components/ui/custom-select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { getApiBaseUrl, isCustomServerSet } from "@/lib/api-client";
 import { CURRENCIES } from "@/lib/currency-symbols";
 
 const CURRENCY_SELECT_OPTIONS: SelectOption[] = CURRENCIES.map((c) => ({
@@ -32,6 +34,28 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 export default function RegisterPage() {
 	const { register: registerUser, user, loading } = useAuth();
 	const router = useRouter();
+
+	const [isServerModalOpen, setIsServerModalOpen] = React.useState(false);
+	const [serverBadge, setServerBadge] = React.useState("Default");
+
+	const updateServerBadge = React.useCallback(() => {
+		if (typeof window === "undefined") return;
+		if (isCustomServerSet()) {
+			const url = getApiBaseUrl().replace(/^https?:\/\//, "");
+			setServerBadge(url.length > 24 ? `${url.slice(0, 22)}...` : url);
+		} else {
+			setServerBadge("Default (:49275 / :5000)");
+		}
+	}, []);
+
+	React.useEffect(() => {
+		updateServerBadge();
+		const handleOpenServer = () => setIsServerModalOpen(true);
+		window.addEventListener("daypulse:configure-server", handleOpenServer);
+		return () => {
+			window.removeEventListener("daypulse:configure-server", handleOpenServer);
+		};
+	}, [updateServerBadge]);
 
 	const {
 		register,
@@ -137,21 +161,38 @@ export default function RegisterPage() {
 						</Button>
 					</form>
 
-					<div className="mt-6 text-center text-xs text-slate-400">
-						Already have an account?{" "}
-						<Link href="/login" className="text-emerald-400 font-semibold hover:underline">
-							Sign In
-						</Link>
-					</div>
+					<div className="mt-6 flex flex-col items-center gap-2">
+						<div className="text-center text-xs text-slate-400">
+							Already have an account?{" "}
+							<Link href="/login" className="text-emerald-400 font-semibold hover:underline">
+								Sign In
+							</Link>
+						</div>
 
-					<div className="mt-2 text-center text-xs text-slate-500">
-						Setting up a new device?{" "}
-						<Link href="/login" className="text-teal-400 font-medium hover:underline">
-							Restore existing workspace
-						</Link>
+						<div className="text-center text-xs text-slate-500">
+							Setting up a new device?{" "}
+							<Link href="/login" className="text-teal-400 font-medium hover:underline">
+								Restore existing workspace
+							</Link>
+						</div>
+
+						<button
+							type="button"
+							onClick={() => setIsServerModalOpen(true)}
+							className="inline-flex items-center gap-1.5 text-[11px] text-slate-400 hover:text-slate-200 transition-colors py-1 px-3 mt-1 rounded-full border border-slate-800 bg-slate-950/60"
+						>
+							<Server className="w-3 h-3 text-emerald-400" />
+							<span>Server: {serverBadge}</span>
+						</button>
 					</div>
 				</div>
 			</div>
+
+			<ServerConfigModal
+				isOpen={isServerModalOpen}
+				onClose={() => setIsServerModalOpen(false)}
+				onSaved={updateServerBadge}
+			/>
 		</div>
 	);
 }
