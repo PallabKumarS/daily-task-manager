@@ -146,21 +146,45 @@ npm run dev:server
 npm run dev:web
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open [http://localhost:3005](http://localhost:3005) in your browser.
 
 ---
 
-## Google Cloud OAuth Setup (Optional for Cloud Sync)
+## Google Drive Cloud Sync Setup
 
-To enable live Google Drive synchronization:
+DayPulse supports encrypted, single-file Google Drive backups for cross-device synchronization and data portability.
+
+### Android Application
+- **Zero Configuration Required**: Download the signed APK from releases and install.
+- Native Google Play Services authentication is linked directly to the application package name (`com.daypulse.tracker`) and the release signature certificate SHA-1.
+- Simply tap **Sync with Google Drive** inside the app and choose your Google account.
+
+### Desktop Application & Self-Hosted Web Client
+Because the desktop app is a decentralized, local-first client running on each user's computer, users configure their own Google OAuth credentials:
+
+#### In-App Configuration (Recommended)
+1. Open DayPulse Desktop and navigate to **Settings** -> **Google Drive Cloud Sync**.
+2. Click **Configure Credentials** / **Enter Credentials**.
+3. Paste your **Client ID** and **Client Secret**.
+4. Click **Connect Google Drive** to authenticate via your local browser.
+
+#### Environment File Configuration (Self-Hosted Developers)
+Create or update your `.env` file in the project root:
+```env
+GOOGLE_CLIENT_ID="your-client-id.apps.googleusercontent.com"
+GOOGLE_CLIENT_SECRET="your-client-secret"
+GOOGLE_REDIRECT_URI="http://localhost:5000/api/v1/sync/google/callback"
+```
+
+#### Creating Your Google OAuth Credentials (for Desktop / Web)
 1. Open [Google Cloud Console](https://console.cloud.google.com/) and create a project.
-2. In **APIs & Services > Library**, search and enable **Google Drive API**.
-3. In **APIs & Services > Credentials**, create an **OAuth 2.0 Client ID** (Web application):
-   - **Authorized redirect URI**: `http://localhost:5000/api/v1/sync/google/callback`
-4. Add the generated credentials to `server/.env`:
-   ```env
-   GOOGLE_CLIENT_ID="your-client-id.apps.googleusercontent.com"
-   GOOGLE_CLIENT_SECRET="your-client-secret"
-   GOOGLE_REDIRECT_URI="http://localhost:5000/api/v1/sync/google/callback"
-   ```
-5. Navigate to **System Settings & Cloud Sync** in DayPulse, click **Connect Google Drive**, and grant authorization.
+2. In **APIs & Services > Library**, search for and enable **Google Drive API**.
+3. In **APIs & Services > OAuth consent screen**:
+   - Choose **External** user type.
+   - Add the scope `https://www.googleapis.com/auth/drive.file`.
+   - Set publishing status to **In production** (or add your Gmail to test users).
+4. In **APIs & Services > Credentials**:
+   - Click **Create Credentials** -> **OAuth 2.0 Client ID**.
+   - Select **Web application**.
+   - Under **Authorized redirect URIs**, add: `http://localhost:5000/api/v1/sync/google/callback`.
+5. Copy the generated **Client ID** and **Client Secret** into DayPulse Desktop Settings.
