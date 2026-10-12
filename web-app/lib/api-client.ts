@@ -3,21 +3,79 @@ const DEFAULT_API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhos
 const TOKEN_KEY = "daypulse_auth_token";
 const SERVER_URL_KEY = "daypulse_api_base_url";
 
+export function isCapacitorNative(): boolean {
+	if (typeof window === "undefined") return false;
+	const cap = (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
+	return Boolean(
+		cap?.isNativePlatform?.() ||
+			window.location.protocol === "capacitor:" ||
+			(window.location.hostname === "localhost" && !window.location.port),
+	);
+}
+
+export function isCustomServerSet(): boolean {
+	if (typeof window === "undefined") return false;
+	return Boolean(localStorage.getItem(SERVER_URL_KEY));
+}
+
+export function normalizeServerUrl(input: string): string {
+	let trimmed = input.trim();
+	if (!trimmed) return "";
+	if (!/^https?:\/\//i.test(trimmed)) {
+		trimmed = `http://${trimmed}`;
+	}
+	trimmed = trimmed.replace(/\/+$/, "");
+	if (!trimmed.endsWith("/api/v1")) {
+		trimmed = `${trimmed}/api/v1`;
+	}
+	return trimmed;
+}
+
+export async function testServerConnection(url: string): Promise<{ ok: boolean; message: string }> {
+	const normalized = normalizeServerUrl(url);
+	if (!normalized) return { ok: false, message: "Server URL cannot be empty." };
+
+	const controller = new AbortController();
+	const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+	try {
+		const res = await fetch(`${normalized}/health`, {
+			signal: controller.signal,
+			headers: { Accept: "application/json" },
+		});
+		clearTimeout(timeoutId);
+		if (res.ok) {
+			return { ok: true, message: "Connected to DayPulse server successfully." };
+		}
+		return { ok: false, message: `Server returned HTTP ${res.status}.` };
+	} catch (err) {
+		clearTimeout(timeoutId);
+		const msg =
+			err instanceof Error && err.name === "AbortError"
+				? "Connection timed out after 4 seconds."
+				: "Cannot reach server. Verify IP, port, and Wi-Fi connection.";
+		return { ok: false, message: msg };
+	}
+}
+
 export function getApiBaseUrl(): string {
 	if (typeof window !== "undefined") {
 		const custom = localStorage.getItem(SERVER_URL_KEY);
-		if (custom) return custom;
-		if (window.location.protocol.startsWith("http")) {
+		if (custom) return custom.replace(/\/+$/, "");
+
+		// On Capacitor mobile native runtime, relative /api/v1 resolves to localhost:80 where no server is listening
+		if (!isCapacitorNative() && window.location.protocol.startsWith("http")) {
 			return "/api/v1";
 		}
 	}
-	return DEFAULT_API_BASE_URL;
+	return DEFAULT_API_BASE_URL.replace(/\/+$/, "");
 }
 
 export function setApiBaseUrl(url: string): void {
 	if (typeof window === "undefined") return;
-	if (url) {
-		localStorage.setItem(SERVER_URL_KEY, url);
+	const trimmed = url.trim();
+	if (trimmed) {
+		localStorage.setItem(SERVER_URL_KEY, normalizeServerUrl(trimmed));
 	} else {
 		localStorage.removeItem(SERVER_URL_KEY);
 	}
@@ -126,11 +184,24 @@ export async function apiRequest<T = unknown>(
 		headers.set("Authorization", `Bearer ${token}`);
 	}
 
-	const response = await fetch(url, {
-		...options,
-		headers,
-		credentials: "omit",
-	});
+	let response: Response;
+	try {
+		response = await fetch(url, {
+			...options,
+			headers,
+			credentials: "omit",
+		});
+	} catch (_networkError) {
+		if (isCapacitorNative() && !isCustomServerSet()) {
+			if (typeof window !== "undefined") {
+				window.dispatchEvent(new CustomEvent("daypulse:configure-server"));
+			}
+			throw new Error(
+				"DayPulse server not configured. Please tap Server Connection to connect to your PC or server.",
+			);
+		}
+		throw new Error("Unable to connect to DayPulse server. Please ensure the server is online.");
+	}
 
 	let json: ApiResponse<T>;
 	try {

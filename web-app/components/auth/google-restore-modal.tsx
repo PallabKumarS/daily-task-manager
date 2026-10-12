@@ -88,8 +88,8 @@ export function GoogleRestoreModal({ isOpen, onClose }: GoogleRestoreModalProps)
 
 			if (electron?.openExternal) {
 				await electron.openExternal(res.data.url);
-			} else {
-				window.open(res.data.url, "_blank");
+			} else if (typeof window !== "undefined") {
+				window.open(res.data.url, "_system") || window.open(res.data.url, "_blank");
 			}
 
 			setStatus("restoring");

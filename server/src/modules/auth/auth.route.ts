@@ -16,6 +16,10 @@ router.post("/login", validateRequest(authValidation.loginValidationSchema), aut
 
 router.post("/logout", authController.logout);
 
+router.get("/google/restore-url", authController.getGoogleRestoreUrl);
+router.get("/google/restore-status", authController.getGoogleRestoreStatus);
+router.post("/restore-backup", authController.restoreBackup);
+
 router.get("/me", auth(), authController.getMe);
 
 router.patch(

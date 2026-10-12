@@ -71,3 +71,43 @@ export const updateProfile = catchAsync(async (req: Request, res: Response) => {
 		data: result,
 	});
 });
+
+export const getGoogleRestoreUrl = catchAsync(async (_req: Request, res: Response) => {
+	const result = authService.getGoogleRestoreUrl();
+
+	sendResponse(res, {
+		statusCode: 200,
+		success: true,
+		message: "Google restore URL generated.",
+		data: result,
+	});
+});
+
+export const getGoogleRestoreStatus = catchAsync(async (_req: Request, res: Response) => {
+	const result = authService.getLatestRestoreLoginResult();
+
+	sendResponse(res, {
+		statusCode: 200,
+		success: true,
+		message: "Google restore status retrieved.",
+		data: result,
+	});
+});
+
+export const restoreBackup = catchAsync(async (req: Request, res: Response) => {
+	const result = await authService.restoreBackupArchiveIntoDB(req.body);
+
+	res.cookie("token", result.token, {
+		httpOnly: true,
+		secure: process.env.NODE_ENV === "production",
+		sameSite: "lax",
+		maxAge: 30 * 24 * 60 * 60 * 1000,
+	});
+
+	sendResponse(res, {
+		statusCode: 200,
+		success: true,
+		message: result.summary,
+		data: result,
+	});
+});

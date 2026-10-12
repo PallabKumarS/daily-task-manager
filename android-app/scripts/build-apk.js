@@ -46,14 +46,22 @@ if (fs.existsSync(webAppDir)) {
 	console.warn("[DayPulse] Web-app directory not found, using existing out/ folder.");
 }
 
-// 2. Sync Capacitor
+// 2. Generate Android icons and splash assets
+const generateIconsScript = path.join(rootDir, "scripts", "generate-icons.mjs");
+if (fs.existsSync(generateIconsScript)) {
+	console.log("[DayPulse] Generating Android launcher icons and splash assets...");
+	execSync(`node "${generateIconsScript}"`, { stdio: "inherit" });
+}
+
+// 3. Sync Capacitor
 console.log("[DayPulse] Syncing Capacitor native assets...");
 execSync("npx cap sync android", {
 	cwd: rootDir,
 	stdio: "inherit",
 });
 
-// 3. Assemble Android APKs with Java 21
+// 4. Assemble Android APKs with Java 21
+
 const env = { ...process.env };
 const java21 = findJava21Home();
 if (java21) {

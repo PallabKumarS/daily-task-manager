@@ -33,8 +33,9 @@ export default {
 		rounds: Number(process.env.TOKEN_ENCRYPTION_ROUNDS) || 10000,
 	},
 	google: {
-		clientId: process.env.GOOGLE_CLIENT_ID || "",
-		clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+		clientId: process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID_DESKTOP || "",
+		clientSecret:
+			process.env.GOOGLE_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET_DESKTOP || "",
 		redirectUri:
 			process.env.GOOGLE_REDIRECT_URI || "http://localhost:5000/api/v1/sync/google/callback",
 	},

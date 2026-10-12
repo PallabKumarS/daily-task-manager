@@ -16,13 +16,16 @@ app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.get("/health", (req: Request, res: Response) => {
+const healthHandler = (_req: Request, res: Response) => {
 	res.status(200).json({
 		status: "ok",
 		message: "DayPulse Core API is operational",
 		timestamp: new Date().toISOString(),
 	});
-});
+};
+
+app.get("/health", healthHandler);
+app.get("/api/v1/health", healthHandler);
 
 app.use("/api/v1", applicationRoutes);
 
