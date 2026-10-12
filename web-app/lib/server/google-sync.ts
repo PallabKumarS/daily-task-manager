@@ -69,8 +69,21 @@ export const getGoogleClientSecret = (): string => {
 	return process.env.GOOGLE_CLIENT_SECRET_DESKTOP || process.env.GOOGLE_CLIENT_SECRET || "";
 };
 
-const getGoogleRedirectUri = (): string =>
-	process.env.GOOGLE_REDIRECT_URI || "http://localhost:5000/api/v1/sync/google/callback";
+export const getGoogleRedirectUri = (): string => {
+	if (process.env.GOOGLE_REDIRECT_URI) {
+		return process.env.GOOGLE_REDIRECT_URI;
+	}
+	if (process.env.NEXT_PUBLIC_APP_URL) {
+		return `${process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "")}/api/v1/sync/google/callback`;
+	}
+	if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+		return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}/api/v1/sync/google/callback`;
+	}
+	if (process.env.VERCEL_URL) {
+		return `https://${process.env.VERCEL_URL}/api/v1/sync/google/callback`;
+	}
+	return "http://localhost:5000/api/v1/sync/google/callback";
+};
 
 let loopbackServer: http.Server | null = null;
 

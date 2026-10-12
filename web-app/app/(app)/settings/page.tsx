@@ -681,8 +681,9 @@ function SettingsContent() {
 								</li>
 								<li>
 									Add Authorized Redirect URI:
-									<div className="mt-1 rounded-lg bg-slate-900 p-2 font-mono text-emerald-400 select-all border border-slate-800 text-[11px] break-all">
-										http://localhost:3000/api/sync/google/callback
+									<div className="mt-1 rounded-lg bg-slate-900 p-2 font-mono text-emerald-400 select-all border border-slate-800 text-[11px] break-all space-y-1">
+										<div>https://day-pulse-web.vercel.app/api/v1/sync/google/callback</div>
+										<div className="text-slate-500 text-[10px]">Desktop/Dev: http://localhost:5000/api/v1/sync/google/callback</div>
 									</div>
 								</li>
 								<li>
