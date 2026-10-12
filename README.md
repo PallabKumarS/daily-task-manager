@@ -1,6 +1,49 @@
 # DayPulse — Daily Activity Flow, Routine Mastery & Financial Pulse
 
-> A high-performance daily productivity, habit loop, and wealth tracking platform designed with a decoupled architecture: persistent standalone Express + WebSocket + Prisma backend server and zero-secret client frameworks (Next.js 16 Web App, Electron Desktop wrapper, and Capacitor Android mobile wrapper).
+<p align="center">
+  <img src="web-app/public/logo.png" alt="DayPulse Logo" width="80" height="80" />
+</p>
+
+<p align="center">
+  <strong>Cross-platform daily productivity, routine tracker, and cumulative financial ledger.</strong>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=next.js" alt="Next.js" />
+  <img src="https://img.shields.io/badge/React-19-blue?style=for-the-badge&logo=react" alt="React" />
+  <img src="https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/Tailwind_CSS-v4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind CSS" />
+  <img src="https://img.shields.io/badge/Electron-Desktop-47848F?style=for-the-badge&logo=electron&logoColor=white" alt="Electron" />
+  <img src="https://img.shields.io/badge/Capacitor-Android-119EFF?style=for-the-badge&logo=capacitor&logoColor=white" alt="Capacitor" />
+  <img src="https://img.shields.io/badge/SQLite-Database-003B57?style=for-the-badge&logo=sqlite&logoColor=white" alt="SQLite" />
+  <img src="https://img.shields.io/badge/Prisma-ORM-2D3748?style=for-the-badge&logo=prisma&logoColor=white" alt="Prisma" />
+</p>
+
+---
+
+## Application Showcase
+
+### Main Workspace & Real-Time Dashboard
+![DayPulse Dashboard](docs/screenshots/dashboard.png)
+
+<br/>
+
+### Core Features
+
+| Routine Mastery & Habit Loops | Priority Task & Event Scheduler |
+| :---: | :---: |
+| ![Routines](docs/screenshots/routines.png) | ![Tasks](docs/screenshots/tasks.png) |
+| **Habit Tracking & Streaks**<br/>Grouped by time slot (Morning, Afternoon, Evening) with advance alarm chime reminders. | **Precision Calendar & Priority Matrix**<br/>Discrete task/event classification with urgent/high/medium priorities and lead time warnings. |
+
+| Cumulative Financial Pulse & Cashflow Ledger | Cross-Platform Local-First Onboarding |
+| :---: | :---: |
+| ![Finances](docs/screenshots/finances.png) | ![Onboarding](docs/screenshots/onboarding.png) |
+| **Cumulative Spendings & Income Ledger**<br/>SVG trajectory charts, multi-currency support, itemized categories, and savings rate. | **Flexible Data Ownership**<br/>Restore from offline ZIP archive, Google Drive cloud sync, or create local accounts. |
+
+| Cloud Sync & System Settings | Modern Landing Page |
+| :---: | :---: |
+| ![Settings](docs/screenshots/settings.png) | ![Landing](docs/screenshots/landing.png) |
+| **Zero-Port Vault & Cloud Sync**<br/>Configure recurring sync intervals, AES-256 token vault, and multi-device dispatchers. | **Clean Presentation**<br/>Responsive design tailored for web, Electron desktop, and Capacitor Android mobile devices. |
 
 ---
 
