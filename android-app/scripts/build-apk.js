@@ -132,12 +132,15 @@ if (fs.existsSync(signedReleaseApk)) {
 
 if (fs.existsSync(targetReleaseApk)) {
 	const apkSigner = findApkSigner();
-	const keystore = path.join(androidDir, "app", "release.keystore");
+	const keystore =
+		process.env.ANDROID_KEYSTORE_PATH || path.join(androidDir, "app", "release.keystore");
 	if (apkSigner && fs.existsSync(keystore)) {
 		try {
 			console.log("[DayPulse] Verifying and applying v1+v2+v3 signatures with apksigner...");
+			const storePass = process.env.ANDROID_KEYSTORE_PASSWORD || "daypulse123";
+			const keyPass = process.env.ANDROID_KEY_PASSWORD || "daypulse123";
 			execSync(
-				`"${apkSigner}" sign --ks "${keystore}" --ks-pass pass:daypulse123 --key-pass pass:daypulse123 --v1-signing-enabled true --v2-signing-enabled true --v3-signing-enabled true "${targetReleaseApk}"`,
+				`"${apkSigner}" sign --ks "${keystore}" --ks-pass pass:${storePass} --key-pass pass:${keyPass} --v1-signing-enabled true --v2-signing-enabled true --v3-signing-enabled true "${targetReleaseApk}"`,
 				{ stdio: "inherit" },
 			);
 			execSync(`"${apkSigner}" verify --verbose "${targetReleaseApk}"`, {

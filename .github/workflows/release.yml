@@ -62,8 +62,19 @@ jobs:
           npm ci
           npx prisma generate --schema=web-app/prisma/schema.prisma
 
+      - name: Restore Keystore from Secret
+        if: ${{ env.KEYSTORE_BASE64 != '' }}
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        shell: pwsh
+        run: |
+          [IO.File]::WriteAllBytes("android-app/android/app/release.keystore", [Convert]::FromBase64String($env:KEYSTORE_BASE64))
+
       - name: Build Android APKs
         working-directory: android-app
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: node scripts/build-apk.js
 
       - name: Upload Android Artifacts

@@ -51,4 +51,6 @@ server-dist/
 *.exe
 *.log
 *credentials.json
+*.keystore
+*.jks
 
