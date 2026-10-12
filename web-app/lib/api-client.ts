@@ -1,4 +1,6 @@
-const DEFAULT_API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api/v1";
+import { handleLocalClientDispatch } from "./local-dispatcher";
+
+const DEFAULT_API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
 
 const TOKEN_KEY = "daypulse_auth_token";
 const SERVER_URL_KEY = "daypulse_api_base_url";
@@ -169,6 +171,19 @@ export async function apiRequest<T = unknown>(
 		return ipcRes;
 	}
 
+	// Route offline Capacitor native directly to client local storage
+	if (isCapacitorNative() && !isCustomServerSet()) {
+		if (!getAuthToken()) {
+			setAuthToken("daypulse_local_token");
+		}
+		const localRes = await handleLocalClientDispatch<T>(endpoint, options);
+		const reqMethod = (options.method || "GET").toUpperCase();
+		if (typeof window !== "undefined" && ["POST", "PATCH", "PUT", "DELETE"].includes(reqMethod)) {
+			window.dispatchEvent(new CustomEvent("daypulse:refresh"));
+		}
+		return localRes;
+	}
+
 	const baseUrl = getApiBaseUrl();
 	const url = endpoint.startsWith("http")
 		? endpoint
@@ -192,14 +207,6 @@ export async function apiRequest<T = unknown>(
 			credentials: "omit",
 		});
 	} catch (_networkError) {
-		if (isCapacitorNative() && !isCustomServerSet()) {
-			if (typeof window !== "undefined") {
-				window.dispatchEvent(new CustomEvent("daypulse:configure-server"));
-			}
-			throw new Error(
-				"DayPulse server not configured. Please tap Server Connection to connect to your PC or server.",
-			);
-		}
 		throw new Error("Unable to connect to DayPulse server. Please ensure the server is online.");
 	}
 

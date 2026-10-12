@@ -8,14 +8,13 @@ const __dirname = path.dirname(__filename);
 
 const rootDir = path.resolve(__dirname, "../..");
 const webAppDir = path.join(rootDir, "web-app");
-const serverDir = path.join(rootDir, "server");
 const desktopAppDir = path.join(rootDir, "desktop-app");
 const targetServerDist = path.join(desktopAppDir, "server-dist");
 
-console.log("[DayPulse] Preparing Server Distribution for Desktop Packaging...");
+console.log("[DayPulse Desktop] Preparing Single-Process Standalone Server Distribution...");
 
-// 1. Build Next.js standalone application
-console.log("[DayPulse] Building Next.js standalone application...");
+// 1. Build Next.js standalone application (includes all API route handlers and Prisma)
+console.log("[DayPulse Desktop] Building Next.js standalone application...");
 execSync("npm run build", {
 	cwd: webAppDir,
 	stdio: "inherit",
@@ -26,138 +25,116 @@ execSync("npm run build", {
 	},
 });
 
-// 2. Build Express API server
-console.log("[DayPulse] Building Express API server...");
-execSync("npm run build", {
-	cwd: serverDir,
-	stdio: "inherit",
-});
-
-// 3. Clean old server-dist
+// 2. Clean previous server-dist
 if (fs.existsSync(targetServerDist)) {
-	console.log("[DayPulse] Cleaning previous server-dist...");
+	console.log("[DayPulse Desktop] Cleaning previous server-dist...");
 	fs.rmSync(targetServerDist, { recursive: true, force: true });
 }
 fs.mkdirSync(targetServerDist, { recursive: true });
 
-// 4. Prepare Web distribution
+// 3. Copy Next.js standalone bundle (dereferencing symlinks)
 const standaloneDir = path.join(webAppDir, ".next/standalone");
-const webTarget = path.join(targetServerDist, "web");
-
-if (fs.existsSync(standaloneDir)) {
-	console.log("[DayPulse] Copying Next.js standalone bundle (dereferencing symlinks)...");
-	fs.cpSync(standaloneDir, webTarget, {
-		recursive: true,
-		dereference: true,
-	});
-} else {
-	console.error("[DayPulse] ERROR: web-app/.next/standalone not found!");
+if (!fs.existsSync(standaloneDir)) {
+	console.error("[DayPulse Desktop] ERROR: web-app/.next/standalone not found!");
 	process.exit(1);
 }
 
-// Copy static and public assets
+console.log("[DayPulse Desktop] Copying standalone bundle with symlink dereferencing...");
+fs.cpSync(standaloneDir, targetServerDist, {
+	recursive: true,
+	dereference: true,
+});
+
+// 4. Copy static assets and public directory
 const staticDir = path.join(webAppDir, ".next/static");
 const publicDir = path.join(webAppDir, "public");
 
-const targetStaticSub = path.join(webTarget, "web-app/.next/static");
-const targetStaticRoot = path.join(webTarget, ".next/static");
-const targetPublicSub = path.join(webTarget, "web-app/public");
-const targetPublicRoot = path.join(webTarget, "public");
+const staticTargets = [
+	path.join(targetServerDist, ".next/static"),
+	path.join(targetServerDist, "web-app/.next/static"),
+];
 
-if (fs.existsSync(staticDir)) {
-	fs.cpSync(staticDir, targetStaticSub, { recursive: true });
-	fs.cpSync(staticDir, targetStaticRoot, { recursive: true });
+for (const target of staticTargets) {
+	if (fs.existsSync(staticDir)) {
+		fs.mkdirSync(path.dirname(target), { recursive: true });
+		fs.cpSync(staticDir, target, { recursive: true });
+	}
 }
 
-if (fs.existsSync(publicDir)) {
-	fs.cpSync(publicDir, targetPublicSub, { recursive: true });
-	fs.cpSync(publicDir, targetPublicRoot, { recursive: true });
+const publicTargets = [
+	path.join(targetServerDist, "public"),
+	path.join(targetServerDist, "web-app/public"),
+];
+
+for (const target of publicTargets) {
+	if (fs.existsSync(publicDir)) {
+		fs.mkdirSync(path.dirname(target), { recursive: true });
+		fs.cpSync(publicDir, target, { recursive: true });
+	}
 }
 
-// Rename web node_modules to vendor (protect from electron-builder prune)
-const webNodeModules = path.join(webTarget, "node_modules");
-const webVendor = path.join(webTarget, "vendor");
-if (fs.existsSync(webNodeModules)) {
-	console.log("[DayPulse] Renaming web node_modules to vendor...");
-	fs.renameSync(webNodeModules, webVendor);
+// 5. Copy Prisma schema and database template
+const prismaSrc = path.join(webAppDir, "prisma");
+if (fs.existsSync(prismaSrc)) {
+	fs.cpSync(prismaSrc, path.join(targetServerDist, "prisma"), { recursive: true });
+	fs.cpSync(prismaSrc, path.join(targetServerDist, "web-app/prisma"), { recursive: true });
 }
 
-// 5. Prepare API distribution
-const apiTarget = path.join(targetServerDist, "api");
-fs.mkdirSync(apiTarget, { recursive: true });
-
-const serverDistSrc = path.join(serverDir, "dist");
-const serverPrismaSrc = path.join(serverDir, "prisma");
-
-if (fs.existsSync(serverDistSrc)) {
-	fs.cpSync(serverDistSrc, path.join(apiTarget, "dist"), { recursive: true });
+const devDbCandidate = path.join(rootDir, "server/prisma/dev.db");
+if (fs.existsSync(devDbCandidate)) {
+	fs.copyFileSync(devDbCandidate, path.join(targetServerDist, "template.db"));
 }
 
-if (fs.existsSync(serverPrismaSrc)) {
-	fs.cpSync(serverPrismaSrc, path.join(apiTarget, "prisma"), { recursive: true });
+// 6. Ensure Prisma Client and Query Engine binaries are copied
+const candidateNodeModules = [
+	path.join(webAppDir, "node_modules"),
+	path.join(rootDir, "node_modules"),
+];
+
+for (const baseNm of candidateNodeModules) {
+	const dotPrisma = path.join(baseNm, ".prisma");
+	const atPrisma = path.join(baseNm, "@prisma");
+
+	const destDirs = [
+		path.join(targetServerDist, "node_modules"),
+		path.join(targetServerDist, "web-app/node_modules"),
+	];
+
+	for (const destNm of destDirs) {
+		if (fs.existsSync(dotPrisma)) {
+			fs.mkdirSync(path.join(destNm, ".prisma"), { recursive: true });
+			fs.cpSync(dotPrisma, path.join(destNm, ".prisma"), { recursive: true });
+		}
+		if (fs.existsSync(atPrisma)) {
+			fs.mkdirSync(path.join(destNm, "@prisma"), { recursive: true });
+			fs.cpSync(atPrisma, path.join(destNm, "@prisma"), { recursive: true });
+		}
+	}
 }
 
-// Copy clean database template
-const templateDbSrc = path.join(serverDir, "prisma/dev.db");
-const templateDbDest = path.join(targetServerDist, "template.db");
-if (fs.existsSync(templateDbSrc)) {
-	fs.copyFileSync(templateDbSrc, templateDbDest);
-}
-
-// Generate package.json for API production runtime
-const apiPackageJson = {
-	name: "daypulse-api",
-	version: "1.0.0",
-	type: "module",
-	dependencies: {
-		"@prisma/client": "^6.4.0",
-		bcryptjs: "^3.0.2",
-		"cookie-parser": "^1.4.7",
-		cors: "^2.8.5",
-		dotenv: "^16.4.7",
-		express: "^4.21.2",
-		jsonwebtoken: "^9.0.2",
-		"node-cron": "^3.0.3",
-		"socket.io": "^4.8.1",
-		zod: "^3.24.2",
+// 7. Rename node_modules to vendor (protect from electron-builder prune)
+const nmPaths = [
+	{
+		src: path.join(targetServerDist, "node_modules"),
+		dest: path.join(targetServerDist, "vendor"),
 	},
-};
+	{
+		src: path.join(targetServerDist, "web-app/node_modules"),
+		dest: path.join(targetServerDist, "web-app/vendor"),
+	},
+];
 
-fs.writeFileSync(
-	path.join(apiTarget, "package.json"),
-	JSON.stringify(apiPackageJson, null, 2),
-	"utf8",
-);
-
-console.log("[DayPulse] Installing production dependencies for API...");
-execSync("npm install --omit=dev --no-package-lock", {
-	cwd: apiTarget,
-	stdio: "inherit",
-});
-
-console.log("[DayPulse] Copying pre-built Prisma client & query engine binary...");
-const rootNodeModules = path.join(rootDir, "node_modules");
-fs.cpSync(path.join(rootNodeModules, ".prisma"), path.join(apiTarget, "node_modules/.prisma"), {
-	recursive: true,
-});
-fs.cpSync(path.join(rootNodeModules, "@prisma"), path.join(apiTarget, "node_modules/@prisma"), {
-	recursive: true,
-});
-
-// Rename api node_modules to vendor (protect from electron-builder prune)
-const apiNodeModules = path.join(apiTarget, "node_modules");
-const apiVendor = path.join(apiTarget, "vendor");
-if (fs.existsSync(apiNodeModules)) {
-	console.log("[DayPulse] Renaming api node_modules to vendor...");
-	fs.renameSync(apiNodeModules, apiVendor);
+for (const { src, dest } of nmPaths) {
+	if (fs.existsSync(src)) {
+		console.log(`[DayPulse Desktop] Renaming ${path.basename(path.dirname(src)) || "root"}/node_modules to vendor...`);
+		fs.renameSync(src, dest);
+	}
 }
 
-// 6. Write production coordinator script: server-dist/server.js
-const coordinatorScript = `const path = require("path");
+// 8. Generate production coordinator script server.js
+const runnerScript = `const path = require("path");
 const fs = require("fs");
-const { fork } = require("child_process");
 
-// 1. Establish User Data and SQLite database
 const userDataPath = process.env.USER_DATA_PATH || path.join(__dirname, "data");
 if (!fs.existsSync(userDataPath)) {
 	fs.mkdirSync(userDataPath, { recursive: true });
@@ -168,119 +145,64 @@ const templateDb = path.join(__dirname, "template.db");
 if (!fs.existsSync(dbPath) && fs.existsSync(templateDb)) {
 	try {
 		fs.copyFileSync(templateDb, dbPath);
-		console.log("[DayPulse Server] Copied database template to", dbPath);
+		console.log("[DayPulse Server] Initialized database from template:", dbPath);
 	} catch (err) {
-		console.warn("[DayPulse Server] Template copy warning:", err.message);
+		console.warn("[DayPulse Server] Template copy notice:", err.message);
 	}
 }
 
-const dbUrl = "file:" + dbPath.replace(/\\\\/g, "/");
-process.env.DATABASE_URL = dbUrl;
+process.env.USER_DATA_PATH = userDataPath;
+process.env.DATABASE_URL = "file:" + dbPath.replace(/\\\\/g, "/");
 
-// 2. Link vendor directories to node_modules via junctions
-const apiDir = path.join(__dirname, "api");
-const apiVendor = path.join(apiDir, "vendor");
-const apiNodeModules = path.join(apiDir, "node_modules");
-if (fs.existsSync(apiVendor) && !fs.existsSync(apiNodeModules)) {
-	try {
-		fs.symlinkSync(apiVendor, apiNodeModules, "junction");
-	} catch (e) {
-		console.warn("[DayPulse Server] API junction warning:", e.message);
+function linkVendor(base) {
+	const vendor = path.join(base, "vendor");
+	const nodeModules = path.join(base, "node_modules");
+	if (fs.existsSync(vendor) && !fs.existsSync(nodeModules)) {
+		try {
+			fs.symlinkSync(vendor, nodeModules, "junction");
+		} catch (e) {}
 	}
 }
 
-const webDir = path.join(__dirname, "web");
-const webVendor = path.join(webDir, "vendor");
-const webNodeModules = path.join(webDir, "node_modules");
-if (fs.existsSync(webVendor) && !fs.existsSync(webNodeModules)) {
-	try {
-		fs.symlinkSync(webVendor, webNodeModules, "junction");
-	} catch (e) {
-		console.warn("[DayPulse Server] Web junction warning:", e.message);
-	}
-}
+linkVendor(__dirname);
+linkVendor(path.join(__dirname, "web-app"));
 
-// 3. Start Express API server on port 49275
-const apiPort = 49275;
-const apiScript = path.join(apiDir, "dist/server.js");
-let apiProcess = null;
+const port = parseInt(process.env.PORT, 10) || 49274;
+process.env.PORT = String(port);
+process.env.HOSTNAME = "127.0.0.1";
+process.env.NODE_ENV = "production";
 
-if (fs.existsSync(apiScript)) {
-	apiProcess = fork(apiScript, [], {
-		cwd: apiDir,
-		env: {
-			...process.env,
-			NODE_ENV: "production",
-			PORT: String(apiPort),
-			DATABASE_URL: dbUrl,
-			ELECTRON_RUN_AS_NODE: "1",
-		},
-		stdio: ["ignore", "pipe", "pipe", "ipc"],
-	});
-
-	if (apiProcess.stdout) apiProcess.stdout.pipe(process.stdout);
-	if (apiProcess.stderr) apiProcess.stderr.pipe(process.stderr);
-} else {
-	console.error("[DayPulse Server] API script not found at", apiScript);
-}
-
-// 4. Start Next.js standalone web server on port 49274
-const webPort = parseInt(process.env.PORT, 10) || 49274;
-const webScriptCandidates = [
-	path.join(webDir, "web-app/server.js"),
-	path.join(webDir, "server.js"),
+const candidates = [
+	path.join(__dirname, "web-app/server.js"),
+	path.join(__dirname, "server-standalone.js"),
 ];
 
-let webScript = null;
-for (const cand of webScriptCandidates) {
+let targetScript = null;
+for (const cand of candidates) {
 	if (fs.existsSync(cand)) {
-		webScript = cand;
+		targetScript = cand;
 		break;
 	}
 }
 
-let webProcess = null;
-if (webScript) {
-	const webCwd = path.dirname(webScript);
-	webProcess = fork(webScript, [], {
-		cwd: webCwd,
-		env: {
-			...process.env,
-			NODE_ENV: "production",
-			PORT: String(webPort),
-			HOSTNAME: "127.0.0.1",
-			SERVER_INTERNAL_URL: "http://127.0.0.1:" + apiPort,
-			NEXT_PUBLIC_API_URL: "http://127.0.0.1:" + apiPort + "/api/v1",
-			ELECTRON_RUN_AS_NODE: "1",
-		},
-		stdio: ["ignore", "pipe", "pipe", "ipc"],
-	});
-
-	if (webProcess.stdout) webProcess.stdout.pipe(process.stdout);
-	if (webProcess.stderr) webProcess.stderr.pipe(process.stderr);
-} else {
-	console.error("[DayPulse Server] Web standalone script not found in", webScriptCandidates);
+if (!targetScript) {
+	console.error("[DayPulse Server] ERROR: Standalone server script not found in:", candidates);
+	process.exit(1);
 }
 
-function handleCleanup() {
-	if (apiProcess) {
-		try { apiProcess.kill(); } catch {}
-		apiProcess = null;
-	}
-	if (webProcess) {
-		try { webProcess.kill(); } catch {}
-		webProcess = null;
-	}
-	process.exit(0);
-}
-
-process.on("SIGINT", handleCleanup);
-process.on("SIGTERM", handleCleanup);
-process.on("exit", handleCleanup);
+process.chdir(path.dirname(targetScript));
+require(targetScript);
 `;
 
-fs.writeFileSync(path.join(targetServerDist, "server.js"), coordinatorScript, "utf8");
+// If standalone created a root server.js, rename it so runnerScript can be server.js
+const standaloneRootServer = path.join(targetServerDist, "server.js");
+if (fs.existsSync(standaloneRootServer)) {
+	fs.renameSync(standaloneRootServer, path.join(targetServerDist, "server-standalone.js"));
+}
 
+fs.writeFileSync(path.join(targetServerDist, "server.js"), runnerScript, "utf8");
+
+// Cleanup leftover junctions
 const cleanupJunction = (p) => {
 	if (fs.existsSync(p)) {
 		try {
@@ -288,10 +210,7 @@ const cleanupJunction = (p) => {
 		} catch {}
 	}
 };
-cleanupJunction(path.join(targetServerDist, "api/node_modules"));
-cleanupJunction(path.join(targetServerDist, "web/node_modules"));
-if (fs.existsSync(path.join(targetServerDist, "data"))) {
-	fs.rmSync(path.join(targetServerDist, "data"), { recursive: true, force: true });
-}
+cleanupJunction(path.join(targetServerDist, "node_modules"));
+cleanupJunction(path.join(targetServerDist, "web-app/node_modules"));
 
-console.log("[DayPulse] Successfully created server-dist at:", targetServerDist);
+console.log("[DayPulse Desktop] Successfully generated single-process server-dist at:", targetServerDist);

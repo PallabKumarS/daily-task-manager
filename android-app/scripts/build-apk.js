@@ -33,14 +33,9 @@ if (!fs.existsSync(androidDir)) {
 // 1. Build and export web-app into android-app/out
 if (fs.existsSync(webAppDir)) {
 	console.log("[DayPulse] Exporting static web application for Android...");
-	execSync("npm run build", {
+	execSync("npm run export:android", {
 		cwd: webAppDir,
 		stdio: "inherit",
-		env: {
-			...process.env,
-			NEXT_EXPORT: "true",
-			CAPACITOR_BUILD: "true",
-		},
 	});
 } else {
 	console.warn("[DayPulse] Web-app directory not found, using existing out/ folder.");

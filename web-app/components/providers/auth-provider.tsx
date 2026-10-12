@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import * as React from "react";
 import { toast } from "sonner";
-import { api, clearAuthToken, getAuthToken, setAuthToken } from "@/lib/api-client";
+import { api, clearAuthToken, getAuthToken, isCapacitorNative, setAuthToken } from "@/lib/api-client";
 import { disconnectSocket, getSocket } from "@/lib/socket-client";
 
 export interface AuthUser {
@@ -35,9 +35,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 		const isDesktop =
 			typeof window !== "undefined" &&
 			Boolean((window as unknown as { electronAPI?: unknown }).electronAPI);
+		const isNative = isCapacitorNative();
 
 		const token = getAuthToken();
-		if (!token && !isDesktop) {
+		if (!token && !isDesktop && !isNative) {
 			setUser(null);
 			setLoading(false);
 			return;
