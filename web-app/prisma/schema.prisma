@@ -1,0 +1,237 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id               String            @id @default(cuid())
+  email            String            @unique
+  name             String
+  passwordHash     String
+  currency         String            @default("USD")
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  routines         Routine[]
+  routineLogs      RoutineLog[]
+  tasks            Task[]
+  transactions     Transaction[]
+  googleConnection GoogleConnection?
+  categoryOptions  CategoryOption[]
+  dailyTrackers    DailyTracker[]
+  dailyTrackerLogs DailyTrackerLog[]
+  debtsLoans       DebtLoan[]
+  debtLoanRepayments DebtLoanRepayment[]
+}
+
+model GoogleConnection {
+  id               String    @id @default(cuid())
+  userId           String    @unique
+  googleId         String?
+  googleEmail      String?
+  encryptedAccess  String
+  encryptedRefresh String?
+  tokenExpiry      DateTime?
+  driveFileId      String?
+  lastSyncAt       DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Routine {
+  id                String       @id @default(cuid())
+  userId            String
+  title             String
+  description       String?
+  timeSlot          String       @default("morning")
+  targetTime        String?
+  daysOfWeek        String       @default("0,1,2,3,4,5,6")
+  streakCount       Int          @default(0)
+  lastCompletedDate String?
+  reminderMinutes   Int          @default(0)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  logs              RoutineLog[]
+
+  @@index([userId])
+}
+
+model RoutineLog {
+  id          String   @id @default(cuid())
+  routineId   String
+  userId      String
+  date        String
+  completed   Boolean  @default(true)
+  completedAt DateTime @default(now())
+
+  routine     Routine  @relation(fields: [routineId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([routineId, date])
+  @@index([userId, date])
+}
+
+model Task {
+  id                  String    @id @default(cuid())
+  userId              String
+  title               String
+  description         String?
+  type                String    @default("TASK")
+  category            String    @default("General")
+  priority            String    @default("MEDIUM")
+  status              String    @default("PENDING")
+  startDate           DateTime?
+  dueDate             DateTime?
+  remindBeforeMinutes   Int       @default(15)
+  reminderSent          Boolean   @default(false)
+  completedAt           DateTime?
+
+  isRecurring           Boolean   @default(false)
+  repeatFrequency       String?
+  repeatInterval        Int       @default(1)
+  repeatDaysOfWeek      String?
+  repeatTime            String?
+  repeatDayOfMonth      Int?
+  repeatMonthOfYear     Int?
+  repeatEndType         String?
+  repeatCount           Int?
+  completedOccurrences  Int       @default(0)
+  repeatUntil           DateTime?
+  lastTriggeredDate     String?
+  lastCompletedDate     String?
+
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([userId, dueDate])
+  @@index([userId, isRecurring])
+}
+
+model Transaction {
+  id            String   @id @default(cuid())
+  userId        String
+  type          String
+  amount        Float
+  category      String
+  description   String?
+  paymentMethod String   @default("Cash")
+  date          DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
+  @@index([userId, type])
+}
+
+model CategoryOption {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  group     String
+  color     String?
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, group, name])
+  @@index([userId, group])
+}
+
+model DailyTracker {
+  id            String            @id @default(cuid())
+  userId        String
+  name          String
+  category      String            @default("Meals & Food")
+  unitName      String            @default("meals")
+  defaultTarget Float             @default(2)
+  unitPrice     Float?
+  currency      String            @default("USD")
+  description   String?
+  color         String?           @default("emerald")
+  isArchived    Boolean           @default(false)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  logs          DailyTrackerLog[]
+
+  @@index([userId])
+}
+
+model DailyTrackerLog {
+  id                      String        @id @default(cuid())
+  trackerId               String
+  userId                  String
+  date                    String
+  value                   Float         @default(0)
+  status                  String        @default("LOGGED")
+  unitPrice               Float?
+  notes                   String?
+  isSettled               Boolean       @default(false)
+  settledAt               DateTime?
+  settlementTransactionId String?
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
+
+  tracker                 DailyTracker  @relation(fields: [trackerId], references: [id], onDelete: Cascade)
+  user                    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([trackerId, date])
+  @@index([userId, date])
+  @@index([trackerId, date])
+}
+
+model DebtLoan {
+  id                   String              @id @default(cuid())
+  userId               String
+  type                 String
+  personName           String
+  amount               Float
+  paidAmount           Float               @default(0)
+  status               String              @default("ACTIVE")
+  date                 DateTime            @default(now())
+  dueDate              DateTime?
+  description          String?
+  initialTransactionId String?
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+
+  user                 User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  repayments           DebtLoanRepayment[]
+
+  @@index([userId, type])
+  @@index([userId, status])
+  @@index([userId, date])
+}
+
+model DebtLoanRepayment {
+  id            String    @id @default(cuid())
+  debtLoanId    String
+  userId        String
+  amount        Float
+  date          DateTime  @default(now())
+  paymentMethod String    @default("Cash")
+  notes         String?
+  transactionId String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  debtLoan      DebtLoan  @relation(fields: [debtLoanId], references: [id], onDelete: Cascade)
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([debtLoanId])
+  @@index([userId, date])
+}
