@@ -1,6 +1,6 @@
 {
 	"name": "daily-task-tracker-workspace",
-	"version": "1.0.3",
+	"version": "1.0.4",
 	"private": true,
 	"workspaces": [
 		"server",

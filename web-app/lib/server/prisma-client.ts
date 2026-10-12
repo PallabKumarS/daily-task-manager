@@ -207,34 +207,42 @@ export function getDatabasePath(): string {
 		return process.env.DATABASE_URL.replace(/^file:/, "");
 	}
 
+	if (
+		process.env.VERCEL ||
+		process.env.AWS_LAMBDA_FUNCTION_NAME ||
+		process.env.NODE_ENV === "production"
+	) {
+		const serverlessDbDir = path.join(os.tmpdir(), "DayPulse");
+		if (!fs.existsSync(/*turbopackIgnore: true*/ serverlessDbDir)) {
+			try {
+				fs.mkdirSync(serverlessDbDir, { recursive: true });
+			} catch {}
+		}
+		return path.join(serverlessDbDir, "daypulse.db");
+	}
+
 	let baseDir: string;
 	if (process.env.USER_DATA_PATH) {
 		baseDir = process.env.USER_DATA_PATH;
 	} else if (process.env.APPDATA) {
 		baseDir = path.join(process.env.APPDATA, "DayPulse");
-	} else if (
-		process.env.VERCEL ||
-		process.env.AWS_LAMBDA_FUNCTION_NAME ||
-		process.platform === "linux"
-	) {
-		baseDir = path.join(os.tmpdir(), "DayPulse");
 	} else {
 		baseDir = path.join(process.cwd(), ".data");
 	}
 
-	if (!fs.existsSync(baseDir)) {
+	if (!fs.existsSync(/*turbopackIgnore: true*/ baseDir)) {
 		fs.mkdirSync(baseDir, { recursive: true });
 	}
 	const targetPath = path.join(baseDir, "daypulse.db");
 
-	if (!fs.existsSync(targetPath)) {
+	if (!fs.existsSync(/*turbopackIgnore: true*/ targetPath)) {
 		const devDbCandidates = [
 			path.resolve(process.cwd(), "prisma/dev.db"),
 			path.resolve(process.cwd(), "../server/prisma/dev.db"),
 			path.resolve(process.cwd(), "../../server/prisma/dev.db"),
 		];
 		for (const candidate of devDbCandidates) {
-			if (fs.existsSync(candidate)) {
+			if (fs.existsSync(/*turbopackIgnore: true*/ candidate)) {
 				try {
 					fs.copyFileSync(candidate, targetPath);
 					break;
