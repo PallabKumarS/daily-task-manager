@@ -1,6 +1,6 @@
 {
 	"name": "day-pulse-server",
-	"version": "1.0.4",
+	"version": "1.0.5",
 	"description": "DayPulse standalone Express.js, WebSocket, and Google Cloud Sync server",
 	"main": "dist/server.js",
 	"type": "module",
