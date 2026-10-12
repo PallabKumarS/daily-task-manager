@@ -149,7 +149,7 @@ async function updateCategory(
 		}
 	}
 
-	const { category, updatedRecords } = await prisma.$transaction(async (tx) => {
+	const { category, updatedRecords } = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
 		const updated = await tx.categoryOption.update({
 			where: { id },
 			data: {
@@ -205,7 +205,7 @@ async function renameCategoryByName(
 		return fail(409, `A category named "${newName}" already exists.`);
 	}
 
-	const { category, updatedRecords } = await prisma.$transaction(async (tx) => {
+	const { category, updatedRecords } = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
 		let saved: CategoryOption;
 		if (source) {
 			saved = await tx.categoryOption.update({
