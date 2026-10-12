@@ -1,6 +1,27 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api/v1";
+const DEFAULT_API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api/v1";
 
 const TOKEN_KEY = "daypulse_auth_token";
+const SERVER_URL_KEY = "daypulse_api_base_url";
+
+export function getApiBaseUrl(): string {
+	if (typeof window !== "undefined") {
+		const custom = localStorage.getItem(SERVER_URL_KEY);
+		if (custom) return custom;
+		if (window.location.protocol.startsWith("http")) {
+			return "/api/v1";
+		}
+	}
+	return DEFAULT_API_BASE_URL;
+}
+
+export function setApiBaseUrl(url: string): void {
+	if (typeof window === "undefined") return;
+	if (url) {
+		localStorage.setItem(SERVER_URL_KEY, url);
+	} else {
+		localStorage.removeItem(SERVER_URL_KEY);
+	}
+}
 
 export function getAuthToken(): string | null {
 	if (typeof window === "undefined") return null;
@@ -90,9 +111,10 @@ export async function apiRequest<T = unknown>(
 		return ipcRes;
 	}
 
+	const baseUrl = getApiBaseUrl();
 	const url = endpoint.startsWith("http")
 		? endpoint
-		: `${API_BASE_URL}${endpoint.startsWith("/") ? "" : "/"}${endpoint}`;
+		: `${baseUrl}${endpoint.startsWith("/") ? "" : "/"}${endpoint}`;
 
 	const token = getAuthToken();
 

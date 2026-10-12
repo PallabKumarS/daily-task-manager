@@ -65,7 +65,7 @@ function cleanStalePortProcesses(port = Number(DEFAULT_DEV_PORT)): void {
 }
 
 export async function ensureDevServerReady(): Promise<void> {
-	const healthUrl = `http://127.0.0.1:${DEFAULT_DEV_PORT}/api/health`;
+	const healthUrl = `http://127.0.0.1:${DEFAULT_DEV_PORT}/`;
 	const alreadyUp = await isUrlResponding(healthUrl, 2000);
 	if (alreadyUp) {
 		console.log(`[DayPulse Desktop] UI server verified at ${healthUrl}`);

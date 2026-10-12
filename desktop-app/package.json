@@ -4,26 +4,20 @@
 	"version": "1.0.0",
 	"description": "DayPulse Standalone Desktop App",
 	"author": "Pallab Kumar Sarker",
-	"main": "dist/main.js",
+	"main": "electron/main.js",
 	"scripts": {
-		"build": "tsc && node scripts/copy-assets.mjs",
-		"watch": "tsc -w",
-		"start": "tsc && node scripts/copy-assets.mjs && node scripts/brand-electron.mjs && node scripts/run-electron.mjs",
-		"dev": "tsc && node scripts/copy-assets.mjs && node scripts/brand-electron.mjs && node scripts/run-electron.mjs",
-		"pack:exe": "tsc && node scripts/copy-assets.mjs && electron-builder --win"
+		"prepare:server": "node scripts/prepare-server.mjs",
+		"build": "node scripts/prepare-server.mjs",
+		"dev": "electron .",
+		"build:desktop": "node scripts/prepare-server.mjs && electron-builder --win",
+		"pack:exe": "node scripts/prepare-server.mjs && electron-builder --win"
 	},
 	"build": {
 		"appId": "com.daypulse.tracker",
 		"productName": "DayPulse",
-		"electronVersion": "44.5.1",
 		"directories": {
 			"output": "release"
 		},
-		"files": [
-			"dist/**/*",
-			"assets/**/*",
-			"package.json"
-		],
 		"win": {
 			"target": [
 				{
@@ -42,20 +36,21 @@
 			"createDesktopShortcut": true,
 			"createStartMenuShortcut": true,
 			"shortcutName": "DayPulse"
-		}
-	},
-	"dependencies": {
-		"@prisma/client": "^6.4.0",
-		"@types/jszip": "^3.4.0",
-		"bcryptjs": "^3.0.3",
-		"jszip": "^3.10.2"
+		},
+		"asar": true,
+		"files": [
+			"electron/**/*",
+			"assets/**/*"
+		],
+		"extraResources": [
+			{
+				"from": "server-dist",
+				"to": "server-dist"
+			}
+		]
 	},
 	"devDependencies": {
-		"@types/bcryptjs": "^2.4.6",
-		"@types/node": "^20.19.43",
 		"electron": "44.5.1",
-		"electron-builder": "^26.4.0",
-		"socket.io-client": "^4.8.4",
-		"typescript": "^5.9.3"
+		"electron-builder": "^26.4.0"
 	}
 }
