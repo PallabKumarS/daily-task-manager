@@ -7,7 +7,6 @@ import {
 	ExternalLink,
 	FileText,
 	KeyRound,
-	LogIn,
 	LogOut,
 	RefreshCw,
 	ShieldCheck,
@@ -15,11 +14,9 @@ import {
 	Unlink,
 	Upload,
 	User,
-	UserPlus,
 	Volume2,
 	VolumeX,
 } from "lucide-react";
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import * as React from "react";
 import { toast } from "sonner";
@@ -326,25 +323,34 @@ function SettingsContent() {
 	// Google Sync Actions
 	const handleConnectGoogle = async () => {
 		try {
-			const res = await api.get<{ url: string }>("/sync/auth-url");
-			if (res.success && res.data.url) {
-				const electronApi =
-					typeof window !== "undefined"
-						? (
-								window as unknown as {
-									electronAPI?: {
-										openExternal?: (u: string) => Promise<boolean>;
-									};
-								}
-							).electronAPI
-						: undefined;
+			const res = await api.get<{ url: string }>("/sync/auth-url").catch((err) => ({
+				success: false,
+				message: err instanceof Error ? err.message : "Failed to obtain Google authorization URL",
+				data: null,
+			}));
 
-				if (electronApi?.openExternal) {
-					await electronApi.openExternal(res.data.url);
-					toast.info("Opened Google Sign-In in your browser. Return here once authorized.");
-				} else {
-					window.location.href = res.data.url;
-				}
+			if (!res.success || !res.data?.url) {
+				toast.error(res.message || "Google Cloud sync is not configured or server is offline");
+				setShowSetupGuide(true);
+				return;
+			}
+
+			const electronApi =
+				typeof window !== "undefined"
+					? (
+							window as unknown as {
+								electronAPI?: {
+									openExternal?: (u: string) => Promise<boolean>;
+								};
+							}
+						).electronAPI
+					: undefined;
+
+			if (electronApi?.openExternal) {
+				await electronApi.openExternal(res.data.url);
+				toast.info("Opened Google Sign-In in your browser. Return here once authorized.");
+			} else if (typeof window !== "undefined") {
+				window.open(res.data.url, "_system") || window.open(res.data.url, "_blank");
 			}
 		} catch (error) {
 			const message = error instanceof Error ? error.message : "Failed to initiate Google OAuth";
@@ -580,7 +586,7 @@ function SettingsContent() {
 								</li>
 								<li>
 									Add Authorized Redirect URI:
-									<div className="mt-1 rounded-lg bg-slate-900 p-2 font-mono text-emerald-400 select-all border border-slate-800">
+									<div className="mt-1 rounded-lg bg-slate-900 p-2 font-mono text-emerald-400 select-all border border-slate-800 text-[11px] break-all">
 										http://localhost:3000/api/sync/google/callback
 									</div>
 								</li>
@@ -591,7 +597,7 @@ function SettingsContent() {
 								<li>
 									Add the following keys to your project{" "}
 									<strong className="text-slate-200">.env</strong> or enter them below:
-									<pre className="mt-1 rounded-lg bg-slate-900 p-2 font-mono text-slate-300 border border-slate-800">
+									<pre className="mt-1 rounded-lg bg-slate-900 p-2 font-mono text-slate-300 border border-slate-800 text-[11px] overflow-x-auto whitespace-pre-wrap break-all">
 										GOOGLE_CLIENT_ID=&quot;your-client-id.apps.googleusercontent.com&quot;
 										GOOGLE_CLIENT_SECRET=&quot;your-client-secret&quot;
 									</pre>
@@ -838,49 +844,27 @@ function SettingsContent() {
 					<h2 className="text-sm font-bold text-white">Account & Authentication</h2>
 				</div>
 
-				{user?.id === "local_user_offline" || user?.email === "offline@daypulse.app" ? (
-					<div className="space-y-3">
-						<div className="p-4 rounded-2xl border border-emerald-500/20 bg-emerald-950/20">
-							<p className="text-xs font-semibold text-emerald-300">Standalone Offline Workspace</p>
-							<p className="text-xs text-slate-400 mt-1">
-								Your tasks, routines, and wealth ledger are saved locally on this device. Sign in or
-								register to sync across devices, or continue using DayPulse offline.
-							</p>
-						</div>
-						<div className="flex flex-wrap items-center gap-3 pt-1">
-							<Link
-								href="/login"
-								className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-semibold text-white transition cursor-pointer"
-							>
-								<LogIn className="w-3.5 h-3.5" />
-								<span>Sign In to Cloud Account</span>
-							</Link>
-							<Link
-								href="/register"
-								className="flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 transition cursor-pointer"
-							>
-								<UserPlus className="w-3.5 h-3.5" />
-								<span>Create New Account</span>
-							</Link>
-						</div>
+				<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl border border-slate-800 bg-slate-950">
+					<div className="space-y-0.5">
+						<p className="text-sm font-semibold text-slate-200">{user?.name || "DayPulse User"}</p>
+						<p className="text-xs text-slate-400">{user?.email}</p>
+						<p className="text-[11px] text-slate-500 pt-0.5">
+							Default currency:{" "}
+							<span className="text-emerald-400 font-medium">{user?.currency || "USD"}</span>
+						</p>
 					</div>
-				) : (
-					<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-slate-800 bg-slate-950">
-						<div>
-							<p className="text-sm font-semibold text-slate-200">{user?.name || "User"}</p>
-							<p className="text-xs text-slate-400">{user?.email}</p>
-						</div>
+					<div className="flex items-center gap-2">
 						<Button
 							variant="outline"
 							size="sm"
 							onClick={() => logout()}
-							className="gap-2 border-red-900/50 text-red-400 hover:bg-red-950/40"
+							className="gap-2 border-red-900/50 text-red-400 hover:bg-red-950/40 text-xs"
 						>
-							<LogOut className="w-4 h-4" />
+							<LogOut className="w-3.5 h-3.5" />
 							<span>Sign Out</span>
 						</Button>
 					</div>
-				)}
+				</div>
 			</div>
 
 			<CategoryManagerModal

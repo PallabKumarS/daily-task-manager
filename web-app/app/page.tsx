@@ -8,13 +8,24 @@ import { LandingFooter } from "@/components/landing/landing-footer";
 import { LandingNavbar } from "@/components/landing/landing-navbar";
 import { useAuth } from "@/components/providers/auth-provider";
 
+import { isCapacitorNative } from "@/lib/api-client";
+
 export default function HomePage() {
 	const { user, loading } = useAuth();
 	const router = useRouter();
 
 	React.useEffect(() => {
-		if (!loading && user) {
-			router.replace("/dashboard");
+		if (!loading) {
+			if (user) {
+				router.replace("/dashboard");
+			} else {
+				const isDesktop =
+					typeof window !== "undefined" &&
+					Boolean((window as unknown as { electronAPI?: unknown }).electronAPI);
+				if (isCapacitorNative() || isDesktop) {
+					router.replace("/login");
+				}
+			}
 		}
 	}, [user, loading, router]);
 

@@ -173,10 +173,16 @@ export async function apiRequest<T = unknown>(
 
 	// Route offline Capacitor native directly to client local storage
 	if (isCapacitorNative() && !isCustomServerSet()) {
-		if (!getAuthToken()) {
-			setAuthToken("daypulse_local_token");
-		}
 		const localRes = await handleLocalClientDispatch<T>(endpoint, options);
+		if (!localRes.success) {
+			if (localRes.statusCode === 401) {
+				clearAuthToken();
+				if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
+					window.dispatchEvent(new CustomEvent("daypulse:unauthorized"));
+				}
+			}
+			throw new Error(localRes.message || "An error occurred in local storage");
+		}
 		const reqMethod = (options.method || "GET").toUpperCase();
 		if (typeof window !== "undefined" && ["POST", "PATCH", "PUT", "DELETE"].includes(reqMethod)) {
 			window.dispatchEvent(new CustomEvent("daypulse:refresh"));

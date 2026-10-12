@@ -1,6 +1,25 @@
-const { app } = require("electron");
+const { app, shell } = require("electron");
 const path = require("path");
 const fs = require("fs");
+
+app.on("web-contents-created", (_event, contents) => {
+	contents.setWindowOpenHandler(({ url }) => {
+		if (url.startsWith("http://") || url.startsWith("https://")) {
+			shell.openExternal(url);
+		}
+		return { action: "deny" };
+	});
+	contents.on("will-navigate", (event, url) => {
+		if (
+			!url.startsWith("http://localhost:") &&
+			!url.startsWith("http://127.0.0.1:") &&
+			!url.startsWith("file://")
+		) {
+			event.preventDefault();
+			shell.openExternal(url);
+		}
+	});
+});
 
 app.name = "DayPulse";
 const appData = process.env.APPDATA || (process.platform === "darwin" ? path.join(process.env.HOME || "", "Library/Application Support") : path.join(process.env.HOME || "", ".config"));

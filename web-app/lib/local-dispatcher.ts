@@ -1,4 +1,6 @@
 import type { ApiResponse } from "./api-client";
+import { exportLocalArchive } from "./export-local-archive";
+import { restoreLocalArchive } from "./restore-local-archive";
 
 export interface LocalStoreState {
 	tasks: Array<Record<string, unknown>>;
@@ -22,6 +24,8 @@ const STORAGE_KEYS = {
 	TRACKER_LOGS: "daypulse_local_tracker_logs",
 	DEBTS_LOANS: "daypulse_local_debts_loans",
 	REPAYMENTS: "daypulse_local_debt_repayments",
+	USER: "daypulse_user_account",
+	CREDENTIALS: "daypulse_user_credentials",
 };
 
 const DEFAULT_CATEGORIES = [
@@ -62,15 +66,26 @@ function generateId(prefix = "loc"): string {
 	return `${prefix}_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
 }
 
-function getLocalUser() {
-	return {
-		id: "local_user_offline",
-		name: "Local User",
-		email: "offline@daypulse.app",
-		currency: "USD",
-		createdAt: new Date().toISOString(),
-		updatedAt: new Date().toISOString(),
-	};
+function getLocalUser(): {
+	id: string;
+	name: string;
+	email: string;
+	currency: string;
+	createdAt: string;
+	updatedAt: string;
+} | null {
+	if (typeof window === "undefined") return null;
+	try {
+		const raw = localStorage.getItem(STORAGE_KEYS.USER);
+		return raw ? JSON.parse(raw) : null;
+	} catch {
+		return null;
+	}
+}
+
+function getActiveUserId(): string {
+	const user = getLocalUser();
+	return user?.id || "usr_local";
 }
 
 export async function handleLocalClientDispatch<T = unknown>(
@@ -103,14 +118,133 @@ export async function handleLocalClientDispatch<T = unknown>(
 
 	// 1. Auth routes
 	if (pathname === "/auth/me") {
-		return { statusCode: 200, success: true, data: getLocalUser() as T };
-	}
-	if (pathname === "/auth/login" || pathname === "/auth/register") {
 		const user = getLocalUser();
+		if (!user) {
+			return {
+				statusCode: 401,
+				success: false,
+				message: "No active session on this device",
+				data: null as unknown as T,
+			};
+		}
+		if (method === "PATCH") {
+			if (body.name) user.name = String(body.name).trim();
+			if (body.currency) user.currency = String(body.currency).trim();
+			user.updatedAt = new Date().toISOString();
+			localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
+			return { statusCode: 200, success: true, data: user as T };
+		}
+		return { statusCode: 200, success: true, data: user as T };
+	}
+
+	if (pathname === "/auth/register" && method === "POST") {
+		const name = String(body.name || "").trim() || "DayPulse User";
+		const email = String(body.email || "")
+			.trim()
+			.toLowerCase();
+		const password = String(body.password || "");
+		const currency = String(body.currency || "USD");
+
+		const user = {
+			id: generateId("usr"),
+			name,
+			email,
+			currency,
+			createdAt: new Date().toISOString(),
+			updatedAt: new Date().toISOString(),
+		};
+		localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
+		localStorage.setItem(STORAGE_KEYS.CREDENTIALS, JSON.stringify({ email, password }));
+		const token = `daypulse_token_${user.id}`;
+		return {
+			statusCode: 201,
+			success: true,
+			message: "Account created successfully",
+			data: { user, token } as T,
+		};
+	}
+
+	if (pathname === "/auth/login" && method === "POST") {
+		const email = String(body.email || "")
+			.trim()
+			.toLowerCase();
+		const password = String(body.password || "");
+		const user = getLocalUser();
+
+		if (!user) {
+			return {
+				statusCode: 404,
+				success: false,
+				message: "No account found on this device. Please create an account or restore a backup.",
+				data: null as unknown as T,
+			};
+		}
+
+		try {
+			const credsRaw = localStorage.getItem(STORAGE_KEYS.CREDENTIALS);
+			if (credsRaw) {
+				const creds = JSON.parse(credsRaw);
+				if (creds.email && creds.email !== email) {
+					return {
+						statusCode: 400,
+						success: false,
+						message: "Invalid email or password",
+						data: null as unknown as T,
+					};
+				}
+				if (creds.password && creds.password !== password) {
+					return {
+						statusCode: 400,
+						success: false,
+						message: "Invalid email or password",
+						data: null as unknown as T,
+					};
+				}
+			}
+		} catch {}
+
+		const token = `daypulse_token_${user.id}`;
 		return {
 			statusCode: 200,
 			success: true,
-			data: { user, token: "daypulse_local_token" } as T,
+			message: "Signed in successfully",
+			data: { user, token } as T,
+		};
+	}
+
+	if (pathname === "/auth/logout") {
+		return {
+			statusCode: 200,
+			success: true,
+			message: "Logged out successfully",
+			data: null as unknown as T,
+		};
+	}
+
+	if (pathname === "/auth/restore-backup" && method === "POST") {
+		const archiveBase64 = String(body.archiveBase64 || body.archive || body.data || "");
+		const backupPayload = (body.backup || body.data) as Record<string, unknown> | undefined;
+		const customPassword = typeof body.password === "string" ? body.password : undefined;
+
+		const restoreRes = await restoreLocalArchive(archiveBase64, backupPayload, customPassword);
+		if (!restoreRes.success || !restoreRes.user) {
+			return {
+				statusCode: 400,
+				success: false,
+				message: restoreRes.message || "Failed to restore backup archive",
+				data: null as unknown as T,
+			};
+		}
+
+		return {
+			statusCode: 200,
+			success: true,
+			message: restoreRes.message,
+			data: {
+				user: restoreRes.user,
+				token: restoreRes.token,
+				summary: restoreRes.message,
+			} as T,
 		};
 	}
 
@@ -124,7 +258,7 @@ export async function handleLocalClientDispatch<T = unknown>(
 			const tasks = getList(STORAGE_KEYS.TASKS);
 			const newTask = {
 				id: generateId("task"),
-				userId: "local_user_offline",
+				userId: getActiveUserId(),
 				title: body.title || "Untitled Task",
 				description: body.description || null,
 				type: body.type || "TASK",
@@ -204,7 +338,7 @@ export async function handleLocalClientDispatch<T = unknown>(
 			const routines = getList(STORAGE_KEYS.ROUTINES);
 			const newRoutine = {
 				id: generateId("rtn"),
-				userId: "local_user_offline",
+				userId: getActiveUserId(),
 				title: body.title || "Untitled Routine",
 				description: body.description || null,
 				timeSlot: body.timeSlot || "morning",
@@ -247,7 +381,7 @@ export async function handleLocalClientDispatch<T = unknown>(
 				logs.push({
 					id: generateId("log"),
 					routineId,
-					userId: "local_user_offline",
+					userId: getActiveUserId(),
 					date,
 					completed: true,
 					completedAt: new Date().toISOString(),
@@ -297,7 +431,7 @@ export async function handleLocalClientDispatch<T = unknown>(
 			const finances = getList(STORAGE_KEYS.FINANCES);
 			const newTx = {
 				id: generateId("tx"),
-				userId: "local_user_offline",
+				userId: getActiveUserId(),
 				type: body.type || "EXPENSE",
 				amount: Number(body.amount) || 0,
 				category: body.category || "General",
@@ -420,7 +554,7 @@ export async function handleLocalClientDispatch<T = unknown>(
 			const list = getList(STORAGE_KEYS.DEBTS_LOANS);
 			const newItem = {
 				id: generateId("dl"),
-				userId: "local_user_offline",
+				userId: getActiveUserId(),
 				type: body.type || "DEBT",
 				personName: body.personName || "Unknown",
 				amount: Number(body.amount) || 0,
@@ -441,7 +575,7 @@ export async function handleLocalClientDispatch<T = unknown>(
 			const isDebt = newItem.type === "DEBT";
 			finances.unshift({
 				id: generateId("tx"),
-				userId: "local_user_offline",
+				userId: getActiveUserId(),
 				type: isDebt ? "INCOME" : "EXPENSE",
 				amount: newItem.amount,
 				category: isDebt ? "Debt (Borrowed)" : "Loan (Lent)",
@@ -469,7 +603,7 @@ export async function handleLocalClientDispatch<T = unknown>(
 			const newRepayment = {
 				id: generateId("rep"),
 				debtLoanId,
-				userId: "local_user_offline",
+				userId: getActiveUserId(),
 				amount: repayAmount,
 				date: body.date || new Date().toISOString(),
 				paymentMethod: body.paymentMethod || "Cash",
@@ -494,7 +628,7 @@ export async function handleLocalClientDispatch<T = unknown>(
 			const isDebt = item.type === "DEBT";
 			finances.unshift({
 				id: generateId("tx"),
-				userId: "local_user_offline",
+				userId: getActiveUserId(),
 				type: isDebt ? "EXPENSE" : "INCOME",
 				amount: repayAmount,
 				category: isDebt ? "Debt Repayment" : "Loan Received",
@@ -543,7 +677,7 @@ export async function handleLocalClientDispatch<T = unknown>(
 			const trackers = getList(STORAGE_KEYS.TRACKERS);
 			const newTrk = {
 				id: generateId("trk"),
-				userId: "local_user_offline",
+				userId: getActiveUserId(),
 				name: body.name || "Tracker",
 				category: body.category || "General",
 				unitName: body.unitName || "units",
@@ -577,7 +711,7 @@ export async function handleLocalClientDispatch<T = unknown>(
 		const entry = {
 			id: existingIdx >= 0 ? logs[existingIdx].id : generateId("trkl"),
 			trackerId,
-			userId: "local_user_offline",
+			userId: getActiveUserId(),
 			date,
 			value: Number(body.value) || 0,
 			status: body.status || "LOGGED",
@@ -593,6 +727,51 @@ export async function handleLocalClientDispatch<T = unknown>(
 		}
 		saveList(STORAGE_KEYS.TRACKER_LOGS, logs);
 		return { statusCode: 201, success: true, data: entry as T };
+	}
+
+	// 7. Sync & Backup Archive routes
+	if (pathname === "/sync/archive/export" && method === "POST") {
+		const exportRes = await exportLocalArchive();
+		return {
+			statusCode: 200,
+			success: true,
+			message: "Backup archive generated successfully",
+			data: exportRes as T,
+		};
+	}
+
+	if (pathname === "/sync/archive/restore" && method === "POST") {
+		const archiveBase64 = String(body.archiveBase64 || body.archive || "");
+		const restoreRes = await restoreLocalArchive(archiveBase64);
+		return {
+			statusCode: 200,
+			success: true,
+			message: restoreRes.message,
+			data: {
+				restoredCounts: restoreRes.counts,
+				summary: restoreRes.message,
+			} as T,
+		};
+	}
+
+	if (pathname === "/sync/restore" && method === "POST") {
+		const restoreRes = await restoreLocalArchive(undefined, body);
+		return {
+			statusCode: 200,
+			success: true,
+			message: restoreRes.message,
+			data: { summary: restoreRes.message } as T,
+		};
+	}
+
+	if (pathname === "/sync/auth-url" && method === "GET") {
+		return {
+			statusCode: 400,
+			success: false,
+			message:
+				"Google Drive cloud sync requires a running DayPulse server. Use 'Multi-Collection ZIP Archive & Offline Backup' for device backups.",
+			data: null as unknown as T,
+		};
 	}
 
 	if (pathname === "/auth/google/restore-url") {

@@ -16,7 +16,6 @@ import {
 	Flame,
 	LayoutGrid,
 	ListFilter,
-	LogIn,
 	Minus,
 	Pencil,
 	Plus,
@@ -39,7 +38,6 @@ import type { TaskItem } from "@/components/tasks/task-list";
 import type { DailyTrackerItem } from "@/components/trackers/tracker-types";
 import { Button } from "@/components/ui/button";
 import { useConfirm } from "@/components/ui/confirm-dialog";
-import { Modal } from "@/components/ui/dialog";
 import { api } from "@/lib/api-client";
 import { formatCurrency } from "@/lib/currency-symbols";
 import { useTodayDate } from "@/lib/date-helpers";
@@ -68,7 +66,6 @@ export function DashboardView({
 	const [viewMode, setViewMode] = React.useState<"OVERVIEW" | "STREAM">("STREAM");
 	const [isRestoreModalOpen, setIsRestoreModalOpen] = React.useState(false);
 	const [isGoogleModalOpen, setIsGoogleModalOpen] = React.useState(false);
-	const [isFirstLaunchPromptOpen, setIsFirstLaunchPromptOpen] = React.useState(false);
 
 	const fetchData = React.useCallback(async () => {
 		try {
@@ -107,22 +104,6 @@ export function DashboardView({
 			window.removeEventListener("daypulse:date-changed", onGlobalRefresh);
 		};
 	}, [fetchData]);
-
-	React.useEffect(() => {
-		if (typeof window !== "undefined") {
-			const prompted = localStorage.getItem("daypulse_onboarding_prompted");
-			if (!prompted) {
-				setIsFirstLaunchPromptOpen(true);
-			}
-		}
-	}, []);
-
-	const handleDismissOnboarding = () => {
-		if (typeof window !== "undefined") {
-			localStorage.setItem("daypulse_onboarding_prompted", "true");
-		}
-		setIsFirstLaunchPromptOpen(false);
-	};
 
 	// Tracker handlers
 	const handleAdjustTracker = async (trackerId: string, delta: number) => {
@@ -1277,86 +1258,6 @@ export function DashboardView({
 					</div>
 				</div>
 			)}
-
-			{/* First Launch Setup Prompt Modal */}
-			<Modal
-				isOpen={isFirstLaunchPromptOpen}
-				onClose={handleDismissOnboarding}
-				title="Welcome to DayPulse"
-				description="Choose how you would like to get started with your workspace."
-			>
-				<div className="space-y-3 pt-2">
-					<button
-						type="button"
-						onClick={() => {
-							handleDismissOnboarding();
-							setIsRestoreModalOpen(true);
-						}}
-						className="w-full text-left p-3.5 rounded-xl border border-slate-800 bg-slate-900/60 hover:bg-slate-800/80 hover:border-emerald-500/40 transition group flex items-start gap-3 cursor-pointer"
-					>
-						<div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0 group-hover:scale-105 transition">
-							<FileArchive className="w-5 h-5" />
-						</div>
-						<div className="flex-1 min-w-0">
-							<div className="text-sm font-semibold text-white group-hover:text-emerald-300 transition">
-								Restore Backup File
-							</div>
-							<div className="text-xs text-slate-400 mt-0.5">
-								Import an encrypted DayPulse backup archive (.zip or .json).
-							</div>
-						</div>
-					</button>
-
-					<button
-						type="button"
-						onClick={() => {
-							handleDismissOnboarding();
-							setIsGoogleModalOpen(true);
-						}}
-						className="w-full text-left p-3.5 rounded-xl border border-slate-800 bg-slate-900/60 hover:bg-slate-800/80 hover:border-blue-500/40 transition group flex items-start gap-3 cursor-pointer"
-					>
-						<div className="p-2 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20 shrink-0 group-hover:scale-105 transition">
-							<Cloud className="w-5 h-5" />
-						</div>
-						<div className="flex-1 min-w-0">
-							<div className="text-sm font-semibold text-white group-hover:text-blue-300 transition">
-								Sync from Google Drive
-							</div>
-							<div className="text-xs text-slate-400 mt-0.5">
-								Authorize with Google to download your latest cloud backup.
-							</div>
-						</div>
-					</button>
-
-					<Link
-						href="/login"
-						onClick={handleDismissOnboarding}
-						className="w-full text-left p-3.5 rounded-xl border border-slate-800 bg-slate-900/60 hover:bg-slate-800/80 hover:border-purple-500/40 transition group flex items-start gap-3 block"
-					>
-						<div className="p-2 rounded-lg bg-purple-500/10 text-purple-400 border border-purple-500/20 shrink-0 group-hover:scale-105 transition">
-							<LogIn className="w-5 h-5" />
-						</div>
-						<div className="flex-1 min-w-0">
-							<div className="text-sm font-semibold text-white group-hover:text-purple-300 transition">
-								Sign In or Register Account
-							</div>
-							<div className="text-xs text-slate-400 mt-0.5">
-								Switch to a hosted DayPulse server account.
-							</div>
-						</div>
-					</Link>
-
-					<div className="pt-2">
-						<Button
-							variant="outline"
-							className="w-full text-xs text-slate-400 hover:text-white"
-							onClick={handleDismissOnboarding}
-						>
-							Start Fresh Local Workspace
-						</Button>
-					</div>
-				</div>
-			</Modal>
 
 			{/* Restore Modals */}
 			<RestoreBackupModal
