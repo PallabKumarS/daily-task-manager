@@ -1,6 +1,6 @@
 {
 	"name": "daily-task-tracker-workspace",
-	"version": "1.0.6",
+	"version": "1.0.7",
 	"private": true,
 	"workspaces": [
 		"server",
@@ -26,5 +26,8 @@
 		"lightningcss-linux-arm64-gnu": "^1.32.0",
 		"lightningcss-linux-x64-gnu": "^1.32.0",
 		"lightningcss-linux-x64-musl": "^1.32.0"
+	},
+	"engines": {
+		"node": ">=20.0.0"
 	}
 }
