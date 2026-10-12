@@ -78,16 +78,32 @@ export function GoogleRestoreModal({
 		setSubmittingCode(false);
 	}, [stopPolling]);
 
-	const handleModalClose = () => {
+	const handleModalClose = React.useCallback(() => {
 		resetState();
 		onClose();
-	};
+	}, [resetState, onClose]);
 
 	React.useEffect(() => {
+		const handleMessage = (event: MessageEvent) => {
+			if (event.data?.type === "daypulse:google_connected") {
+				stopPolling();
+				setStatus("success");
+				setStatusText("Restored successfully. Finalizing session...");
+				refreshUser().then(() => {
+					toast.success("Workspace restored from Google Drive successfully");
+					setTimeout(() => {
+						handleModalClose();
+						router.push("/dashboard");
+					}, 1200);
+				});
+			}
+		};
+		window.addEventListener("message", handleMessage);
 		return () => {
+			window.removeEventListener("message", handleMessage);
 			stopPolling();
 		};
-	}, [stopPolling]);
+	}, [stopPolling, refreshUser, router, handleModalClose]);
 
 	React.useEffect(() => {
 		if (isOpen) {

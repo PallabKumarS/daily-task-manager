@@ -197,11 +197,19 @@ function SettingsContent() {
 		}
 
 		const onSyncRefresh = () => fetchGoogleStatus();
+		const handleMessage = (event: MessageEvent) => {
+			if (event.data?.type === "daypulse:google_connected") {
+				toast.success(`Google Account connected: ${event.data.email || ""}`);
+				fetchGoogleStatus();
+			}
+		};
 		window.addEventListener("daypulse:refresh", onSyncRefresh);
 		window.addEventListener("daypulse:sync-updated", onSyncRefresh);
+		window.addEventListener("message", handleMessage);
 		return () => {
 			window.removeEventListener("daypulse:refresh", onSyncRefresh);
 			window.removeEventListener("daypulse:sync-updated", onSyncRefresh);
+			window.removeEventListener("message", handleMessage);
 		};
 	}, [fetchGoogleStatus, searchParams]);
 
@@ -683,7 +691,9 @@ function SettingsContent() {
 									Add Authorized Redirect URI:
 									<div className="mt-1 rounded-lg bg-slate-900 p-2 font-mono text-emerald-400 select-all border border-slate-800 text-[11px] break-all space-y-1">
 										<div>https://day-pulse-web.vercel.app/api/v1/sync/google/callback</div>
-										<div className="text-slate-500 text-[10px]">Desktop/Dev: http://localhost:5000/api/v1/sync/google/callback</div>
+										<div className="text-slate-500 text-[10px]">
+											Desktop/Dev: http://localhost:5000/api/v1/sync/google/callback
+										</div>
 									</div>
 								</li>
 								<li>

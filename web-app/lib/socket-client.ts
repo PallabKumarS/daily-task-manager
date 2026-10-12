@@ -1,5 +1,5 @@
 import { io, type Socket } from "socket.io-client";
-import { getApiBaseUrl, getAuthToken } from "./api-client";
+import { getApiBaseUrl, getAuthToken, isCustomServerSet } from "./api-client";
 
 let socket: Socket | null = null;
 
@@ -20,7 +20,7 @@ export function getSocket(): Socket | null {
 	if (typeof window === "undefined") return null;
 
 	const isDesktop = Boolean((window as unknown as { electronAPI?: unknown }).electronAPI);
-	if (isDesktop) return null;
+	if (isDesktop || !isCustomServerSet()) return null;
 
 	const token = getAuthToken();
 	if (!token) {

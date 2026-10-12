@@ -171,8 +171,8 @@ export async function apiRequest<T = unknown>(
 		return ipcRes;
 	}
 
-	// Route offline Capacitor native directly to client local storage
-	if (isCapacitorNative() && !isCustomServerSet()) {
+	// Route browser client and Capacitor native directly to client local storage when no custom server is configured
+	if (typeof window !== "undefined" && !isCustomServerSet()) {
 		const localRes = await handleLocalClientDispatch<T>(endpoint, options);
 		if (!localRes.success) {
 			if (localRes.statusCode === 401) {

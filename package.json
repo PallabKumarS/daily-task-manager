@@ -1,6 +1,7 @@
 {
 	"name": "daily-task-tracker-workspace",
-	"version": "1.0.10",
+	"version": "1.0.11",
+	"author": "Pallab Kumar Sarker",
 	"private": true,
 	"workspaces": [
 		"server",

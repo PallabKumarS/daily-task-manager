@@ -3,7 +3,13 @@
 import { useRouter } from "next/navigation";
 import * as React from "react";
 import { toast } from "sonner";
-import { api, clearAuthToken, getAuthToken, isCapacitorNative, setAuthToken } from "@/lib/api-client";
+import {
+	api,
+	clearAuthToken,
+	getAuthToken,
+	isCapacitorNative,
+	setAuthToken,
+} from "@/lib/api-client";
 import { disconnectSocket, getSocket } from "@/lib/socket-client";
 
 export interface AuthUser {
@@ -38,7 +44,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 		const isNative = isCapacitorNative();
 
 		const token = getAuthToken();
-		if (!token && !isDesktop && !isNative) {
+		const hasLocalUser =
+			typeof window !== "undefined" && Boolean(localStorage.getItem("daypulse_user_account"));
+
+		if (!token && !isDesktop && !isNative && !hasLocalUser) {
 			setUser(null);
 			setLoading(false);
 			return;

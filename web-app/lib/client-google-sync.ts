@@ -30,20 +30,34 @@ export function getClientGoogleCredentials(): ClientGoogleCredentials | null {
 	if (typeof window === "undefined") return null;
 	try {
 		const raw = localStorage.getItem(STORAGE_KEYS.CREDS);
-		if (!raw) return null;
-		const parsed = JSON.parse(raw);
-		if (parsed.clientId && parsed.clientSecret) {
-			return parsed as ClientGoogleCredentials;
+		if (raw) {
+			const parsed = JSON.parse(raw);
+			if (parsed.clientId && parsed.clientSecret) {
+				return parsed as ClientGoogleCredentials;
+			}
 		}
-		return null;
 	} catch {
-		return null;
+		// Suppress parse failure
 	}
+
+	const envClientId =
+		process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID_DESKTOP || "";
+	const envClientSecret =
+		process.env.NEXT_PUBLIC_GOOGLE_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET_DESKTOP || "";
+
+	if (envClientId) {
+		return {
+			clientId: envClientId,
+			clientSecret: envClientSecret,
+		};
+	}
+
+	return null;
 }
 
 export function isClientGoogleConfigured(): boolean {
 	const creds = getClientGoogleCredentials();
-	return Boolean(creds?.clientId && creds?.clientSecret);
+	return Boolean(creds?.clientId);
 }
 
 export function saveClientGoogleTokens(tokens: {
@@ -79,9 +93,17 @@ export function clearClientGoogleTokens(): void {
 	localStorage.removeItem(STORAGE_KEYS.TOKENS);
 }
 
-export function getClientGoogleAuthUrl(
-	redirectUri = "http://localhost:3000/api/sync/google/callback",
-): string {
+export function getClientGoogleRedirectUri(): string {
+	if (typeof window !== "undefined" && window.location.origin) {
+		return `${window.location.origin}/api/v1/sync/google/callback`;
+	}
+	if (process.env.NEXT_PUBLIC_APP_URL) {
+		return `${process.env.NEXT_PUBLIC_APP_URL.replace(/\/+$/, "")}/api/v1/sync/google/callback`;
+	}
+	return "http://localhost:5000/api/v1/sync/google/callback";
+}
+
+export function getClientGoogleAuthUrl(redirectUri = getClientGoogleRedirectUri()): string {
 	const creds = getClientGoogleCredentials();
 	if (!creds?.clientId) {
 		throw new Error("Google Client ID is not configured. Please enter your credentials first.");
@@ -107,7 +129,7 @@ export function getClientGoogleAuthUrl(
 
 export async function exchangeClientCodeForTokens(
 	code: string,
-	redirectUri = "http://localhost:3000/api/sync/google/callback",
+	redirectUri = getClientGoogleRedirectUri(),
 ): Promise<{ accessToken: string; email?: string }> {
 	const creds = getClientGoogleCredentials();
 	if (!creds?.clientId || !creds?.clientSecret) {

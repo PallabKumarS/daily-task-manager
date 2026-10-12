@@ -1,6 +1,7 @@
 {
 	"name": "day-pulse-server",
-	"version": "1.0.10",
+	"version": "1.0.11",
+	"author": "Pallab Kumar Sarker",
 	"description": "DayPulse standalone Express.js, WebSocket, and Google Cloud Sync server",
 	"main": "dist/server.js",
 	"type": "module",
