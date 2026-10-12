@@ -1,4 +1,5 @@
 import * as fs from "node:fs";
+import * as os from "node:os";
 import * as path from "node:path";
 import { PrismaClient } from "@prisma/client";
 import {
@@ -211,6 +212,12 @@ export function getDatabasePath(): string {
 		baseDir = process.env.USER_DATA_PATH;
 	} else if (process.env.APPDATA) {
 		baseDir = path.join(process.env.APPDATA, "DayPulse");
+	} else if (
+		process.env.VERCEL ||
+		process.env.AWS_LAMBDA_FUNCTION_NAME ||
+		process.platform === "linux"
+	) {
+		baseDir = path.join(os.tmpdir(), "DayPulse");
 	} else {
 		baseDir = path.join(process.cwd(), ".data");
 	}
