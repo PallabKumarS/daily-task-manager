@@ -188,7 +188,11 @@ export default function LoginPage() {
 				onClose={() => setIsRestoreModalOpen(false)}
 			/>
 
-			<GoogleRestoreModal isOpen={isGoogleModalOpen} onClose={() => setIsGoogleModalOpen(false)} />
+			<GoogleRestoreModal
+				isOpen={isGoogleModalOpen}
+				onClose={() => setIsGoogleModalOpen(false)}
+				onOpenFileRestore={() => setIsRestoreModalOpen(true)}
+			/>
 
 			<ServerConfigModal
 				isOpen={isServerModalOpen}

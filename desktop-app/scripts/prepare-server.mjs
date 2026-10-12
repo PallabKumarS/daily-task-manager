@@ -15,7 +15,7 @@ console.log("[DayPulse Desktop] Preparing Single-Process Standalone Server Distr
 
 // 1. Build Next.js standalone application (includes all API route handlers and Prisma)
 console.log("[DayPulse Desktop] Building Next.js standalone application...");
-execSync("npm run build", {
+execSync("npx next build", {
 	cwd: webAppDir,
 	stdio: "inherit",
 	env: {
@@ -153,6 +153,12 @@ if (!fs.existsSync(dbPath) && fs.existsSync(templateDb)) {
 
 process.env.USER_DATA_PATH = userDataPath;
 process.env.DATABASE_URL = "file:" + dbPath.replace(/\\\\/g, "/");
+if (!process.env.JWT_SECRET) {
+	process.env.JWT_SECRET = "daypulse-desktop-jwt-secret-standalone-2026";
+}
+if (!process.env.TOKEN_ENCRYPTION_SECRET) {
+	process.env.TOKEN_ENCRYPTION_SECRET = "daypulse-desktop-aes-gcm-secret-key-32-bytes";
+}
 
 function linkVendor(base) {
 	const vendor = path.join(base, "vendor");

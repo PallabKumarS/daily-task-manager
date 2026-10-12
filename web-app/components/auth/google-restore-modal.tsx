@@ -1,17 +1,28 @@
 "use client";
 
-import { AlertCircle, CheckCircle2, Cloud, ExternalLink, RefreshCw } from "lucide-react";
+import {
+	AlertCircle,
+	CheckCircle2,
+	Cloud,
+	ExternalLink,
+	FileArchive,
+	KeyRound,
+	RefreshCw,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/components/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { api, setAuthToken } from "@/lib/api-client";
 
 interface GoogleRestoreModalProps {
 	isOpen: boolean;
 	onClose: () => void;
+	onOpenFileRestore?: () => void;
 }
 
 interface GoogleRestoreResult {
@@ -26,7 +37,11 @@ interface GoogleRestoreResult {
 	restoredAt: string;
 }
 
-export function GoogleRestoreModal({ isOpen, onClose }: GoogleRestoreModalProps) {
+export function GoogleRestoreModal({
+	isOpen,
+	onClose,
+	onOpenFileRestore,
+}: GoogleRestoreModalProps) {
 	const router = useRouter();
 	const { refreshUser } = useAuth();
 
@@ -35,6 +50,11 @@ export function GoogleRestoreModal({ isOpen, onClose }: GoogleRestoreModalProps)
 	);
 	const [statusText, setStatusText] = React.useState("");
 	const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
+	const [isConfigured, setIsConfigured] = React.useState<boolean | null>(null);
+	const [showConfigForm, setShowConfigForm] = React.useState(false);
+	const [clientIdInput, setClientIdInput] = React.useState("");
+	const [clientSecretInput, setClientSecretInput] = React.useState("");
+	const [savingCredentials, setSavingCredentials] = React.useState(false);
 
 	const pollTimerRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -62,6 +82,51 @@ export function GoogleRestoreModal({ isOpen, onClose }: GoogleRestoreModalProps)
 			stopPolling();
 		};
 	}, [stopPolling]);
+
+	React.useEffect(() => {
+		if (isOpen) {
+			api
+				.get<{ configured: boolean; clientId?: string }>("/auth/google/credentials")
+				.then((res) => {
+					if (res.success && res.data) {
+						setIsConfigured(Boolean(res.data.configured));
+					}
+				})
+				.catch(() => {
+					setIsConfigured(false);
+				});
+		}
+	}, [isOpen]);
+
+	const handleSaveCredentials = async (e: React.FormEvent) => {
+		e.preventDefault();
+		if (!clientIdInput.trim() || !clientSecretInput.trim()) {
+			toast.error("Please enter both Client ID and Client Secret");
+			return;
+		}
+
+		setSavingCredentials(true);
+		try {
+			const res = await api.post("/auth/google/credentials", {
+				clientId: clientIdInput.trim(),
+				clientSecret: clientSecretInput.trim(),
+			});
+
+			if (res.success) {
+				toast.success("Google OAuth credentials saved successfully");
+				setIsConfigured(true);
+				setShowConfigForm(false);
+				setErrorMessage(null);
+				handleStartGoogleRestore();
+			} else {
+				toast.error(res.message || "Failed to save credentials");
+			}
+		} catch {
+			toast.error("An unexpected error occurred while saving credentials");
+		} finally {
+			setSavingCredentials(false);
+		}
+	};
 
 	const handleStartGoogleRestore = async () => {
 		setErrorMessage(null);
@@ -165,10 +230,121 @@ export function GoogleRestoreModal({ isOpen, onClose }: GoogleRestoreModalProps)
 						</div>
 
 						{errorMessage && (
-							<div className="rounded-xl border border-red-900/50 bg-red-950/20 p-3 flex items-start gap-2.5 text-xs text-red-300">
-								<AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-								<span>{errorMessage}</span>
+							<div className="rounded-xl border border-red-900/50 bg-red-950/20 p-3.5 space-y-2.5 text-xs text-red-300">
+								<div className="flex items-start gap-2.5">
+									<AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+									<span className="leading-relaxed">{errorMessage}</span>
+								</div>
+								<div className="flex items-center gap-2 pt-1 border-t border-red-900/40">
+									{onOpenFileRestore && (
+										<Button
+											type="button"
+											variant="secondary"
+											size="sm"
+											onClick={() => {
+												handleModalClose();
+												onOpenFileRestore();
+											}}
+											className="gap-1.5 text-xs h-8 bg-slate-900 hover:bg-slate-800 text-slate-200"
+										>
+											<FileArchive className="w-3.5 h-3.5 text-emerald-400" />
+											<span>Restore from Local File Backup Instead</span>
+										</Button>
+									)}
+									<Button
+										type="button"
+										variant="ghost"
+										size="sm"
+										onClick={() => setShowConfigForm(!showConfigForm)}
+										className="gap-1.5 text-xs h-8 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-950/30"
+									>
+										<KeyRound className="w-3.5 h-3.5" />
+										<span>{showConfigForm ? "Hide Credentials" : "Enter Credentials"}</span>
+									</Button>
+								</div>
 							</div>
+						)}
+
+						{isConfigured === false && !errorMessage && (
+							<div className="rounded-xl border border-amber-900/40 bg-amber-950/15 p-3.5 space-y-2 text-xs text-amber-200/90">
+								<div className="flex items-start gap-2.5">
+									<AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+									<p className="leading-relaxed">
+										Google Cloud OAuth credentials are not configured yet. You can restore directly
+										from a local backup file, or configure your Google Client ID below.
+									</p>
+								</div>
+								<div className="flex items-center gap-2 pt-1 border-t border-amber-900/30">
+									{onOpenFileRestore && (
+										<Button
+											type="button"
+											variant="secondary"
+											size="sm"
+											onClick={() => {
+												handleModalClose();
+												onOpenFileRestore();
+											}}
+											className="gap-1.5 text-xs h-8 bg-slate-900 hover:bg-slate-800 text-slate-200"
+										>
+											<FileArchive className="w-3.5 h-3.5 text-emerald-400" />
+											<span>Use File Backup (.zip / .json)</span>
+										</Button>
+									)}
+									<Button
+										type="button"
+										variant="ghost"
+										size="sm"
+										onClick={() => setShowConfigForm(!showConfigForm)}
+										className="gap-1.5 text-xs h-8 text-amber-300 hover:text-amber-200 hover:bg-amber-950/30"
+									>
+										<KeyRound className="w-3.5 h-3.5" />
+										<span>{showConfigForm ? "Hide Form" : "Set Google Credentials"}</span>
+									</Button>
+								</div>
+							</div>
+						)}
+
+						{showConfigForm && (
+							<form
+								onSubmit={handleSaveCredentials}
+								className="rounded-2xl border border-slate-800 bg-slate-950 p-4 space-y-3"
+							>
+								<div className="flex items-center gap-2 text-xs font-semibold text-slate-200">
+									<KeyRound className="w-4 h-4 text-emerald-400" />
+									<span>Configure Google OAuth Credentials</span>
+								</div>
+								<div className="space-y-1.5">
+									<Label htmlFor="google-client-id">Google Client ID</Label>
+									<Input
+										id="google-client-id"
+										placeholder="e.g. 123456789-xxx.apps.googleusercontent.com"
+										value={clientIdInput}
+										onChange={(e) => setClientIdInput(e.target.value)}
+										className="text-xs"
+									/>
+								</div>
+								<div className="space-y-1.5">
+									<Label htmlFor="google-client-secret">Google Client Secret</Label>
+									<Input
+										id="google-client-secret"
+										type="password"
+										placeholder="e.g. GOCSPX-xxxxxx"
+										value={clientSecretInput}
+										onChange={(e) => setClientSecretInput(e.target.value)}
+										className="text-xs"
+									/>
+								</div>
+								<Button
+									type="submit"
+									variant="emerald"
+									size="sm"
+									disabled={savingCredentials}
+									className="w-full gap-2 text-xs h-9 mt-1"
+								>
+									<span>{savingCredentials ? "Saving..." : "Save & Connect Google Drive"}</span>
+									<ExternalLink className="w-3.5 h-3.5" />
+								</Button>
+							</form>
 						)}
 
 						<div className="rounded-xl border border-slate-800 bg-slate-950/40 p-3.5 flex items-start gap-2.5 text-xs text-slate-400">
@@ -180,9 +356,25 @@ export function GoogleRestoreModal({ isOpen, onClose }: GoogleRestoreModalProps)
 						</div>
 
 						<div className="flex items-center justify-between pt-2">
-							<Button variant="ghost" size="sm" onClick={handleModalClose}>
-								Cancel
-							</Button>
+							<div className="flex items-center gap-2">
+								<Button variant="ghost" size="sm" onClick={handleModalClose}>
+									Cancel
+								</Button>
+								{onOpenFileRestore && (
+									<Button
+										variant="ghost"
+										size="sm"
+										onClick={() => {
+											handleModalClose();
+											onOpenFileRestore();
+										}}
+										className="gap-1.5 text-xs text-slate-300 hover:text-white"
+									>
+										<FileArchive className="w-3.5 h-3.5 text-emerald-400" />
+										<span>File Backup</span>
+									</Button>
+								)}
+							</div>
 							<Button
 								variant="emerald"
 								size="sm"

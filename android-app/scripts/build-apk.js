@@ -94,15 +94,45 @@ const unsignedReleaseApk = path.join(
 	"app-release-unsigned.apk",
 );
 
+function findApkSigner() {
+	const candidates = [
+		path.join(process.env.LOCALAPPDATA || "", "Android/Sdk/build-tools/35.0.0/apksigner.bat"),
+		path.join(process.env.LOCALAPPDATA || "", "Android/Sdk/build-tools/34.0.0/apksigner.bat"),
+		path.join(process.env.ANDROID_HOME || "", "build-tools/35.0.0/apksigner.bat"),
+		path.join(process.env.ANDROID_HOME || "", "build-tools/34.0.0/apksigner.bat"),
+	];
+	return candidates.find((p) => fs.existsSync(p));
+}
+
 if (fs.existsSync(debugApk)) {
 	fs.copyFileSync(debugApk, path.join(releaseDir, "DayPulse-debug.apk"));
 	console.log("[DayPulse] Exported: release/DayPulse-debug.apk");
 }
 
+const targetReleaseApk = path.join(releaseDir, "DayPulse-release.apk");
 if (fs.existsSync(signedReleaseApk)) {
-	fs.copyFileSync(signedReleaseApk, path.join(releaseDir, "DayPulse-release.apk"));
+	fs.copyFileSync(signedReleaseApk, targetReleaseApk);
 	console.log("[DayPulse] Exported: release/DayPulse-release.apk (Signed)");
 } else if (fs.existsSync(unsignedReleaseApk)) {
 	fs.copyFileSync(unsignedReleaseApk, path.join(releaseDir, "DayPulse-release-unsigned.apk"));
 	console.log("[DayPulse] Exported: release/DayPulse-release-unsigned.apk");
+}
+
+if (fs.existsSync(targetReleaseApk)) {
+	const apkSigner = findApkSigner();
+	const keystore = path.join(androidDir, "app", "release.keystore");
+	if (apkSigner && fs.existsSync(keystore)) {
+		try {
+			console.log("[DayPulse] Verifying and applying v1+v2+v3 signatures with apksigner...");
+			execSync(
+				`"${apkSigner}" sign --ks "${keystore}" --ks-pass pass:daypulse123 --key-pass pass:daypulse123 --v1-signing-enabled true --v2-signing-enabled true --v3-signing-enabled true "${targetReleaseApk}"`,
+				{ stdio: "inherit" },
+			);
+			execSync(`"${apkSigner}" verify --verbose "${targetReleaseApk}"`, {
+				stdio: "inherit",
+			});
+		} catch (e) {
+			console.warn("[DayPulse] apksigner verification notice:", e.message);
+		}
+	}
 }

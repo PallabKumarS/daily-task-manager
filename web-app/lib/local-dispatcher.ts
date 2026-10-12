@@ -580,6 +580,24 @@ export async function handleLocalClientDispatch<T = unknown>(
 		return { statusCode: 201, success: true, data: entry as T };
 	}
 
+	if (pathname === "/auth/google/restore-url") {
+		return {
+			statusCode: 400,
+			success: false,
+			message:
+				"Google Drive cloud recovery requires an online server connection. Use 'File Backup' to restore your data offline.",
+			data: null as unknown as T,
+		};
+	}
+
+	if (pathname === "/auth/google/credentials" || pathname === "/sync/google/credentials") {
+		return {
+			statusCode: 200,
+			success: true,
+			data: { configured: false } as unknown as T,
+		};
+	}
+
 	// 8. Health check
 	if (pathname === "/health") {
 		return { statusCode: 200, success: true, data: { status: "ok" } as T };
@@ -589,6 +607,6 @@ export async function handleLocalClientDispatch<T = unknown>(
 	return {
 		statusCode: 200,
 		success: true,
-		data: null as T,
+		data: null as unknown as T,
 	};
 }

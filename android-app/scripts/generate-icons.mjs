@@ -7,7 +7,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const rootDir = path.resolve(__dirname, "../..");
-const srcLogo = path.join(rootDir, "assets/logo.png");
+const srcMasterLogo = path.join(rootDir, "assets/google-app-logo.png");
+const srcLogo = fs.existsSync(srcMasterLogo) ? srcMasterLogo : path.join(rootDir, "assets/logo.png");
 const resDir = path.join(rootDir, "android-app/android/app/src/main/res");
 
 const densities = [
@@ -23,31 +24,77 @@ async function generate() {
 		throw new Error(`Source logo not found at ${srcLogo}`);
 	}
 
+	// Prepare cropped emblem from high-res master
+	const masterImg = sharp(srcLogo);
+	const masterMeta = await masterImg.metadata();
+	let emblemBuffer;
+	if (masterMeta.width && masterMeta.width >= 1000) {
+		emblemBuffer = await masterImg
+			.extract({ left: 224, top: 224, width: 576, height: 576 })
+			.png()
+			.toBuffer();
+	} else {
+		emblemBuffer = await masterImg.png().toBuffer();
+	}
+
 	for (const d of densities) {
 		const dir = path.join(resDir, d.name);
 		if (!fs.existsSync(dir)) {
 			fs.mkdirSync(dir, { recursive: true });
 		}
 
-		// 1. ic_launcher.png (legacy square/rounded)
-		await sharp(srcLogo)
-			.resize(d.iconSize, d.iconSize)
+		// 1. ic_launcher.png (legacy rounded square)
+		const iconEmblemSize = Math.round(d.iconSize * 0.82);
+		const iconEmblem = await sharp(emblemBuffer).resize(iconEmblemSize, iconEmblemSize).toBuffer();
+		const iconOffset = Math.floor((d.iconSize - iconEmblemSize) / 2);
+
+		const cornerRadius = Math.round(d.iconSize * 0.22);
+		const rectMaskSvg = `<svg width="${d.iconSize}" height="${d.iconSize}"><rect width="${d.iconSize}" height="${d.iconSize}" rx="${cornerRadius}" ry="${cornerRadius}" fill="#ffffff"/></svg>`;
+
+		await sharp({
+			create: {
+				width: d.iconSize,
+				height: d.iconSize,
+				channels: 4,
+				background: { r: 9, g: 13, b: 22, alpha: 1 },
+			},
+		})
+			.composite([
+				{ input: iconEmblem, top: iconOffset, left: iconOffset },
+				{ input: Buffer.from(rectMaskSvg), blend: "dest-in" },
+			])
 			.png()
 			.toFile(path.join(dir, "ic_launcher.png"));
 
 		// 2. ic_launcher_round.png (legacy round)
 		const radius = d.iconSize / 2;
 		const circleMaskSvg = `<svg width="${d.iconSize}" height="${d.iconSize}"><circle cx="${radius}" cy="${radius}" r="${radius}" fill="#ffffff"/></svg>`;
-		await sharp(srcLogo)
-			.resize(d.iconSize, d.iconSize)
-			.composite([{ input: Buffer.from(circleMaskSvg), blend: "dest-in" }])
+
+		await sharp({
+			create: {
+				width: d.iconSize,
+				height: d.iconSize,
+				channels: 4,
+				background: { r: 9, g: 13, b: 22, alpha: 1 },
+			},
+		})
+			.composite([
+				{ input: iconEmblem, top: iconOffset, left: iconOffset },
+				{ input: Buffer.from(circleMaskSvg), blend: "dest-in" },
+			])
 			.png()
 			.toFile(path.join(dir, "ic_launcher_round.png"));
 
 		// 3. ic_launcher_foreground.png (adaptive foreground)
-		const resizedLogo = await sharp(srcLogo).resize(d.logoInFg, d.logoInFg).toBuffer();
+		const fgRadius = d.logoInFg / 2;
+		const fgCircleMask = `<svg width="${d.logoInFg}" height="${d.logoInFg}"><circle cx="${fgRadius}" cy="${fgRadius}" r="${fgRadius}" fill="#ffffff"/></svg>`;
+		const fgEmblem = await sharp(emblemBuffer)
+			.resize(d.logoInFg, d.logoInFg)
+			.composite([{ input: Buffer.from(fgCircleMask), blend: "dest-in" }])
+			.png()
+			.toBuffer();
+		const fgOffset = Math.floor((d.fgSize - d.logoInFg) / 2);
 
-		const offset = Math.floor((d.fgSize - d.logoInFg) / 2);
 		await sharp({
 			create: {
 				width: d.fgSize,
@@ -56,7 +103,7 @@ async function generate() {
 				background: { r: 0, g: 0, b: 0, alpha: 0 },
 			},
 		})
-			.composite([{ input: resizedLogo, top: offset, left: offset }])
+			.composite([{ input: fgEmblem, top: fgOffset, left: fgOffset }])
 			.png()
 			.toFile(path.join(dir, "ic_launcher_foreground.png"));
 

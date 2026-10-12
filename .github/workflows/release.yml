@@ -23,18 +23,10 @@ jobs:
           node-version: 20
           cache: "npm"
 
-      - name: Install root dependencies
-        run: npm ci
-
-      - name: Install web-app dependencies and generate Prisma
-        working-directory: web-app
+      - name: Install dependencies and generate Prisma
         run: |
           npm ci
-          npx prisma generate
-
-      - name: Install desktop-app dependencies
-        working-directory: desktop-app
-        run: npm ci
+          npx prisma generate --schema=web-app/prisma/schema.prisma
 
       - name: Build Desktop Application
         working-directory: desktop-app
@@ -65,15 +57,17 @@ jobs:
           node-version: 20
           cache: "npm"
 
-      - name: Install dependencies
+      - name: Install dependencies and generate Prisma
         run: |
           npm ci
-          cd web-app && npm ci && npx prisma generate
-          cd ../android-app && npm ci
+          npx prisma generate --schema=web-app/prisma/schema.prisma
 
       - name: Export web-app for Android
         working-directory: web-app
         run: npm run export:android
+
+      - name: Generate launcher icons
+        run: node android-app/scripts/generate-icons.mjs
 
       - name: Sync Capacitor
         working-directory: android-app

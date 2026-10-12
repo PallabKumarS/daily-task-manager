@@ -1,4 +1,6 @@
+import * as fs from "node:fs";
 import * as http from "node:http";
+import * as path from "node:path";
 import type { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { createBackupArchive } from "./archive-builder";
@@ -7,10 +9,66 @@ import { mergeBackupIntoUser, summarizeMergeReport } from "./backup-merge";
 import { decryptToken, encryptToken } from "./crypto-vault";
 import { startSession } from "./session-store";
 
-const getGoogleClientId = (): string =>
-	process.env.GOOGLE_CLIENT_ID_DESKTOP || process.env.GOOGLE_CLIENT_ID || "";
-const getGoogleClientSecret = (): string =>
-	process.env.GOOGLE_CLIENT_SECRET_DESKTOP || process.env.GOOGLE_CLIENT_SECRET || "";
+function getCredentialsFilePath(): string {
+	const baseDir = process.env.USER_DATA_PATH || process.cwd();
+	return path.join(baseDir, "google-credentials.json");
+}
+
+function loadPersistedCredentials(): { clientId?: string; clientSecret?: string } {
+	try {
+		const filePath = getCredentialsFilePath();
+		if (fs.existsSync(filePath)) {
+			const data = JSON.parse(fs.readFileSync(filePath, "utf8"));
+			return data || {};
+		}
+	} catch {
+		// Suppress disk read failure
+	}
+	return {};
+}
+
+let runtimeClientId = "";
+let runtimeClientSecret = "";
+
+export function saveGoogleCredentials(clientId: string, clientSecret: string): void {
+	runtimeClientId = clientId.trim();
+	runtimeClientSecret = clientSecret.trim();
+	try {
+		const filePath = getCredentialsFilePath();
+		const dir = path.dirname(filePath);
+		if (!fs.existsSync(dir)) {
+			fs.mkdirSync(dir, { recursive: true });
+		}
+		fs.writeFileSync(
+			filePath,
+			JSON.stringify({ clientId: runtimeClientId, clientSecret: runtimeClientSecret }, null, 2),
+			"utf8",
+		);
+	} catch {
+		// Suppress disk write failure
+	}
+}
+
+export const getGoogleClientId = (): string => {
+	if (runtimeClientId) return runtimeClientId;
+	const persisted = loadPersistedCredentials();
+	if (persisted.clientId) {
+		runtimeClientId = persisted.clientId;
+		return runtimeClientId;
+	}
+	return process.env.GOOGLE_CLIENT_ID_DESKTOP || process.env.GOOGLE_CLIENT_ID || "";
+};
+
+export const getGoogleClientSecret = (): string => {
+	if (runtimeClientSecret) return runtimeClientSecret;
+	const persisted = loadPersistedCredentials();
+	if (persisted.clientSecret) {
+		runtimeClientSecret = persisted.clientSecret;
+		return runtimeClientSecret;
+	}
+	return process.env.GOOGLE_CLIENT_SECRET_DESKTOP || process.env.GOOGLE_CLIENT_SECRET || "";
+};
+
 const getGoogleRedirectUri = (): string =>
 	process.env.GOOGLE_REDIRECT_URI || "http://localhost:5000/api/v1/sync/google/callback";
 

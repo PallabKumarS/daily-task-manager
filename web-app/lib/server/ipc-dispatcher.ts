@@ -22,8 +22,10 @@ import {
 	executeGoogleSyncRestore,
 	executeGoogleSyncUpload,
 	getGoogleAuthUrl,
+	getGoogleClientId,
 	getLatestGoogleRestoreLoginResult,
 	isGoogleConfigured,
+	saveGoogleCredentials,
 	startGoogleOAuthLoopbackServer,
 } from "./google-sync";
 import { getCurrentUserId, getPrismaClient } from "./prisma-client";
@@ -340,7 +342,7 @@ export async function handleIpcApiDispatch(req: IpcApiRequest): Promise<IpcApiRe
 					statusCode: 400,
 					success: false,
 					message:
-						"Google Drive sync is not configured. Please define GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in .env.",
+						"Google Drive sync is not configured. Provide your Google OAuth credentials or restore from a local backup file.",
 					data: null,
 				};
 			}
@@ -367,6 +369,44 @@ export async function handleIpcApiDispatch(req: IpcApiRequest): Promise<IpcApiRe
 				statusCode: 200,
 				success: true,
 				data: null,
+			};
+		}
+
+		if (
+			(pathname === "/auth/google/credentials" || pathname === "/sync/google/credentials") &&
+			method === "GET"
+		) {
+			const configured = isGoogleConfigured();
+			const clientId = getGoogleClientId();
+			return {
+				statusCode: 200,
+				success: true,
+				data: {
+					configured,
+					clientId: clientId ? `${clientId.slice(0, 12)}...` : "",
+				},
+			};
+		}
+
+		if (
+			(pathname === "/auth/google/credentials" || pathname === "/sync/google/credentials") &&
+			method === "POST"
+		) {
+			const creds = body as { clientId?: string; clientSecret?: string };
+			if (!creds?.clientId || !creds?.clientSecret) {
+				return {
+					statusCode: 400,
+					success: false,
+					message: "Both Client ID and Client Secret are required.",
+					data: null,
+				};
+			}
+			saveGoogleCredentials(creds.clientId, creds.clientSecret);
+			return {
+				statusCode: 200,
+				success: true,
+				message: "Google Drive OAuth credentials saved successfully.",
+				data: { configured: true },
 			};
 		}
 

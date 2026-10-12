@@ -68,6 +68,36 @@ function SettingsContent() {
 	const [syncingGoogle, setSyncingGoogle] = React.useState(false);
 	const [restoringGoogle, setRestoringGoogle] = React.useState(false);
 	const [showSetupGuide, setShowSetupGuide] = React.useState(false);
+	const [customClientId, setCustomClientId] = React.useState("");
+	const [customClientSecret, setCustomClientSecret] = React.useState("");
+	const [savingGoogleCreds, setSavingGoogleCreds] = React.useState(false);
+
+	const handleSaveGoogleCredentials = async (e: React.FormEvent) => {
+		e.preventDefault();
+		if (!customClientId.trim() || !customClientSecret.trim()) {
+			toast.error("Please enter both Client ID and Client Secret");
+			return;
+		}
+		setSavingGoogleCreds(true);
+		try {
+			const res = await api.post("/sync/google/credentials", {
+				clientId: customClientId.trim(),
+				clientSecret: customClientSecret.trim(),
+			});
+			if (res.success) {
+				toast.success("Google OAuth credentials saved successfully");
+				fetchGoogleStatus();
+				setCustomClientId("");
+				setCustomClientSecret("");
+			} else {
+				toast.error(res.message || "Failed to save credentials");
+			}
+		} catch {
+			toast.error("Failed to save credentials");
+		} finally {
+			setSavingGoogleCreds(false);
+		}
+	};
 
 	const fetchGoogleStatus = React.useCallback(async () => {
 		try {
@@ -552,13 +582,50 @@ function SettingsContent() {
 								</li>
 								<li>
 									Add the following keys to your project{" "}
-									<strong className="text-slate-200">.env</strong>:
+									<strong className="text-slate-200">.env</strong> or enter them below:
 									<pre className="mt-1 rounded-lg bg-slate-900 p-2 font-mono text-slate-300 border border-slate-800">
 										GOOGLE_CLIENT_ID=&quot;your-client-id.apps.googleusercontent.com&quot;
 										GOOGLE_CLIENT_SECRET=&quot;your-client-secret&quot;
 									</pre>
 								</li>
 							</ol>
+
+							<form
+								onSubmit={handleSaveGoogleCredentials}
+								className="mt-4 pt-3 border-t border-slate-800 space-y-3"
+							>
+								<p className="font-semibold text-white">Save Credentials Directly in DayPulse:</p>
+								<div className="space-y-1.5">
+									<Label htmlFor="settings-google-client-id">Google Client ID</Label>
+									<Input
+										id="settings-google-client-id"
+										placeholder="e.g. 123456789-xxx.apps.googleusercontent.com"
+										value={customClientId}
+										onChange={(e) => setCustomClientId(e.target.value)}
+										className="text-xs"
+									/>
+								</div>
+								<div className="space-y-1.5">
+									<Label htmlFor="settings-google-client-secret">Google Client Secret</Label>
+									<Input
+										id="settings-google-client-secret"
+										type="password"
+										placeholder="e.g. GOCSPX-xxxxxx"
+										value={customClientSecret}
+										onChange={(e) => setCustomClientSecret(e.target.value)}
+										className="text-xs"
+									/>
+								</div>
+								<Button
+									type="submit"
+									variant="emerald"
+									size="sm"
+									disabled={savingGoogleCreds}
+									className="gap-2 text-xs"
+								>
+									<span>{savingGoogleCreds ? "Saving..." : "Save Google Credentials"}</span>
+								</Button>
+							</form>
 						</div>
 					)}
 				</div>
