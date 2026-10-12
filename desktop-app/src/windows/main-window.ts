@@ -1,6 +1,6 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { BrowserWindow } from "electron";
+import { BrowserWindow, shell } from "electron";
 import { getAssetPath, getWindowIcon, getWindowIconPath } from "./windows-branding.js";
 
 export function createMainWindow(onCloseHide: () => void): BrowserWindow {
@@ -26,6 +26,21 @@ export function createMainWindow(onCloseHide: () => void): BrowserWindow {
 			nodeIntegration: false,
 			sandbox: false,
 		},
+	});
+
+	// Ensure all popups, OAuth windows, and links open strictly in user default browser
+	win.webContents.setWindowOpenHandler(({ url }) => {
+		if (url && (url.startsWith("http://") || url.startsWith("https://"))) {
+			shell.openExternal(url);
+		}
+		return { action: "deny" };
+	});
+
+	win.webContents.on("will-navigate", (event, url) => {
+		if (!url.startsWith("http://localhost:") && !url.startsWith("file://")) {
+			event.preventDefault();
+			shell.openExternal(url);
+		}
 	});
 
 	if (!windowIcon.isEmpty()) {

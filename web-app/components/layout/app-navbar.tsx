@@ -10,6 +10,7 @@ import {
 	Clock,
 	DollarSign,
 	Plus,
+	Settings,
 } from "lucide-react";
 import Link from "next/link";
 import * as React from "react";
@@ -153,6 +154,14 @@ export function AppNavbar({ onQuickAdd }: AppNavbarProps) {
 				)}
 
 				<NotificationCenter />
+
+				<Link
+					href="/settings"
+					className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-800 bg-slate-900/60 text-slate-400 hover:text-white hover:bg-slate-800/80 hover:border-slate-700 transition"
+					title="Sync & Settings"
+				>
+					<Settings className="w-4 h-4" />
+				</Link>
 			</div>
 		</header>
 	);

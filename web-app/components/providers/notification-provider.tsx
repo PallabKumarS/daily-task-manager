@@ -5,14 +5,12 @@ import { toast } from "sonner";
 import { parseAlarmConfig } from "@/lib/alarm-settings";
 import { api, getAuthToken } from "@/lib/api-client";
 import { playNotificationChime, stopCurrentAlarm } from "@/lib/audio-chime";
-import { dispatchUnifiedAlarm } from "@/lib/cross-platform-alarm";
-import { getSocket } from "@/lib/socket-client";
 import {
-	getNotificationPermission,
-	isNotificationSupported,
-	requestNotificationPermission,
-	showSystemNotification,
-} from "@/lib/web-notification";
+	dispatchUnifiedAlarm,
+	requestPlatformNotificationPermissions,
+} from "@/lib/cross-platform-alarm";
+import { getSocket } from "@/lib/socket-client";
+import { showSystemNotification } from "@/lib/web-notification";
 
 export interface AppNotification {
 	id: string;
@@ -55,9 +53,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 	const notifiedIdsRef = React.useRef<Set<string>>(new Set());
 
 	React.useEffect(() => {
-		if (isNotificationSupported()) {
-			setPermission(getNotificationPermission());
-		}
+		requestPlatformNotificationPermissions().then((perm) => {
+			setPermission(perm);
+		});
 
 		try {
 			const savedSound = localStorage.getItem(SOUND_KEY);
@@ -188,10 +186,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 	}, [triggerNotification]);
 
 	const requestPermission = React.useCallback(async () => {
-		const perm = await requestNotificationPermission();
+		const perm = await requestPlatformNotificationPermissions();
 		setPermission(perm);
 		if (perm === "granted") {
-			toast.success("Desktop notifications enabled");
+			toast.success("Notifications enabled");
 			triggerNotification({
 				title: "Notifications Activated",
 				message: "DayPulse will alert you ahead of your routines, tasks, and events.",

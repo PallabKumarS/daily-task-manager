@@ -338,23 +338,37 @@ export async function handleLocalClientDispatch<T = unknown>(
 		const finances = getList(STORAGE_KEYS.FINANCES);
 		let income = 0;
 		let expense = 0;
-		const categoryTotals: Record<string, number> = {};
+		const expenseCatTotals: Record<string, number> = {};
+		const incomeCatTotals: Record<string, number> = {};
 
 		for (const tx of finances) {
 			const amt = Number(tx.amount) || 0;
-			if (tx.type === "INCOME") income += amt;
+			if (tx.type === "INCOME") {
+				income += amt;
+				const cat = String(tx.category || "General Income");
+				incomeCatTotals[cat] = (incomeCatTotals[cat] || 0) + amt;
+			}
 			if (tx.type === "EXPENSE") {
 				expense += amt;
-				const cat = String(tx.category || "Other");
-				categoryTotals[cat] = (categoryTotals[cat] || 0) + amt;
+				const cat = String(tx.category || "General Expense");
+				expenseCatTotals[cat] = (expenseCatTotals[cat] || 0) + amt;
 			}
 		}
 
-		const categoryBreakdown = Object.entries(categoryTotals).map(([category, amount]) => ({
+		const expenseCategories = Object.entries(expenseCatTotals).map(([category, amount]) => ({
 			category,
 			amount,
-			percentage: expense > 0 ? (amount / expense) * 100 : 0,
+			percentage: expense > 0 ? Math.round((amount / expense) * 100) : 0,
 		}));
+
+		const incomeCategories = Object.entries(incomeCatTotals).map(([category, amount]) => ({
+			category,
+			amount,
+			percentage: income > 0 ? Math.round((amount / income) * 100) : 0,
+		}));
+
+		const netBalance = income - expense;
+		const savingsRate = income > 0 ? Math.max(0, Math.round((netBalance / income) * 100)) : 0;
 
 		return {
 			statusCode: 200,
@@ -362,9 +376,10 @@ export async function handleLocalClientDispatch<T = unknown>(
 			data: {
 				totalIncome: income,
 				totalExpense: expense,
-				netSavings: income - expense,
-				savingsRate: income > 0 ? ((income - expense) / income) * 100 : 0,
-				categoryBreakdown,
+				netBalance,
+				savingsRate,
+				expenseCategories,
+				incomeCategories,
 				timeline: [],
 			} as T,
 		};

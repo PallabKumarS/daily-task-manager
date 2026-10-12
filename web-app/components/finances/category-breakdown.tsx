@@ -16,13 +16,13 @@ interface CategoryBreakdownProps {
 }
 
 export function CategoryBreakdown({
-	expenseCategories,
-	incomeCategories,
+	expenseCategories = [],
+	incomeCategories = [],
 	currency,
 }: CategoryBreakdownProps) {
 	const [activeTab, setActiveTab] = React.useState<"EXPENSE" | "INCOME">("EXPENSE");
 
-	const list = activeTab === "EXPENSE" ? expenseCategories : incomeCategories;
+	const list = (activeTab === "EXPENSE" ? expenseCategories : incomeCategories) || [];
 
 	return (
 		<div className="rounded-2xl border border-slate-800/80 bg-slate-900/60 p-5 backdrop-blur-xl">

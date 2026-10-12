@@ -1,6 +1,13 @@
 "use client";
 
-import { Calculator, CalendarCheck, CheckSquare, LayoutDashboard, TrendingUp } from "lucide-react";
+import {
+	Calculator,
+	CalendarCheck,
+	CheckSquare,
+	LayoutDashboard,
+	Settings,
+	TrendingUp,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -11,13 +18,14 @@ const DOCK_ITEMS = [
 	{ href: "/trackers", label: "Trackers", icon: Calculator },
 	{ href: "/tasks", label: "Tasks", icon: CheckSquare },
 	{ href: "/finances", label: "Finances", icon: TrendingUp },
+	{ href: "/settings", label: "Settings", icon: Settings },
 ];
 
 export function BottomDock() {
 	const pathname = usePathname();
 
 	return (
-		<nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-slate-800 bg-slate-950/90 backdrop-blur-xl px-2 py-2 safe-area-pb">
+		<nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-slate-800 bg-slate-950/95 backdrop-blur-xl px-1 py-1.5 safe-area-pb">
 			<div className="flex items-center justify-around">
 				{DOCK_ITEMS.map((item) => {
 					const Icon = item.icon;
@@ -27,7 +35,7 @@ export function BottomDock() {
 							key={item.href}
 							href={item.href}
 							className={cn(
-								"flex flex-col items-center justify-center py-1 px-3 rounded-xl transition duration-150 min-w-[56px]",
+								"flex flex-col items-center justify-center py-1 px-1.5 rounded-xl transition duration-150 min-w-[48px]",
 								isActive ? "text-emerald-400 font-semibold" : "text-slate-400 hover:text-slate-200",
 							)}
 						>

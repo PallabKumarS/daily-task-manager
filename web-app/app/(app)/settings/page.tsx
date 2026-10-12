@@ -7,14 +7,19 @@ import {
 	ExternalLink,
 	FileText,
 	KeyRound,
+	LogIn,
+	LogOut,
 	RefreshCw,
+	ShieldCheck,
 	Tag,
 	Unlink,
 	Upload,
 	User,
+	UserPlus,
 	Volume2,
 	VolumeX,
 } from "lucide-react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import * as React from "react";
 import { toast } from "sonner";
@@ -45,7 +50,7 @@ interface GoogleSyncStatus {
 }
 
 function SettingsContent() {
-	const { user, updateProfile } = useAuth();
+	const { user, updateProfile, logout } = useAuth();
 	const searchParams = useSearchParams();
 	const { permission, soundEnabled, requestPermission, toggleSound, triggerNotification } =
 		useNotifications();
@@ -821,6 +826,58 @@ function SettingsContent() {
 						{savingProfile ? "Saving..." : "Save Preferences"}
 					</Button>
 				</form>
+			</div>
+
+			{/* Account & Authentication */}
+			<div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-xl space-y-4">
+				<div className="flex items-center gap-2 pb-3 border-b border-slate-800">
+					<ShieldCheck className="w-4 h-4 text-emerald-400" />
+					<h2 className="text-sm font-bold text-white">Account & Authentication</h2>
+				</div>
+
+				{user?.id === "local_user_offline" || user?.email === "offline@daypulse.app" ? (
+					<div className="space-y-3">
+						<div className="p-4 rounded-2xl border border-emerald-500/20 bg-emerald-950/20">
+							<p className="text-xs font-semibold text-emerald-300">Standalone Offline Workspace</p>
+							<p className="text-xs text-slate-400 mt-1">
+								Your tasks, routines, and wealth ledger are saved locally on this device. Sign in or
+								register to sync across devices, or continue using DayPulse offline.
+							</p>
+						</div>
+						<div className="flex flex-wrap items-center gap-3 pt-1">
+							<Link
+								href="/login"
+								className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-semibold text-white transition cursor-pointer"
+							>
+								<LogIn className="w-3.5 h-3.5" />
+								<span>Sign In to Cloud Account</span>
+							</Link>
+							<Link
+								href="/register"
+								className="flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 transition cursor-pointer"
+							>
+								<UserPlus className="w-3.5 h-3.5" />
+								<span>Create New Account</span>
+							</Link>
+						</div>
+					</div>
+				) : (
+					<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-slate-800 bg-slate-950">
+						<div>
+							<p className="text-sm font-semibold text-slate-200">{user?.name || "User"}</p>
+							<p className="text-xs text-slate-400">{user?.email}</p>
+						</div>
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => logout()}
+							className="gap-2 border-red-900/50 text-red-400 hover:bg-red-950/40"
+						>
+							<LogOut className="w-4 h-4" />
+							<span>Sign Out</span>
+						</Button>
+					</div>
+				)}
 			</div>
 
 			<CategoryManagerModal

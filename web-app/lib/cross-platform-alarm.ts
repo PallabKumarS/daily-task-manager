@@ -36,26 +36,46 @@ async function ensureAndroidAlarmChannel(): Promise<void> {
 	}
 }
 
-export async function requestPlatformNotificationPermissions(): Promise<boolean> {
+export async function getPlatformNotificationPermission(): Promise<NotificationPermission> {
 	if (Capacitor.isNativePlatform()) {
 		try {
-			const status = await LocalNotifications.requestPermissions();
-			return status.display === "granted";
+			const status = await LocalNotifications.checkPermissions();
+			if (status.display === "granted") return "granted";
+			if (status.display === "denied") return "denied";
+			return "default";
 		} catch {
-			return false;
+			return "default";
+		}
+	}
+
+	if (typeof window !== "undefined" && "Notification" in window) {
+		return Notification.permission;
+	}
+
+	return "denied";
+}
+
+export async function requestPlatformNotificationPermissions(): Promise<NotificationPermission> {
+	if (Capacitor.isNativePlatform()) {
+		try {
+			await ensureAndroidAlarmChannel();
+			const status = await LocalNotifications.requestPermissions();
+			return status.display === "granted" ? "granted" : "denied";
+		} catch {
+			return "denied";
 		}
 	}
 
 	if (typeof window !== "undefined" && "Notification" in window) {
 		try {
 			const permission = await Notification.requestPermission();
-			return permission === "granted";
+			return permission;
 		} catch {
-			return false;
+			return "denied";
 		}
 	}
 
-	return false;
+	return "denied";
 }
 
 export async function dispatchUnifiedAlarm(payload: UnifiedAlarmPayload): Promise<void> {
