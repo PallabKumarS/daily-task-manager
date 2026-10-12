@@ -63,8 +63,8 @@ if (java21) {
 	env.JAVA_HOME = java21;
 }
 
-console.log("[DayPulse] Assembling Android APKs (Debug and Signed Release)...");
-execSync(`${gradlewCmd} assembleDebug assembleRelease`, {
+console.log("[DayPulse] Assembling Android Release APK...");
+execSync(`${gradlewCmd} assembleRelease`, {
 	cwd: androidDir,
 	stdio: "inherit",
 	env,
@@ -74,7 +74,6 @@ if (!fs.existsSync(releaseDir)) {
 	fs.mkdirSync(releaseDir, { recursive: true });
 }
 
-const debugApk = path.join(androidDir, "app", "build", "outputs", "apk", "debug", "app-debug.apk");
 const signedReleaseApk = path.join(
 	androidDir,
 	"app",
@@ -120,11 +119,6 @@ function findApkSigner() {
 		}
 	}
 	return undefined;
-}
-
-if (fs.existsSync(debugApk)) {
-	fs.copyFileSync(debugApk, path.join(releaseDir, "DayPulse-debug.apk"));
-	console.log("[DayPulse] Exported: release/DayPulse-debug.apk");
 }
 
 const targetReleaseApk = path.join(releaseDir, "DayPulse-release.apk");
