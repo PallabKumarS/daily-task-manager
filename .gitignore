@@ -45,6 +45,9 @@ next-env.d.ts
 # binary releases & installers
 release/
 **/release/
+server-dist/
+**/server-dist/
 *.apk
 *.exe
+*.log
 

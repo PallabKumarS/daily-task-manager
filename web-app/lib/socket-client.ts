@@ -1,9 +1,20 @@
 import { io, type Socket } from "socket.io-client";
-import { getAuthToken } from "./api-client";
+import { getApiBaseUrl, getAuthToken } from "./api-client";
 
 let socket: Socket | null = null;
 
-const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:5000";
+function getSocketUrl(): string {
+	if (typeof window !== "undefined") {
+		const apiUrl = getApiBaseUrl();
+		try {
+			const parsed = new URL(apiUrl);
+			return parsed.origin;
+		} catch {
+			// ignore
+		}
+	}
+	return process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:5000";
+}
 
 export function getSocket(): Socket | null {
 	if (typeof window === "undefined") return null;
@@ -21,7 +32,7 @@ export function getSocket(): Socket | null {
 	}
 
 	if (!socket) {
-		socket = io(SOCKET_URL, {
+		socket = io(getSocketUrl(), {
 			auth: { token },
 			transports: ["websocket", "polling"],
 			autoConnect: true,

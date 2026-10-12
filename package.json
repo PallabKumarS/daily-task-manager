@@ -14,7 +14,7 @@
 		"dev:desktop": "npm run dev --workspace=desktop-app",
 		"build:server": "npm run build --workspace=server",
 		"build:web": "npm run build --workspace=web-app",
-		"build:desktop": "npm run build --workspace=desktop-app",
+		"build:desktop": "npm run build:desktop --workspace=desktop-app",
 		"build:android": "npm run build --workspace=android-app",
 		"build:apk": "npm run build:apk --workspace=android-app",
 		"build": "npm run build --workspaces",
