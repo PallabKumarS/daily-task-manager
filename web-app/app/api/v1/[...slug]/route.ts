@@ -48,10 +48,60 @@ async function processRequest(request: NextRequest, slug: string[], method: stri
 		}
 
 		try {
-			const tokens = await exchangeCodeForTokens(code);
-			const profile = await getGoogleProfile(tokens.accessToken);
+			const redirectUri = `${url.origin}/api/v1/sync/google/callback`;
 			const isOnboardingRestore =
 				state === "restore_onboarding" || state === "login_restore" || state.startsWith("restore");
+
+			let profile: { id: string; email: string; name?: string } | null = null;
+			let tokens: { accessToken: string; refreshToken?: string; expiresIn: number } | null = null;
+			let prismaHandled = false;
+
+			try {
+				const prisma = getPrismaClient();
+				if (prisma) {
+					const processed = await processGoogleOAuthCode(prisma, code, state, redirectUri);
+					profile = processed.profile;
+					tokens = processed.tokens;
+					prismaHandled = true;
+				}
+			} catch (prismaErr) {
+				console.warn("[DayPulse Google Sync] Prisma processing notice:", prismaErr);
+			}
+
+			if (!tokens || !profile) {
+				tokens = await exchangeCodeForTokens(code, redirectUri);
+				profile = await getGoogleProfile(tokens.accessToken);
+			}
+
+			if (prismaHandled) {
+				const html = `<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>DayPulse - Google Drive Connected</title>
+</head>
+<body style="background:#09090b;color:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center;">
+	<div style="background:#18181b;padding:48px;border-radius:20px;border:1px solid #27272a;max-width:440px;box-shadow:0 20px 40px rgba(0,0,0,0.5);">
+		<h2 style="color:#10b981;margin:0 0 12px;font-size:22px;">${isOnboardingRestore ? "Workspace Restored" : "Google Account Connected"}</h2>
+		<p style="color:#a1a1aa;font-size:14px;margin:8px 0;line-height:1.5;">${isOnboardingRestore ? `Your Google Drive data for ${profile.email} has been restored into DayPulse.` : `Your Google Drive connection is now active for ${profile.email}.`}</p>
+		<p style="color:#71717a;font-size:13px;margin:12px 0 0;">You can close this tab and return to the DayPulse application.</p>
+		<div style="display:inline-block;background:rgba(16,185,129,0.1);color:#34d399;padding:6px 14px;border-radius:999px;font-size:12px;font-weight:600;margin-top:20px;border:1px solid rgba(16,185,129,0.2);">${isOnboardingRestore ? "Restore Complete" : "Connection Active"}</div>
+	</div>
+	<script>
+		try {
+			if (window.opener && window.opener !== window) {
+				window.opener.postMessage({ type: "daypulse:google_connected", email: "${profile.email}" }, "*");
+			}
+			setTimeout(function() { window.close(); }, 2500);
+		} catch(e) {}
+	</script>
+</body>
+</html>`;
+				return new NextResponse(html, {
+					status: 200,
+					headers: { "Content-Type": "text/html; charset=utf-8" },
+				});
+			}
 
 			let backupData: Record<string, unknown> | null = null;
 			if (isOnboardingRestore) {
@@ -64,12 +114,6 @@ async function processRequest(request: NextRequest, slug: string[], method: stri
 					console.warn("[DayPulse Google Sync] Backup download notice:", restoreErr);
 				}
 			}
-
-			// Best-effort database update for persistent server/desktop
-			try {
-				const prisma = getPrismaClient();
-				await processGoogleOAuthCode(prisma, code, state).catch(() => {});
-			} catch {}
 
 			const targetPath = isOnboardingRestore ? "/dashboard" : "/settings";
 			const syncPayload = {

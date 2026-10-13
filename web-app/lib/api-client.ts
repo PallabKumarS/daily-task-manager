@@ -15,6 +15,12 @@ export function isCapacitorNative(): boolean {
 	);
 }
 
+export function isElectron(): boolean {
+	if (typeof window === "undefined") return false;
+	const electron = (window as unknown as { electronAPI?: { isElectron?: boolean } }).electronAPI;
+	return Boolean(electron?.isElectron);
+}
+
 export function isCustomServerSet(): boolean {
 	if (typeof window === "undefined") return false;
 	return Boolean(localStorage.getItem(SERVER_URL_KEY));
@@ -171,8 +177,9 @@ export async function apiRequest<T = unknown>(
 		return ipcRes;
 	}
 
-	// Route browser client and Capacitor native directly to client local storage when no custom server is configured
-	if (typeof window !== "undefined" && !isCustomServerSet()) {
+	// Route browser client (Vercel) and Capacitor native directly to client local storage when no custom server is configured.
+	// Desktop Electron app runs a dedicated standalone server with SQLite/Prisma on its local port.
+	if (!isElectron() && typeof window !== "undefined" && !isCustomServerSet()) {
 		const localRes = await handleLocalClientDispatch<T>(endpoint, options);
 		if (!localRes.success) {
 			if (localRes.statusCode === 401) {

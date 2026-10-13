@@ -1,6 +1,6 @@
 {
 	"name": "web-app",
-	"version": "1.0.12",
+	"version": "1.0.13",
 	"author": "Pallab Kumar Sarker",
 	"private": true,
 	"scripts": {

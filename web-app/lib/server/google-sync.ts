@@ -69,9 +69,15 @@ export const getGoogleClientSecret = (): string => {
 	return process.env.GOOGLE_CLIENT_SECRET_DESKTOP || process.env.GOOGLE_CLIENT_SECRET || "";
 };
 
-export const getGoogleRedirectUri = (): string => {
+export const getGoogleRedirectUri = (origin?: string): string => {
+	if (origin) {
+		return `${origin.replace(/\/+$/, "")}/api/v1/sync/google/callback`;
+	}
 	if (process.env.GOOGLE_REDIRECT_URI) {
 		return process.env.GOOGLE_REDIRECT_URI;
+	}
+	if (process.env.PORT) {
+		return `http://localhost:${process.env.PORT}/api/v1/sync/google/callback`;
 	}
 	if (process.env.NEXT_PUBLIC_APP_URL) {
 		return `${process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "")}/api/v1/sync/google/callback`;
@@ -82,7 +88,7 @@ export const getGoogleRedirectUri = (): string => {
 	if (process.env.VERCEL_URL) {
 		return `https://${process.env.VERCEL_URL}/api/v1/sync/google/callback`;
 	}
-	return "http://localhost:5000/api/v1/sync/google/callback";
+	return "http://localhost:49274/api/v1/sync/google/callback";
 };
 
 let loopbackServer: http.Server | null = null;
@@ -110,13 +116,14 @@ export function isGoogleConfigured(): boolean {
 	);
 }
 
-export function getGoogleAuthUrl(userId: string): string {
+export function getGoogleAuthUrl(userId: string, redirectUri?: string): string {
 	if (!isGoogleConfigured()) {
 		throw new Error(
 			"Google Drive sync is not configured. Please define GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in .env.",
 		);
 	}
 
+	const resolvedRedirectUri = redirectUri || getGoogleRedirectUri();
 	const scopes = [
 		"https://www.googleapis.com/auth/drive.file",
 		"https://www.googleapis.com/auth/userinfo.email",
@@ -125,7 +132,7 @@ export function getGoogleAuthUrl(userId: string): string {
 
 	const params = new URLSearchParams({
 		client_id: getGoogleClientId(),
-		redirect_uri: getGoogleRedirectUri(),
+		redirect_uri: resolvedRedirectUri,
 		response_type: "code",
 		scope: scopes,
 		access_type: "offline",
@@ -136,7 +143,11 @@ export function getGoogleAuthUrl(userId: string): string {
 	return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
 }
 
-export async function exchangeCodeForTokens(code: string): Promise<GoogleTokens> {
+export async function exchangeCodeForTokens(
+	code: string,
+	redirectUri?: string,
+): Promise<GoogleTokens> {
+	const resolvedRedirectUri = redirectUri || getGoogleRedirectUri();
 	const response = await fetch("https://oauth2.googleapis.com/token", {
 		method: "POST",
 		headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -144,7 +155,7 @@ export async function exchangeCodeForTokens(code: string): Promise<GoogleTokens>
 			code,
 			client_id: getGoogleClientId(),
 			client_secret: getGoogleClientSecret(),
-			redirect_uri: getGoogleRedirectUri(),
+			redirect_uri: resolvedRedirectUri,
 			grant_type: "authorization_code",
 		}),
 	});
@@ -455,10 +466,13 @@ export async function processGoogleOAuthCode(
 	prisma: PrismaClient,
 	rawCode: string,
 	stateParam = "restore_onboarding",
+	redirectUri?: string,
+	existingTokens?: GoogleTokens,
 ): Promise<{
 	profile: GoogleProfile;
 	result: GoogleRestoreLoginResult | null;
 	isOnboardingRestore: boolean;
+	tokens: GoogleTokens;
 }> {
 	let code = rawCode.trim();
 	if (code.includes("code=")) {
@@ -468,7 +482,7 @@ export async function processGoogleOAuthCode(
 		} catch {}
 	}
 
-	const tokens = await exchangeCodeForTokens(code);
+	const tokens = existingTokens || (await exchangeCodeForTokens(code, redirectUri));
 	const profile = await getGoogleProfile(tokens.accessToken);
 	const tokenExpiry = new Date(Date.now() + tokens.expiresIn * 1000);
 
@@ -590,6 +604,7 @@ export async function processGoogleOAuthCode(
 		profile,
 		result: latestGoogleRestoreLoginResult,
 		isOnboardingRestore,
+		tokens,
 	};
 }
 

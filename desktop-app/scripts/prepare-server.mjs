@@ -126,7 +126,9 @@ const nmPaths = [
 
 for (const { src, dest } of nmPaths) {
 	if (fs.existsSync(src)) {
-		console.log(`[DayPulse Desktop] Renaming ${path.basename(path.dirname(src)) || "root"}/node_modules to vendor...`);
+		console.log(
+			`[DayPulse Desktop] Renaming ${path.basename(path.dirname(src)) || "root"}/node_modules to vendor...`,
+		);
 		fs.renameSync(src, dest);
 	}
 }
@@ -158,6 +160,9 @@ if (!process.env.JWT_SECRET) {
 }
 if (!process.env.TOKEN_ENCRYPTION_SECRET) {
 	process.env.TOKEN_ENCRYPTION_SECRET = "daypulse-desktop-aes-gcm-secret-key-32-bytes";
+}
+if (!process.env.GOOGLE_REDIRECT_URI) {
+	process.env.GOOGLE_REDIRECT_URI = "http://localhost:49274/api/v1/sync/google/callback";
 }
 
 function linkVendor(base) {
@@ -219,4 +224,7 @@ const cleanupJunction = (p) => {
 cleanupJunction(path.join(targetServerDist, "node_modules"));
 cleanupJunction(path.join(targetServerDist, "web-app/node_modules"));
 
-console.log("[DayPulse Desktop] Successfully generated single-process server-dist at:", targetServerDist);
+console.log(
+	"[DayPulse Desktop] Successfully generated single-process server-dist at:",
+	targetServerDist,
+);

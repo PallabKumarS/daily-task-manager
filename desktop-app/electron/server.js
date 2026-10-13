@@ -76,11 +76,41 @@ function startServer(mainWindow) {
 		return;
 	}
 
+	const envCandidates = [
+		path.join(__dirname, "../../.env"),
+		path.join(__dirname, "../.env"),
+		path.join(userDataPath, ".env"),
+	];
+	for (const envFile of envCandidates) {
+		if (fs.existsSync(envFile)) {
+			try {
+				const content = fs.readFileSync(envFile, "utf8");
+				for (const line of content.split(/\r?\n/)) {
+					const trimmed = line.trim();
+					if (!trimmed || trimmed.startsWith("#")) continue;
+					const eqIdx = trimmed.indexOf("=");
+					if (eqIdx > 0) {
+						const k = trimmed.slice(0, eqIdx).trim();
+						const v = trimmed.slice(eqIdx + 1).trim().replace(/^["']|["']$/g, "");
+						if (!process.env[k]) {
+							process.env[k] = v;
+						}
+					}
+				}
+			} catch {}
+		}
+	}
+
 	backendProcess = fork(serverScriptPath, [], {
 		env: {
 			...process.env,
 			NODE_ENV: "production",
 			PORT: String(webPort),
+			GOOGLE_CLIENT_ID_DESKTOP: process.env.GOOGLE_CLIENT_ID_DESKTOP,
+			GOOGLE_CLIENT_SECRET_DESKTOP: process.env.GOOGLE_CLIENT_SECRET_DESKTOP,
+			GOOGLE_REDIRECT_URI:
+				process.env.GOOGLE_REDIRECT_URI ||
+				`http://localhost:${webPort}/api/v1/sync/google/callback`,
 			USER_DATA_PATH: userDataPath,
 			ELECTRON_RUN_AS_NODE: "1",
 		},
