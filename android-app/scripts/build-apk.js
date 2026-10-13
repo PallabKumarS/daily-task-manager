@@ -61,10 +61,16 @@ const env = { ...process.env };
 const java21 = findJava21Home();
 if (java21) {
 	env.JAVA_HOME = java21;
+	const javaBin = path.join(java21, "bin");
+	env.Path = `${javaBin}${path.delimiter}${env.Path || ""}`;
+	env.PATH = `${javaBin}${path.delimiter}${env.PATH || ""}`;
 }
 
 console.log("[DayPulse] Assembling Android Release APK...");
-execSync(`${gradlewCmd} assembleRelease`, {
+const gradleArgs = java21
+	? `-Dorg.gradle.java.home="${java21}" assembleRelease`
+	: "assembleRelease";
+execSync(`${gradlewCmd} ${gradleArgs}`, {
 	cwd: androidDir,
 	stdio: "inherit",
 	env,

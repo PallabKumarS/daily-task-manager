@@ -9,6 +9,7 @@ import {
 	dispatchUnifiedAlarm,
 	requestPlatformNotificationPermissions,
 } from "@/lib/cross-platform-alarm";
+import { initNativeAlarmListener } from "@/lib/native-alarm-scheduler";
 import { getSocket } from "@/lib/socket-client";
 import { initSyncScheduler } from "@/lib/sync-scheduler";
 import { showSystemNotification } from "@/lib/web-notification";
@@ -72,8 +73,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 		}
 
 		const cleanupScheduler = initSyncScheduler();
+		const cleanupNativeAlarms = initNativeAlarmListener();
 		return () => {
 			cleanupScheduler();
+			cleanupNativeAlarms();
 		};
 	}, []);
 

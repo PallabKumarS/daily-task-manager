@@ -16,16 +16,16 @@ export interface UnifiedAlarmPayload {
 
 let channelInitialized = false;
 
-async function ensureAndroidAlarmChannel(): Promise<void> {
+export async function ensureAndroidAlarmChannel(): Promise<void> {
 	if (channelInitialized || !Capacitor.isNativePlatform()) return;
 
 	try {
 		await LocalNotifications.createChannel({
-			id: "daypulse_alarms",
+			id: "daypulse_alarms_v2",
 			name: "DayPulse Alarms & Events",
 			description: "Time-sensitive task reminders and alarm notifications",
 			importance: 5,
-			sound: "alarm_chime.wav",
+			sound: "daypulse_alarm.wav",
 			vibration: true,
 			lights: true,
 			visibility: 1,
@@ -97,9 +97,9 @@ export async function dispatchUnifiedAlarm(payload: UnifiedAlarmPayload): Promis
 					id: numericId,
 					title: payload.title,
 					body: payload.message,
-					channelId: "daypulse_alarms",
+					channelId: "daypulse_alarms_v2",
 					schedule: scheduleOption,
-					sound: "alarm_chime.wav",
+					sound: "daypulse_alarm.wav",
 					extra: {
 						originalId: payload.id,
 						type: payload.type,

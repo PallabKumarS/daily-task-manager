@@ -53,10 +53,9 @@ export function Modal({
 	};
 
 	return (
-		<div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-5 md:p-8">
-			{/* Non-blurring dark overlay to keep background window visible */}
+		<div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-5 md:p-8 overflow-y-auto bg-slate-950/80">
 			<div
-				className="fixed inset-0 bg-slate-950/70 transition-opacity animate-in fade-in duration-150"
+				className="fixed inset-0 bg-slate-950/85 transition-opacity animate-in fade-in duration-150"
 				onClick={onClose}
 				aria-hidden="true"
 			/>
@@ -76,7 +75,11 @@ export function Modal({
 						<h2 id="modal-title" className="text-base sm:text-xl font-bold text-slate-100 truncate">
 							{title}
 						</h2>
-						{description && <p className="text-xs sm:text-sm text-slate-400 mt-0.5 sm:mt-1 leading-relaxed">{description}</p>}
+						{description && (
+							<p className="text-xs sm:text-sm text-slate-400 mt-0.5 sm:mt-1 leading-relaxed">
+								{description}
+							</p>
+						)}
 					</div>
 					<button
 						type="button"
@@ -88,7 +91,9 @@ export function Modal({
 					</button>
 				</div>
 
-				<div className="pt-3 sm:pt-5 pb-1 sm:pb-2 px-0.5 sm:px-2 overflow-y-auto overflow-x-hidden min-w-0 w-full flex-1">{children}</div>
+				<div className="pt-3 sm:pt-5 pb-1 sm:pb-2 px-0.5 sm:px-2 overflow-y-auto overflow-x-hidden min-w-0 w-full flex-1">
+					{children}
+				</div>
 			</div>
 		</div>
 	);
