@@ -84,16 +84,23 @@ async function processRequest(request: NextRequest, slug: string[], method: stri
 	<div style="background:#18181b;padding:48px;border-radius:20px;border:1px solid #27272a;max-width:440px;box-shadow:0 20px 40px rgba(0,0,0,0.5);">
 		<h2 style="color:#10b981;margin:0 0 12px;font-size:22px;">${isOnboardingRestore ? "Workspace Restored" : "Google Account Connected"}</h2>
 		<p style="color:#a1a1aa;font-size:14px;margin:8px 0;line-height:1.5;">${isOnboardingRestore ? `Your Google Drive data for ${profile.email} has been restored into DayPulse.` : `Your Google Drive connection is now active for ${profile.email}.`}</p>
-		<p style="color:#71717a;font-size:13px;margin:12px 0 0;">You can close this tab and return to the DayPulse application.</p>
+		<p style="color:#71717a;font-size:13px;margin:12px 0 0;">Returning to DayPulse...</p>
 		<div style="display:inline-block;background:rgba(16,185,129,0.1);color:#34d399;padding:6px 14px;border-radius:999px;font-size:12px;font-weight:600;margin-top:20px;border:1px solid rgba(16,185,129,0.2);">${isOnboardingRestore ? "Restore Complete" : "Connection Active"}</div>
+		<div style="margin-top:24px;">
+			<button onclick="try{if(window.opener&&window.opener!==window){window.opener.postMessage({type:'daypulse:google_connected',email:'${profile.email}'},'*');window.close();}}catch(e){}window.location.href='${isOnboardingRestore ? "/dashboard" : "/settings"}';" style="background:#10b981;color:#022c22;font-weight:600;border:none;border-radius:10px;padding:9px 20px;cursor:pointer;font-size:13px;">Return to DayPulse</button>
+		</div>
 	</div>
 	<script>
 		try {
 			if (window.opener && window.opener !== window) {
 				window.opener.postMessage({ type: "daypulse:google_connected", email: "${profile.email}" }, "*");
+				setTimeout(function() { window.close(); }, 1200);
+			} else {
+				setTimeout(function() { window.location.href = "${isOnboardingRestore ? "/dashboard" : "/settings"}?sync_status=connected&email=${encodeURIComponent(profile.email)}"; }, 1400);
 			}
-			setTimeout(function() { window.close(); }, 2500);
-		} catch(e) {}
+		} catch(e) {
+			setTimeout(function() { window.location.href = "${isOnboardingRestore ? "/dashboard" : "/settings"}"; }, 1500);
+		}
 	</script>
 </body>
 </html>`;
@@ -159,10 +166,16 @@ async function processRequest(request: NextRequest, slug: string[], method: stri
 			try {
 				var data = ${JSON.stringify(syncPayload)};
 				if (data.tokens) {
-					localStorage.setItem("daypulse_google_tokens", JSON.stringify(data.tokens));
+					var prevTokens = null;
+					try { prevTokens = JSON.parse(localStorage.getItem("daypulse_google_tokens")); } catch(e) {}
+					var savedTokens = Object.assign({}, prevTokens || {}, data.tokens);
+					if (!data.tokens.refreshToken && prevTokens && prevTokens.refreshToken) {
+						savedTokens.refreshToken = prevTokens.refreshToken;
+					}
+					localStorage.setItem("daypulse_google_tokens", JSON.stringify(savedTokens));
 					localStorage.setItem("daypulse_google_sync_status", JSON.stringify({
 						lastSyncAt: new Date().toISOString(),
-						email: data.tokens.email
+						email: savedTokens.email || data.tokens.email
 					}));
 				}
 				if (data.user) {
@@ -198,11 +211,13 @@ async function processRequest(request: NextRequest, slug: string[], method: stri
 				if (window.opener && window.opener !== window) {
 					try {
 						window.opener.postMessage({ type: "daypulse:google_connected", email: data.profile.email }, "*");
-						window.close();
+						setTimeout(function() { window.close(); }, 1200);
 						return;
 					} catch(e) {}
 				}
-				window.location.replace(data.targetUrl);
+				setTimeout(function() {
+					window.location.replace(data.targetUrl);
+				}, 1000);
 			} catch(err) {
 				window.location.replace("/settings?sync_error=" + encodeURIComponent(err.message || "Failed to initialize local session"));
 			}

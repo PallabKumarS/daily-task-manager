@@ -78,6 +78,10 @@ contextBridge.exposeInMainWorld("electronAPI", api);
 try {
 	webFrame.executeJavaScript(`
 		(() => {
+			if (typeof document !== "undefined" && document.documentElement) {
+				document.documentElement.classList.add("is-electron");
+				document.documentElement.style.setProperty("--titlebar-height", "36px");
+			}
 			if (window.__daypulse_ipc_interceptor_installed) return;
 			window.__daypulse_ipc_interceptor_installed = true;
 

@@ -15,7 +15,7 @@ function createWindow() {
 		minWidth: 960,
 		minHeight: 640,
 		show: true,
-		title: "DayPulse",
+		title: "DayPulse — Client UI",
 		backgroundColor: "#090d16",
 		frame: false,
 		icon: fs.existsSync(iconPath) ? iconPath : undefined,
@@ -49,6 +49,11 @@ function createWindow() {
 	if (fs.existsSync(splashPath)) {
 		mainWindow.loadFile(splashPath);
 	}
+
+	mainWindow.on("page-title-updated", (event) => {
+		event.preventDefault();
+		mainWindow.setTitle("DayPulse — Client UI");
+	});
 
 	return mainWindow;
 }

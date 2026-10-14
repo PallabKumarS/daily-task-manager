@@ -1,7 +1,7 @@
 {
 	"name": "desktop-app",
 	"productName": "DayPulse",
-	"version": "1.0.13",
+	"version": "1.0.14",
 	"description": "DayPulse Standalone Desktop App",
 	"author": "Pallab Kumar Sarker",
 	"main": "electron/main.js",

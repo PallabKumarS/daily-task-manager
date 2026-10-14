@@ -63,6 +63,7 @@ export function getGoogleAuthUrl(userId: string, redirectUri?: string): string {
 		scope: scopes,
 		access_type: "offline",
 		prompt: "consent",
+		include_granted_scopes: "true",
 		state: userId,
 	});
 
@@ -189,6 +190,12 @@ export async function getValidAccessToken(prisma: PrismaClient, userId: string):
 	if (!rawAccess) {
 		throw new Error(
 			"Google Drive session has expired. Please reconnect your Google account in Settings.",
+		);
+	}
+
+	if (isExpiringSoon && !rawRefresh) {
+		throw new Error(
+			"Google Drive session has expired (missing refresh token). Please reconnect your Google account in Settings.",
 		);
 	}
 
@@ -388,6 +395,141 @@ export function clearLatestGoogleRestoreLoginResult(): void {
 	latestGoogleRestoreLoginResult = null;
 }
 
+export async function processGoogleOAuthCode(
+	prisma: PrismaClient,
+	rawCode: string,
+	stateParam: string,
+	redirectUri?: string,
+): Promise<{ profile: GoogleProfile; tokens: GoogleTokens }> {
+	let code = rawCode.trim();
+	if (code.includes("code=")) {
+		try {
+			const u = new URL(code.startsWith("http") ? code : `http://dummy.com/${code}`);
+			code = u.searchParams.get("code") || code;
+		} catch {}
+	}
+
+	const tokens = await exchangeCodeForTokens(code, redirectUri);
+	const profile = await getGoogleProfile(tokens.accessToken);
+	const tokenExpiry = new Date(Date.now() + tokens.expiresIn * 1000);
+
+	const isOnboardingRestore =
+		stateParam === "restore_onboarding" ||
+		stateParam === "login_restore" ||
+		stateParam.startsWith("restore");
+
+	let activeUserId = stateParam;
+
+	if (isOnboardingRestore || !activeUserId) {
+		let targetUser = await prisma.user.findUnique({
+			where: { email: profile.email },
+		});
+
+		if (!targetUser) {
+			const salt = await bcrypt.genSalt(10);
+			const defaultPass = await bcrypt.hash(`DayPulse@${profile.id.slice(-6)}`, salt);
+			targetUser = await prisma.user.create({
+				data: {
+					email: profile.email,
+					name: profile.name || "Google User",
+					passwordHash: defaultPass,
+					currency: "USD",
+				},
+			});
+		}
+
+		activeUserId = targetUser.id;
+	}
+
+	await prisma.googleConnection.upsert({
+		where: { userId: activeUserId },
+		update: {
+			googleId: profile.id,
+			googleEmail: profile.email,
+			encryptedAccess: encryptToken(tokens.accessToken),
+			encryptedRefresh: tokens.refreshToken ? encryptToken(tokens.refreshToken) : undefined,
+			tokenExpiry,
+		},
+		create: {
+			userId: activeUserId,
+			googleId: profile.id,
+			googleEmail: profile.email,
+			encryptedAccess: encryptToken(tokens.accessToken),
+			encryptedRefresh: tokens.refreshToken ? encryptToken(tokens.refreshToken) : null,
+			tokenExpiry,
+		},
+	});
+
+	if (isOnboardingRestore) {
+		try {
+			const backupData = (await downloadLatestBackupFromGoogleDrive(tokens.accessToken)) as {
+				archiveBase64?: string;
+				tasks?: Array<Record<string, unknown>>;
+				routines?: Array<Record<string, unknown>>;
+				transactions?: Array<Record<string, unknown>>;
+				trackers?: Array<Record<string, unknown>>;
+				categories?: Array<Record<string, unknown>>;
+			};
+
+			let restoreSummary = "";
+			if (backupData.archiveBase64) {
+				const restoreResult = await restoreBackupArchive(
+					backupData.archiveBase64,
+					activeUserId,
+					prisma,
+				);
+				restoreSummary = restoreResult.summary || "Data restored";
+			} else if (
+				Array.isArray(backupData.tasks) ||
+				Array.isArray(backupData.routines) ||
+				Array.isArray(backupData.transactions) ||
+				Array.isArray(backupData.trackers) ||
+				Array.isArray(backupData.categories)
+			) {
+				const mergeReport = await mergeBackupIntoUser(prisma, activeUserId, {
+					tasks: backupData.tasks || [],
+					routines: backupData.routines || [],
+					routineLogs:
+						((backupData as Record<string, unknown>).routineLogs as Array<
+							Record<string, unknown>
+						>) || [],
+					transactions: backupData.transactions || [],
+					trackers: backupData.trackers || [],
+					trackerLogs:
+						((backupData as Record<string, unknown>).trackerLogs as Array<
+							Record<string, unknown>
+						>) || [],
+					categories: backupData.categories || [],
+				});
+				restoreSummary = summarizeMergeReport(mergeReport);
+			}
+
+			const currentUser = await prisma.user.findUnique({
+				where: { id: activeUserId },
+			});
+
+			if (currentUser) {
+				startSession(currentUser.id);
+				latestGoogleRestoreLoginResult = {
+					user: {
+						id: currentUser.id,
+						email: currentUser.email,
+						name: currentUser.name,
+						currency: currentUser.currency,
+					},
+					token: `daypulse_token_${currentUser.id}`,
+					summary: restoreSummary || "Workspace restored from Google Drive",
+					restoredAt: new Date().toISOString(),
+				};
+			}
+		} catch (restoreErr) {
+			console.warn("[DayPulse Google Sync] Notice during onboarding backup download:", restoreErr);
+		}
+	}
+
+	return { profile, tokens };
+}
+
 export function startGoogleOAuthLoopbackServer(
 	prisma: PrismaClient,
 	onConnected?: (email: string) => void,
@@ -407,127 +549,11 @@ export function startGoogleOAuthLoopbackServer(
 					return;
 				}
 
-				const tokens = await exchangeCodeForTokens(code);
-				const profile = await getGoogleProfile(tokens.accessToken);
-				const tokenExpiry = new Date(Date.now() + tokens.expiresIn * 1000);
-
+				const { profile } = await processGoogleOAuthCode(prisma, code, stateParam);
 				const isOnboardingRestore =
 					stateParam === "restore_onboarding" ||
 					stateParam === "login_restore" ||
 					stateParam.startsWith("restore");
-
-				let activeUserId = stateParam;
-
-				if (isOnboardingRestore || !activeUserId) {
-					// Find or create local user for this Google profile
-					let targetUser = await prisma.user.findUnique({
-						where: { email: profile.email },
-					});
-
-					if (!targetUser) {
-						const salt = await bcrypt.genSalt(10);
-						const defaultPass = await bcrypt.hash(`DayPulse@${profile.id.slice(-6)}`, salt);
-						targetUser = await prisma.user.create({
-							data: {
-								email: profile.email,
-								name: profile.name || "Google User",
-								passwordHash: defaultPass,
-								currency: "USD",
-							},
-						});
-					}
-
-					activeUserId = targetUser.id;
-				}
-
-				await prisma.googleConnection.upsert({
-					where: { userId: activeUserId },
-					update: {
-						googleId: profile.id,
-						googleEmail: profile.email,
-						encryptedAccess: encryptToken(tokens.accessToken),
-						encryptedRefresh: tokens.refreshToken ? encryptToken(tokens.refreshToken) : undefined,
-						tokenExpiry,
-					},
-					create: {
-						userId: activeUserId,
-						googleId: profile.id,
-						googleEmail: profile.email,
-						encryptedAccess: encryptToken(tokens.accessToken),
-						encryptedRefresh: tokens.refreshToken ? encryptToken(tokens.refreshToken) : null,
-						tokenExpiry,
-					},
-				});
-
-				let restoreSummary = "";
-				if (isOnboardingRestore) {
-					try {
-						const backupData = (await downloadLatestBackupFromGoogleDrive(tokens.accessToken)) as {
-							archiveBase64?: string;
-							tasks?: Array<Record<string, unknown>>;
-							routines?: Array<Record<string, unknown>>;
-							transactions?: Array<Record<string, unknown>>;
-							trackers?: Array<Record<string, unknown>>;
-							categories?: Array<Record<string, unknown>>;
-						};
-
-						if (backupData.archiveBase64) {
-							const restoreResult = await restoreBackupArchive(
-								backupData.archiveBase64,
-								activeUserId,
-								prisma,
-							);
-							restoreSummary = restoreResult.summary || "Data restored";
-						} else if (
-							Array.isArray(backupData.tasks) ||
-							Array.isArray(backupData.routines) ||
-							Array.isArray(backupData.transactions) ||
-							Array.isArray(backupData.trackers) ||
-							Array.isArray(backupData.categories)
-						) {
-							const mergeReport = await mergeBackupIntoUser(prisma, activeUserId, {
-								tasks: backupData.tasks || [],
-								routines: backupData.routines || [],
-								routineLogs:
-									((backupData as Record<string, unknown>).routineLogs as Array<
-										Record<string, unknown>
-									>) || [],
-								transactions: backupData.transactions || [],
-								trackers: backupData.trackers || [],
-								trackerLogs:
-									((backupData as Record<string, unknown>).trackerLogs as Array<
-										Record<string, unknown>
-									>) || [],
-								categories: backupData.categories || [],
-							});
-							restoreSummary = summarizeMergeReport(mergeReport);
-						}
-					} catch (restoreErr) {
-						console.warn(
-							"[DayPulse Google Sync] Notice during onboarding backup download:",
-							restoreErr,
-						);
-					}
-
-					const currentUser = await prisma.user.findUnique({
-						where: { id: activeUserId },
-					});
-
-					if (currentUser) {
-						startSession(currentUser.id);
-						latestGoogleRestoreLoginResult = {
-							user: {
-								id: currentUser.id,
-								email: currentUser.email,
-								name: currentUser.name,
-								currency: currentUser.currency,
-							},
-							token: `daypulse_token_${currentUser.id}`,
-							summary: restoreSummary || "Workspace restored from Google Drive",
-							restoredAt: new Date().toISOString(),
-						};
-					}
-				}
 
 				res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
 				res.end(`
@@ -548,9 +574,17 @@ export function startGoogleOAuthLoopbackServer(
 						<div class="card">
 							<h2>${isOnboardingRestore ? "Workspace Restored" : "Google Account Connected"}</h2>
 							<p>${isOnboardingRestore ? `Your Google Drive data for ${profile.email} has been restored into DayPulse.` : `Your Google Drive connection is now active in DayPulse (${profile.email}).`}</p>
-							<p>You can close this tab and return to the DayPulse workspace.</p>
+							<p>Returning to DayPulse...</p>
 							<div class="badge">${isOnboardingRestore ? "Restore Complete" : "Connection Active"}</div>
+							<div style="margin-top:24px;">
+								<button onclick="try{window.close();}catch(e){}" style="background:#10b981;color:#022c22;font-weight:600;border:none;border-radius:10px;padding:9px 20px;cursor:pointer;font-size:13px;">Close Window</button>
+							</div>
 						</div>
+						<script>
+							setTimeout(function() {
+								try { window.close(); } catch(e) {}
+							}, 1200);
+						</script>
 					</body>
 					</html>
 				`);

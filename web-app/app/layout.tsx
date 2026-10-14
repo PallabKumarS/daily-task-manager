@@ -48,6 +48,13 @@ export default function RootLayout({
 			lang="en"
 			className={`${geistSans.variable} ${geistMono.variable} h-full dark antialiased`}
 		>
+			<head>
+				<script>
+					{
+						'try{if(typeof window!=="undefined"&&window.electronAPI&&window.electronAPI.isElectron){document.documentElement.classList.add("is-electron");document.documentElement.style.setProperty("--titlebar-height","36px");}}catch(e){}'
+					}
+				</script>
+			</head>
 			<body className="min-h-full flex flex-col bg-slate-950 text-slate-100 selection:bg-emerald-500/30 selection:text-emerald-300">
 				<DesktopTitlebar />
 				<AuthProvider>

@@ -15,6 +15,8 @@ export function DesktopTitlebar() {
 		const api = (window as unknown as { electronAPI?: Record<string, unknown> }).electronAPI;
 		if (api?.isElectron) {
 			setIsElectron(true);
+			document.documentElement.classList.add("is-electron");
+			document.documentElement.style.setProperty("--titlebar-height", "36px");
 
 			const checkState = async () => {
 				try {
@@ -85,7 +87,7 @@ export function DesktopTitlebar() {
 	return (
 		<div
 			style={dragStyle}
-			className="h-9 w-full bg-slate-950/95 border-b border-slate-800/80 flex items-center justify-between select-none z-50 shrink-0 sticky top-0"
+			className="h-9 w-full bg-slate-950 border-b border-slate-800 flex items-center justify-between select-none z-50 shrink-0 sticky top-0"
 		>
 			{/* Left: App Branding */}
 			<div className="flex items-center gap-2 px-3 min-w-0" style={noDragStyle}>

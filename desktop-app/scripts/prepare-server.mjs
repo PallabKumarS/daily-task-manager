@@ -137,6 +137,8 @@ for (const { src, dest } of nmPaths) {
 const runnerScript = `const path = require("path");
 const fs = require("fs");
 
+process.title = "DayPulse - Background Server";
+
 const userDataPath = process.env.USER_DATA_PATH || path.join(__dirname, "data");
 if (!fs.existsSync(userDataPath)) {
 	fs.mkdirSync(userDataPath, { recursive: true });

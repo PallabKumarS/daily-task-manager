@@ -22,6 +22,7 @@ app.on("web-contents-created", (_event, contents) => {
 });
 
 app.name = "DayPulse";
+process.title = "DayPulse - App Manager";
 const appData = process.env.APPDATA || (process.platform === "darwin" ? path.join(process.env.HOME || "", "Library/Application Support") : path.join(process.env.HOME || "", ".config"));
 const userData = path.join(appData, "DayPulse");
 try {

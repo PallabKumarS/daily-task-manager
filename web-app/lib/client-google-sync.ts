@@ -122,6 +122,7 @@ export function getClientGoogleAuthUrl(redirectUri = getClientGoogleRedirectUri(
 		scope: scopes,
 		access_type: "offline",
 		prompt: "consent",
+		include_granted_scopes: "true",
 	});
 
 	return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;

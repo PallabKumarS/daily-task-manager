@@ -137,6 +137,7 @@ export function getGoogleAuthUrl(userId: string, redirectUri?: string): string {
 		scope: scopes,
 		access_type: "offline",
 		prompt: "consent",
+		include_granted_scopes: "true",
 		state: userId,
 	});
 
@@ -263,6 +264,12 @@ export async function getValidAccessToken(prisma: PrismaClient, userId: string):
 	if (!rawAccess) {
 		throw new Error(
 			"Google Drive session has expired. Please reconnect your Google account in Settings.",
+		);
+	}
+
+	if (isExpiringSoon && !rawRefresh) {
+		throw new Error(
+			"Google Drive session has expired (missing refresh token). Please reconnect your Google account in Settings.",
 		);
 	}
 

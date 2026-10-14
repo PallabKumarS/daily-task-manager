@@ -1,5 +1,12 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
+try {
+	if (typeof document !== "undefined" && document.documentElement) {
+		document.documentElement.classList.add("is-electron");
+		document.documentElement.style.setProperty("--titlebar-height", "36px");
+	}
+} catch (_) {}
+
 contextBridge.exposeInMainWorld("electronAPI", {
 	isElectron: true,
 	minimize: () => {

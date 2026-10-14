@@ -24,6 +24,7 @@ import {
 	getGoogleAuthUrl,
 	getLatestGoogleRestoreLoginResult,
 	isGoogleConfigured,
+	processGoogleOAuthCode,
 	startGoogleOAuthLoopbackServer,
 } from "./google-sync.js";
 import { getCurrentUserId, getPrismaClient } from "./prisma-client.js";
@@ -1803,6 +1804,35 @@ export async function handleIpcApiDispatch(req: IpcApiRequest): Promise<IpcApiRe
 				message: "Google account disconnected successfully",
 				data: null,
 			};
+		}
+
+		if (pathname === "/sync/google/exchange-code" && method === "POST") {
+			const bodyObj = (body || {}) as Record<string, unknown>;
+			const code = String(bodyObj.code || "");
+			if (!code) {
+				return {
+					statusCode: 400,
+					success: false,
+					message: "Authorization code is required.",
+					data: null,
+				};
+			}
+			try {
+				const { profile } = await processGoogleOAuthCode(prisma, code, userId);
+				return {
+					statusCode: 200,
+					success: true,
+					message: "Google account successfully connected.",
+					data: { email: profile.email },
+				};
+			} catch (err: unknown) {
+				return {
+					statusCode: 400,
+					success: false,
+					message: err instanceof Error ? err.message : "Failed to exchange authorization code",
+					data: null,
+				};
+			}
 		}
 
 		if (pathname === "/sync/simulate" && method === "POST") {

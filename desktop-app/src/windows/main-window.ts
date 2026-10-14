@@ -14,7 +14,7 @@ export function createMainWindow(onCloseHide: () => void): BrowserWindow {
 		minWidth: 920,
 		minHeight: 640,
 		show: true,
-		title: "DayPulse",
+		title: "DayPulse — Client UI",
 		icon: !windowIcon.isEmpty() ? windowIcon : iconPath || undefined,
 		backgroundColor: "#09090b",
 		autoHideMenuBar: true,
@@ -62,6 +62,11 @@ export function createMainWindow(onCloseHide: () => void): BrowserWindow {
 	win.on("unmaximize", emitWindowState);
 	win.on("enter-full-screen", emitWindowState);
 	win.on("leave-full-screen", emitWindowState);
+
+	win.on("page-title-updated", (event) => {
+		event.preventDefault();
+		win.setTitle("DayPulse — Client UI");
+	});
 
 	// Directly load splash.html inside mainWindow matching krishan-traders pattern
 	const splashPath = getAssetPath("splash.html");

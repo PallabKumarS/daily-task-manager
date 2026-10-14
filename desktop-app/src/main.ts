@@ -26,6 +26,7 @@ loadDesktopEnv();
 
 app.name = "DayPulse";
 app.setName("DayPulse");
+process.title = "DayPulse - App Manager";
 setupWindowsBranding();
 
 let mainWindow: BrowserWindow | null = null;

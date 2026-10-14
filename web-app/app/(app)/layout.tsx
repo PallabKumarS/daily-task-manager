@@ -69,7 +69,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 	}
 
 	return (
-		<div className="min-h-screen flex flex-row bg-background text-foreground">
+		<div className="min-h-[calc(100vh-var(--titlebar-height,0px))] flex flex-row bg-background text-foreground">
 			<AppSidebar />
 
 			<div className="flex-1 flex flex-col min-w-0">

@@ -43,7 +43,7 @@ export function AppNavbar({ onQuickAdd }: AppNavbarProps) {
 	}, [isQuickLogOpen]);
 
 	return (
-		<header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-border/80 bg-background/80 px-4 sm:px-8 backdrop-blur-xl">
+		<header className="sticky top-[var(--titlebar-height,0px)] z-30 flex h-16 w-full items-center justify-between border-b border-border/80 bg-background/80 px-4 sm:px-8 backdrop-blur-xl transition-[top] duration-150">
 			<div className="flex items-center gap-3">
 				{/* Mobile Logo Brand */}
 				<Link href="/dashboard" className="md:hidden flex items-center gap-2">

@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 :root {
+	--titlebar-height: 0px;
 	color-scheme: dark;
 	--background: #090a10;
 	--foreground: #ffffff;
@@ -47,6 +48,10 @@
 
 * {
 	border-color: var(--border);
+}
+
+html.is-electron {
+	--titlebar-height: 36px;
 }
 
 html,

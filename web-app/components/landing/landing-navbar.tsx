@@ -9,7 +9,7 @@ export function LandingNavbar() {
 	const { user } = useAuth();
 
 	return (
-		<header className="sticky top-0 z-40 w-full border-b border-slate-900 bg-slate-950/80 backdrop-blur-xl">
+		<header className="sticky top-[var(--titlebar-height,0px)] z-40 w-full border-b border-slate-900 bg-slate-950/80 backdrop-blur-xl transition-[top] duration-150">
 			<div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
 				<Link href="/" className="flex items-center gap-2.5">
 					<div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 text-slate-950 shadow-md shadow-emerald-500/20">
