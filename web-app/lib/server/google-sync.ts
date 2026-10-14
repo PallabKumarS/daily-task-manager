@@ -708,18 +708,27 @@ export async function executeGoogleSyncUpload(
 	const accessToken = await getValidAccessToken(prisma, userId);
 	const archive = await createBackupArchive(userId, prisma);
 
-	const [tasks, routines, routineLogs, transactions, trackers, trackerLogs, categories, debtsLoans, repayments] =
-		await Promise.all([
-			prisma.task.findMany({ where: { userId }, orderBy: { createdAt: "asc" } }),
-			prisma.routine.findMany({ where: { userId }, orderBy: { createdAt: "asc" } }),
-			prisma.routineLog.findMany({ where: { userId }, orderBy: { date: "asc" } }),
-			prisma.transaction.findMany({ where: { userId }, orderBy: { date: "asc" } }),
-			prisma.dailyTracker.findMany({ where: { userId }, orderBy: { createdAt: "asc" } }),
-			prisma.dailyTrackerLog.findMany({ where: { userId }, orderBy: { date: "asc" } }),
-			prisma.categoryOption.findMany({ where: { userId }, orderBy: { name: "asc" } }),
-			prisma.debtLoan.findMany({ where: { userId }, orderBy: { date: "asc" } }),
-			prisma.debtLoanRepayment.findMany({ where: { userId }, orderBy: { date: "asc" } }),
-		]);
+	const [
+		tasks,
+		routines,
+		routineLogs,
+		transactions,
+		trackers,
+		trackerLogs,
+		categories,
+		debtsLoans,
+		repayments,
+	] = await Promise.all([
+		prisma.task.findMany({ where: { userId }, orderBy: { createdAt: "asc" } }),
+		prisma.routine.findMany({ where: { userId }, orderBy: { createdAt: "asc" } }),
+		prisma.routineLog.findMany({ where: { userId }, orderBy: { date: "asc" } }),
+		prisma.transaction.findMany({ where: { userId }, orderBy: { date: "asc" } }),
+		prisma.dailyTracker.findMany({ where: { userId }, orderBy: { createdAt: "asc" } }),
+		prisma.dailyTrackerLog.findMany({ where: { userId }, orderBy: { date: "asc" } }),
+		prisma.categoryOption.findMany({ where: { userId }, orderBy: { name: "asc" } }),
+		prisma.debtLoan.findMany({ where: { userId }, orderBy: { date: "asc" } }),
+		prisma.debtLoanRepayment.findMany({ where: { userId }, orderBy: { date: "asc" } }),
+	]);
 
 	const backupPayload = {
 		exportedAt: new Date().toISOString(),

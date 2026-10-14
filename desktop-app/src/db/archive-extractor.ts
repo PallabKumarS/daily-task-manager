@@ -227,7 +227,8 @@ export async function restoreBackupArchive(
 		restoredCounts: {
 			tasks: (mergeReport.tasks?.created || 0) + (mergeReport.tasks?.updated || 0),
 			routines: (mergeReport.routines?.created || 0) + (mergeReport.routines?.updated || 0),
-			routineLogs: (mergeReport.routineLogs?.created || 0) + (mergeReport.routineLogs?.updated || 0),
+			routineLogs:
+				(mergeReport.routineLogs?.created || 0) + (mergeReport.routineLogs?.updated || 0),
 			transactions:
 				(mergeReport.transactions?.created || 0) + (mergeReport.transactions?.updated || 0),
 			trackers: (mergeReport.trackers?.created || 0) + (mergeReport.trackers?.updated || 0),

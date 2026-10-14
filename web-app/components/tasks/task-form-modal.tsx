@@ -19,6 +19,7 @@ import {
 } from "@/lib/alarm-settings";
 import { api } from "@/lib/api-client";
 import { TASK_CATEGORIES } from "@/lib/currency-symbols";
+import { syncNativeAndroidAlarms } from "@/lib/native-alarm-scheduler";
 import { recordRecentAddition } from "@/lib/recent-activity-store";
 
 const TYPE_OPTIONS: SelectOption[] = [
@@ -379,6 +380,7 @@ export function TaskFormModal({
 				});
 				onSuccess();
 				onClose();
+				syncNativeAndroidAlarms();
 			} else {
 				toast.error(res.message || "Failed to save");
 			}

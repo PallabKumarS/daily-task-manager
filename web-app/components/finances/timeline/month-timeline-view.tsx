@@ -287,8 +287,8 @@ export function MonthTimelineView({
 						</p>
 					</div>
 
-					<div className="flex items-center gap-3">
-						<div className="flex items-center gap-3 text-xs">
+					<div className="flex flex-wrap items-center justify-between gap-3">
+						<div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs">
 							<span className="text-emerald-400 font-bold">
 								+{formatCurrency(selectedDayIncome, currency)}
 							</span>
@@ -312,7 +312,7 @@ export function MonthTimelineView({
 								variant="emerald"
 								size="sm"
 								onClick={() => onAddNew(selectedDateStr)}
-								className="gap-1.5 text-xs h-8"
+								className="gap-1.5 text-xs h-8 shrink-0"
 							>
 								<Plus className="w-3.5 h-3.5" />
 								<span>Add to this Day</span>

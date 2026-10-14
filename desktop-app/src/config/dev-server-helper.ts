@@ -94,7 +94,9 @@ export async function ensureDevServerReady(): Promise<void> {
 		return;
 	}
 
-	console.log(`[DayPulse Desktop] Auto-spawning Next.js dev server in: ${webDir} on port ${DEFAULT_DEV_PORT}`);
+	console.log(
+		`[DayPulse Desktop] Auto-spawning Next.js dev server in: ${webDir} on port ${DEFAULT_DEV_PORT}`,
+	);
 
 	const isWin = process.platform === "win32";
 	const npmCmd = isWin ? "npm.cmd" : "npm";

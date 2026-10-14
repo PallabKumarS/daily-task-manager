@@ -11,6 +11,7 @@ import { Modal } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/lib/api-client";
+import { syncNativeAndroidAlarms } from "@/lib/native-alarm-scheduler";
 import { recordRecentAddition } from "@/lib/recent-activity-store";
 
 const TIME_SLOT_OPTIONS: SelectOption[] = [
@@ -188,6 +189,7 @@ export function RoutineFormModal({
 				});
 				onSuccess();
 				onClose();
+				syncNativeAndroidAlarms();
 			} else {
 				toast.error(res.message || "Failed to save routine");
 			}

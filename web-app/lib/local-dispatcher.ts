@@ -283,7 +283,10 @@ export async function handleLocalClientDispatch<T = unknown>(
 				status: body.status || "PENDING",
 				startDate: body.startDate || null,
 				dueDate: body.dueDate || null,
-				remindBeforeMinutes: Number(body.remindBeforeMinutes) || 15,
+				remindBeforeMinutes:
+					body.remindBeforeMinutes !== undefined && body.remindBeforeMinutes !== null
+						? Number(body.remindBeforeMinutes)
+						: 0,
 				reminderSent: false,
 				completedAt: null,
 				isRecurring: Boolean(body.isRecurring),

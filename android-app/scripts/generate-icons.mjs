@@ -8,7 +8,9 @@ const __dirname = path.dirname(__filename);
 
 const rootDir = path.resolve(__dirname, "../..");
 const srcMasterLogo = path.join(rootDir, "assets/google-app-logo.png");
-const srcLogo = fs.existsSync(srcMasterLogo) ? srcMasterLogo : path.join(rootDir, "assets/logo.png");
+const srcLogo = fs.existsSync(srcMasterLogo)
+	? srcMasterLogo
+	: path.join(rootDir, "assets/logo.png");
 const resDir = path.join(rootDir, "android-app/android/app/src/main/res");
 
 const densities = [

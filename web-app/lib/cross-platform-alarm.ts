@@ -21,7 +21,7 @@ export async function ensureAndroidAlarmChannel(): Promise<void> {
 
 	try {
 		await LocalNotifications.createChannel({
-			id: "daypulse_alarms_v2",
+			id: "daypulse_alarms_v3",
 			name: "DayPulse Alarms & Events",
 			description: "Time-sensitive task reminders and alarm notifications",
 			importance: 5,
@@ -97,7 +97,7 @@ export async function dispatchUnifiedAlarm(payload: UnifiedAlarmPayload): Promis
 					id: numericId,
 					title: payload.title,
 					body: payload.message,
-					channelId: "daypulse_alarms_v2",
+					channelId: "daypulse_alarms_v3",
 					schedule: scheduleOption,
 					sound: "daypulse_alarm.wav",
 					extra: {

@@ -11,6 +11,9 @@ interface TaskItem {
 	status: string;
 	type: string;
 	remindBeforeMinutes?: number;
+	isRecurring?: boolean;
+	repeatTime?: string | null;
+	repeatDaysOfWeek?: string | null;
 }
 
 interface RoutineItem {
@@ -52,37 +55,106 @@ export async function syncNativeAndroidAlarms(): Promise<number> {
 		// 1. Process future Tasks and Events
 		if (tasksRes?.success && Array.isArray(tasksRes.data)) {
 			for (const task of tasksRes.data) {
-				if (task.status === "COMPLETED" || task.status === "CANCELLED" || !task.dueDate) {
+				if (task.status === "COMPLETED" || task.status === "CANCELLED") {
 					continue;
 				}
 
+				const isEvent = task.type === "EVENT";
+				const leadMinutes = task.remindBeforeMinutes || 0;
+				const leadMs = leadMinutes * 60 * 1000;
+
+				// Case A: Recurring Task with repeatTime
+				if (task.isRecurring && task.repeatTime) {
+					const times = task.repeatTime
+						.split(",")
+						.map((t) => t.trim())
+						.filter(Boolean);
+					const activeDays = (task.repeatDaysOfWeek || "0,1,2,3,4,5,6")
+						.split(",")
+						.map((s) => s.trim());
+
+					for (let dayOffset = 0; dayOffset < 7; dayOffset++) {
+						const dayTarget = new Date(now + dayOffset * 24 * 60 * 60 * 1000);
+						const dayOfWeekStr = dayTarget.getDay().toString();
+						if (!activeDays.includes(dayOfWeekStr)) continue;
+
+						for (const timeStr of times) {
+							const [tHour, tMin] = timeStr.split(":").map(Number);
+							if (Number.isNaN(tHour) || Number.isNaN(tMin)) continue;
+
+							const occTarget = new Date(dayTarget);
+							occTarget.setHours(tHour, tMin, 0, 0);
+							const dueTimeMs = occTarget.getTime();
+							const triggerMs = dueTimeMs - leadMs;
+
+							const dateKey = `${occTarget.getFullYear()}_${occTarget.getMonth() + 1}_${occTarget.getDate()}_${tHour}_${tMin}`;
+
+							// Exact on-time alarm
+							if (dueTimeMs > now && dueTimeMs <= now + maxHorizonMs) {
+								notificationsToSchedule.push({
+									id: stringToNumericId(`task_due_${task.id}_${dateKey}`),
+									title: isEvent ? `Event: ${task.title}` : `Task Due: ${task.title}`,
+									body: task.description
+										? task.description.slice(0, 80)
+										: `Scheduled for ${timeStr}`,
+									channelId: "daypulse_alarms_v3",
+									schedule: { at: new Date(dueTimeMs), allowWhileIdle: true },
+									sound: "daypulse_alarm.wav",
+									extra: { taskId: task.id, type: task.type, dateKey },
+								});
+							}
+
+							// Advance reminder if requested
+							if (leadMs > 0 && triggerMs > now && triggerMs <= now + maxHorizonMs) {
+								notificationsToSchedule.push({
+									id: stringToNumericId(`task_adv_${task.id}_${dateKey}`),
+									title: isEvent ? `Upcoming Event: ${task.title}` : `Upcoming Task: ${task.title}`,
+									body: `${task.title} starts in ${leadMinutes}m (at ${timeStr})`,
+									channelId: "daypulse_alarms_v3",
+									schedule: { at: new Date(triggerMs), allowWhileIdle: true },
+									sound: "daypulse_alarm.wav",
+									extra: { taskId: task.id, type: task.type, dateKey },
+								});
+							}
+						}
+					}
+					continue;
+				}
+
+				// Case B: Single occurrence with dueDate
+				if (!task.dueDate) continue;
 				const dueMs = new Date(task.dueDate).getTime();
 				if (Number.isNaN(dueMs)) continue;
 
-				const leadMs = (task.remindBeforeMinutes || 0) * 60 * 1000;
-				const triggerMs = dueMs - leadMs;
+				const timeLabel = new Date(dueMs).toLocaleTimeString([], {
+					hour: "2-digit",
+					minute: "2-digit",
+				});
 
-				if (triggerMs > now && triggerMs <= now + maxHorizonMs) {
-					const isEvent = task.type === "EVENT";
-					const notifId = stringToNumericId(`task_${task.id}`);
-					const timeLabel = new Date(dueMs).toLocaleTimeString([], {
-						hour: "2-digit",
-						minute: "2-digit",
-					});
-
+				// 1. Exact due time alarm
+				if (dueMs > now && dueMs <= now + maxHorizonMs) {
 					notificationsToSchedule.push({
-						id: notifId,
-						title: isEvent ? `Event Reminder: ${task.title}` : `Upcoming Task: ${task.title}`,
-						body: task.description
-							? `${task.title} — ${task.description.slice(0, 80)}`
-							: `Scheduled for ${timeLabel}`,
-						channelId: "daypulse_alarms_v2",
-						schedule: { at: new Date(triggerMs), allowWhileIdle: true },
+						id: stringToNumericId(`task_due_${task.id}`),
+						title: isEvent ? `Event: ${task.title}` : `Task Due: ${task.title}`,
+						body: task.description ? task.description.slice(0, 80) : `Scheduled for ${timeLabel}`,
+						channelId: "daypulse_alarms_v3",
+						schedule: { at: new Date(dueMs), allowWhileIdle: true },
 						sound: "daypulse_alarm.wav",
-						extra: {
-							taskId: task.id,
-							type: task.type,
-						},
+						extra: { taskId: task.id, type: task.type },
+					});
+				}
+
+				// 2. Advance alert if lead time configured
+				const advanceMs = dueMs - leadMs;
+				if (leadMs > 0 && advanceMs > now && advanceMs <= now + maxHorizonMs) {
+					notificationsToSchedule.push({
+						id: stringToNumericId(`task_adv_${task.id}`),
+						title: isEvent ? `Upcoming Event: ${task.title}` : `Upcoming Task: ${task.title}`,
+						body: `${task.title} starts in ${leadMinutes}m (at ${timeLabel})`,
+						channelId: "daypulse_alarms_v3",
+						schedule: { at: new Date(advanceMs), allowWhileIdle: true },
+						sound: "daypulse_alarm.wav",
+						extra: { taskId: task.id, type: task.type },
 					});
 				}
 			}
@@ -98,6 +170,7 @@ export async function syncNativeAndroidAlarms(): Promise<number> {
 
 				const activeDays = (routine.daysOfWeek || "0,1,2,3,4,5,6").split(",");
 				const leadMinutes = routine.reminderMinutes || 0;
+				const leadMs = leadMinutes * 60 * 1000;
 
 				for (let dayOffset = 0; dayOffset < 7; dayOffset++) {
 					const targetDate = new Date(now + dayOffset * 24 * 60 * 60 * 1000);
@@ -106,39 +179,49 @@ export async function syncNativeAndroidAlarms(): Promise<number> {
 					if (!activeDays.includes(dayOfWeekStr)) continue;
 
 					targetDate.setHours(rHour, rMin, 0, 0);
-					const routineTriggerMs = targetDate.getTime() - leadMinutes * 60 * 1000;
+					const routineDueMs = targetDate.getTime();
+					const routineTriggerMs = routineDueMs - leadMs;
+					const dateKey = `${targetDate.getFullYear()}_${targetDate.getMonth() + 1}_${targetDate.getDate()}`;
 
-					if (routineTriggerMs > now && routineTriggerMs <= now + maxHorizonMs) {
-						const dateKey = `${targetDate.getFullYear()}_${targetDate.getMonth() + 1}_${targetDate.getDate()}`;
-						const notifId = stringToNumericId(`routine_${routine.id}_${dateKey}`);
-
+					// Exact routine time
+					if (routineDueMs > now && routineDueMs <= now + maxHorizonMs) {
 						notificationsToSchedule.push({
-							id: notifId,
+							id: stringToNumericId(`routine_due_${routine.id}_${dateKey}`),
 							title: `Daily Routine: ${routine.title}`,
 							body: `Time for your routine: "${routine.title}" at ${routine.targetTime}`,
-							channelId: "daypulse_alarms_v2",
+							channelId: "daypulse_alarms_v3",
+							schedule: { at: new Date(routineDueMs), allowWhileIdle: true },
+							sound: "daypulse_alarm.wav",
+							extra: { routineId: routine.id, type: "routine" },
+						});
+					}
+
+					// Advance reminder if configured
+					if (leadMs > 0 && routineTriggerMs > now && routineTriggerMs <= now + maxHorizonMs) {
+						notificationsToSchedule.push({
+							id: stringToNumericId(`routine_adv_${routine.id}_${dateKey}`),
+							title: `Upcoming Routine: ${routine.title}`,
+							body: `Routine "${routine.title}" starts in ${leadMinutes}m at ${routine.targetTime}`,
+							channelId: "daypulse_alarms_v3",
 							schedule: { at: new Date(routineTriggerMs), allowWhileIdle: true },
 							sound: "daypulse_alarm.wav",
-							extra: {
-								routineId: routine.id,
-								type: "routine",
-							},
+							extra: { routineId: routine.id, type: "routine" },
 						});
 					}
 				}
 			}
 		}
 
-		// Sort by nearest trigger time and cap to safe limit (top 50)
+		// Sort by nearest trigger time and cap to safe limit (top 60)
 		notificationsToSchedule.sort((a, b) => {
 			const timeA = a.schedule?.at ? new Date(a.schedule.at).getTime() : 0;
 			const timeB = b.schedule?.at ? new Date(b.schedule.at).getTime() : 0;
 			return timeA - timeB;
 		});
 
-		const limitedBatch = notificationsToSchedule.slice(0, 50);
+		const limitedBatch = notificationsToSchedule.slice(0, 60);
 
-		// Clear pending and register new batch
+		// Clear existing scheduled notifications and register latest batch
 		const pending = await LocalNotifications.getPending();
 		if (pending.notifications.length > 0) {
 			await LocalNotifications.cancel({ notifications: pending.notifications });
@@ -160,23 +243,40 @@ export function initNativeAlarmListener(): () => void {
 	if (!Capacitor.isNativePlatform()) return () => {};
 
 	let debounceTimer: ReturnType<typeof setTimeout> | null = null;
-	const triggerSync = () => {
+	const scheduleCoalesced = (immediate = false) => {
 		if (debounceTimer) clearTimeout(debounceTimer);
+		if (immediate) {
+			syncNativeAndroidAlarms();
+			return;
+		}
 		debounceTimer = setTimeout(() => {
 			syncNativeAndroidAlarms();
-		}, 1500);
+		}, 200);
 	};
 
-	// Trigger sync on initial load, app resume, visibility change, and custom refresh
-	triggerSync();
-	window.addEventListener("daypulse:refresh", triggerSync);
-	document.addEventListener("visibilitychange", triggerSync);
-	window.addEventListener("focus", triggerSync);
+	const onVisibilityChange = () => {
+		// When app is minimized or backgrounded, immediately sync before JS execution is suspended
+		if (document.hidden) {
+			syncNativeAndroidAlarms();
+		} else {
+			scheduleCoalesced(false);
+		}
+	};
+
+	const onRefresh = () => scheduleCoalesced(false);
+	const onFocus = () => scheduleCoalesced(false);
+
+	// Initial sync upon startup
+	scheduleCoalesced(true);
+
+	window.addEventListener("daypulse:refresh", onRefresh);
+	document.addEventListener("visibilitychange", onVisibilityChange);
+	window.addEventListener("focus", onFocus);
 
 	return () => {
 		if (debounceTimer) clearTimeout(debounceTimer);
-		window.removeEventListener("daypulse:refresh", triggerSync);
-		document.removeEventListener("visibilitychange", triggerSync);
-		window.removeEventListener("focus", triggerSync);
+		window.removeEventListener("daypulse:refresh", onRefresh);
+		document.removeEventListener("visibilitychange", onVisibilityChange);
+		window.removeEventListener("focus", onFocus);
 	};
 }

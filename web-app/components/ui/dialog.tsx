@@ -65,7 +65,7 @@ export function Modal({
 				aria-modal="true"
 				aria-labelledby="modal-title"
 				className={cn(
-					"relative w-full max-w-[calc(100vw-1rem)] rounded-2xl sm:rounded-3xl border border-slate-700/80 bg-slate-900 p-4 sm:p-7 md:p-8 shadow-2xl shadow-black/90 z-10 max-h-[94vh] sm:max-h-[90vh] md:max-h-[88vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200",
+					"relative w-full max-w-[calc(100vw-1rem)] rounded-2xl sm:rounded-3xl border border-slate-700/80 bg-slate-900 p-4 sm:p-7 md:p-8 shadow-2xl shadow-black/90 z-10 max-h-[calc(100dvh-1.5rem)] sm:max-h-[90dvh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 my-auto",
 					maxWidthClasses[maxWidth],
 					className,
 				)}
@@ -91,7 +91,7 @@ export function Modal({
 					</button>
 				</div>
 
-				<div className="pt-3 sm:pt-5 pb-1 sm:pb-2 px-0.5 sm:px-2 overflow-y-auto overflow-x-hidden min-w-0 w-full flex-1">
+				<div className="pt-3 sm:pt-5 pb-1 sm:pb-2 px-0.5 sm:px-2 overflow-y-auto overscroll-contain overflow-x-hidden min-w-0 w-full flex-1">
 					{children}
 				</div>
 			</div>

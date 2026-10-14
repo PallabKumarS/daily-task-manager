@@ -107,9 +107,7 @@ function mergeRoutineLogs(
 			const incomingCompletedAt = item.completedAt
 				? new Date(String(item.completedAt)).getTime()
 				: 0;
-			const prevCompletedAt = prev.completedAt
-				? new Date(String(prev.completedAt)).getTime()
-				: 0;
+			const prevCompletedAt = prev.completedAt ? new Date(String(prev.completedAt)).getTime() : 0;
 			map.set(key, incomingCompletedAt >= prevCompletedAt ? { ...prev, ...item } : prev);
 		}
 	}
@@ -122,11 +120,15 @@ function mergeCategories(
 ): Array<Record<string, unknown>> {
 	const map = new Map<string, Record<string, unknown>>();
 	for (const item of existing) {
-		const key = `${String(item.group || "EXPENSE").toUpperCase()}_${String(item.name || "").trim().toLowerCase()}`;
+		const key = `${String(item.group || "EXPENSE").toUpperCase()}_${String(item.name || "")
+			.trim()
+			.toLowerCase()}`;
 		map.set(key, item);
 	}
 	for (const item of incoming) {
-		const key = `${String(item.group || "EXPENSE").toUpperCase()}_${String(item.name || "").trim().toLowerCase()}`;
+		const key = `${String(item.group || "EXPENSE").toUpperCase()}_${String(item.name || "")
+			.trim()
+			.toLowerCase()}`;
 		map.set(key, item);
 	}
 	return Array.from(map.values());
