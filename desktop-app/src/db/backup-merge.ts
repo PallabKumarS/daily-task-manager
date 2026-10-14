@@ -10,6 +10,8 @@ export interface BackupCollections {
 	trackers: BackupRecord[];
 	trackerLogs: BackupRecord[];
 	categories: BackupRecord[];
+	debtsLoans?: BackupRecord[];
+	repayments?: BackupRecord[];
 }
 
 export interface MergeStats {
@@ -18,7 +20,7 @@ export interface MergeStats {
 	skipped: number;
 }
 
-export type MergeReport = Record<keyof BackupCollections, MergeStats>;
+export type MergeReport = Record<string, MergeStats>;
 
 type Tx = Prisma.TransactionClient;
 
@@ -62,6 +64,8 @@ export const emptyCollections = (): BackupCollections => ({
 	trackers: [],
 	trackerLogs: [],
 	categories: [],
+	debtsLoans: [],
+	repayments: [],
 });
 
 interface ExistingRow {
@@ -473,11 +477,122 @@ async function mergeCategories(tx: Tx, userId: string, records: BackupRecord[]) 
 	return stats;
 }
 
-/**
- * Merges a parsed backup into a local account inside a single database
- * transaction. Parents are merged before their logs so ownership checks on
- * routine and tracker logs see freshly restored rows.
- */
+function debtLoanData(dl: BackupRecord) {
+	return {
+		type: text(dl.type, "DEBT"),
+		personName: text(dl.personName, "Unknown"),
+		amount: numeric(dl.amount, 0),
+		paidAmount: numeric(dl.paidAmount, 0),
+		status: text(dl.status, "ACTIVE"),
+		date: optionalDate(dl.date) ?? new Date(),
+		dueDate: optionalDate(dl.dueDate),
+		description: optionalText(dl.description),
+		initialTransactionId: optionalText(dl.initialTransactionId),
+	};
+}
+
+function repaymentData(rep: BackupRecord) {
+	return {
+		amount: numeric(rep.amount, 0),
+		date: optionalDate(rep.date) ?? new Date(),
+		paymentMethod: text(rep.paymentMethod, "Cash"),
+		notes: optionalText(rep.notes),
+		transactionId: optionalText(rep.transactionId),
+	};
+}
+
+async function mergeDebtsLoans(tx: Tx, userId: string, records: BackupRecord[]) {
+	const stats = emptyStats();
+	const existing = indexById(
+		await tx.debtLoan.findMany({
+			where: { id: { in: idsOf(records) } },
+			select: ROW_SELECT,
+		}),
+	);
+	for (const record of records) {
+		const id = recordId(record);
+		const stamps = timestamps(record);
+		const decision = decide(
+			id ? existing.get(id) : undefined,
+			optionalDate(record.updatedAt),
+			userId,
+		);
+		if (decision === "skip") {
+			stats.skipped++;
+		} else if (decision === "update" && id) {
+			await tx.debtLoan.update({
+				where: { id },
+				data: { ...debtLoanData(record), updatedAt: stamps.updatedAt },
+			});
+			stats.updated++;
+		} else {
+			await tx.debtLoan.create({
+				data: {
+					...(id ? { id } : {}),
+					userId,
+					...debtLoanData(record),
+					...stamps,
+				},
+			});
+			stats.created++;
+		}
+	}
+	return stats;
+}
+
+async function mergeDebtLoanRepayments(tx: Tx, userId: string, records: BackupRecord[]) {
+	const stats = emptyStats();
+	const debtLoanIds = records.map((r) => String(r.debtLoanId || ""));
+	const owned = await tx.debtLoan.findMany({
+		where: { userId, id: { in: [...new Set(debtLoanIds)] } },
+		select: { id: true },
+	});
+	const ownedSet = new Set(owned.map((o) => o.id));
+
+	const existing = indexById(
+		await tx.debtLoanRepayment.findMany({
+			where: { id: { in: idsOf(records) } },
+			select: ROW_SELECT,
+		}),
+	);
+
+	for (const record of records) {
+		const debtLoanId = String(record.debtLoanId || "");
+		if (!ownedSet.has(debtLoanId)) {
+			stats.skipped++;
+			continue;
+		}
+		const id = recordId(record);
+		const stamps = timestamps(record);
+		const decision = decide(
+			id ? existing.get(id) : undefined,
+			optionalDate(record.updatedAt),
+			userId,
+		);
+		if (decision === "skip") {
+			stats.skipped++;
+		} else if (decision === "update" && id) {
+			await tx.debtLoanRepayment.update({
+				where: { id },
+				data: { ...repaymentData(record), updatedAt: stamps.updatedAt },
+			});
+			stats.updated++;
+		} else {
+			await tx.debtLoanRepayment.create({
+				data: {
+					...(id ? { id } : {}),
+					debtLoanId,
+					userId,
+					...repaymentData(record),
+					...stamps,
+				},
+			});
+			stats.created++;
+		}
+	}
+	return stats;
+}
+
 export async function mergeBackupIntoUser(
 	prisma: PrismaClient,
 	userId: string,
@@ -492,6 +607,8 @@ export async function mergeBackupIntoUser(
 			const trackers = await mergeTrackers(tx, userId, collections.trackers);
 			const routineLogs = await mergeRoutineLogs(tx, userId, collections.routineLogs);
 			const trackerLogs = await mergeTrackerLogs(tx, userId, collections.trackerLogs);
+			const debtsLoans = await mergeDebtsLoans(tx, userId, collections.debtsLoans || []);
+			const repayments = await mergeDebtLoanRepayments(tx, userId, collections.repayments || []);
 			return {
 				tasks,
 				routines,
@@ -500,6 +617,8 @@ export async function mergeBackupIntoUser(
 				trackers,
 				trackerLogs,
 				categories,
+				debtsLoans,
+				repayments,
 			};
 		},
 		{ timeout: 120_000, maxWait: 10_000 },

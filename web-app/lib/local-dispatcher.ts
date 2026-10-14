@@ -2,6 +2,7 @@ import type { ApiResponse } from "./api-client";
 import {
 	clearClientGoogleTokens,
 	exchangeClientCodeForTokens,
+	executeClientBidirectionalSync,
 	getClientGoogleAuthUrl,
 	getClientGoogleCredentials,
 	getClientGoogleStatus,
@@ -13,6 +14,8 @@ import {
 	uploadBackupToGoogleDrive,
 } from "./client-google-sync";
 import { exportLocalArchive } from "./export-local-archive";
+import { calculateLocalFinanceAnalytics } from "./local-finance-analytics";
+import { buildLocalTrackerMonthDetail, formatTrackerWithMonthStats } from "./local-tracker-stats";
 import { restoreLocalArchive } from "./restore-local-archive";
 
 export interface LocalStoreState {
@@ -430,27 +433,57 @@ export async function handleLocalClientDispatch<T = unknown>(
 	}
 
 	// 4. Finance routes
-	if (pathname === "/finances") {
+	if (pathname === "/finances" || pathname === "/finances/transactions") {
 		if (method === "GET") {
-			const finances = getList(STORAGE_KEYS.FINANCES);
+			let finances = getList<Record<string, unknown>>(STORAGE_KEYS.FINANCES);
+
+			if (query.type && ["EXPENSE", "INCOME"].includes(query.type.toUpperCase())) {
+				finances = finances.filter(
+					(t) => String(t.type || "").toUpperCase() === query.type.toUpperCase(),
+				);
+			}
+			if (query.category) {
+				finances = finances.filter((t) => t.category === query.category);
+			}
+			if (query.startDate) {
+				const start = new Date(query.startDate).getTime();
+				finances = finances.filter((t) => new Date(String(t.date)).getTime() >= start);
+			}
+			if (query.endDate) {
+				const end = new Date(query.endDate).getTime();
+				finances = finances.filter((t) => new Date(String(t.date)).getTime() <= end);
+			}
+
+			finances.sort(
+				(a, b) => new Date(String(b.date)).getTime() - new Date(String(a.date)).getTime(),
+			);
+
+			const limit = query.limit ? Number(query.limit) : undefined;
+			const data = limit ? finances.slice(0, limit) : finances;
+
 			return {
 				statusCode: 200,
 				success: true,
-				data: finances as T,
-				meta: { page: 1, limit: 100, totalData: finances.length, totalPage: 1 },
+				data: data as T,
+				meta: {
+					page: 1,
+					limit: limit || data.length,
+					totalData: finances.length,
+					totalPage: 1,
+				},
 			};
 		}
 		if (method === "POST") {
-			const finances = getList(STORAGE_KEYS.FINANCES);
+			const finances = getList<Record<string, unknown>>(STORAGE_KEYS.FINANCES);
 			const newTx = {
 				id: generateId("tx"),
 				userId: getActiveUserId(),
-				type: body.type || "EXPENSE",
+				type: String(body.type || "EXPENSE").toUpperCase(),
 				amount: Number(body.amount) || 0,
-				category: body.category || "General",
-				description: body.description || "",
-				paymentMethod: body.paymentMethod || "Cash",
-				date: body.date || new Date().toISOString(),
+				category: String(body.category || "General"),
+				description: typeof body.description === "string" ? body.description : "",
+				paymentMethod: typeof body.paymentMethod === "string" ? body.paymentMethod : "Cash",
+				date: body.date ? new Date(String(body.date)).toISOString() : new Date().toISOString(),
 				createdAt: new Date().toISOString(),
 				updatedAt: new Date().toISOString(),
 			};
@@ -458,16 +491,32 @@ export async function handleLocalClientDispatch<T = unknown>(
 			saveList(STORAGE_KEYS.FINANCES, finances);
 			return { statusCode: 201, success: true, data: newTx as T };
 		}
+		if (method === "DELETE") {
+			saveList(STORAGE_KEYS.FINANCES, []);
+			return {
+				statusCode: 200,
+				success: true,
+				message: "All transactions deleted",
+				data: null as unknown as T,
+			};
+		}
 	}
 
 	if (pathname === "/finances/summary" && method === "GET") {
-		const finances = getList(STORAGE_KEYS.FINANCES);
+		const finances = getList<Record<string, unknown>>(STORAGE_KEYS.FINANCES);
 		let totalIncome = 0;
 		let totalExpense = 0;
+		const categoryBreakdown: Record<string, number> = {};
+
 		for (const tx of finances) {
 			const amt = Number(tx.amount) || 0;
-			if (tx.type === "INCOME") totalIncome += amt;
-			else if (tx.type === "EXPENSE") totalExpense += amt;
+			const cat = String(tx.category || "General");
+			if (String(tx.type).toUpperCase() === "INCOME") {
+				totalIncome += amt;
+			} else {
+				totalExpense += amt;
+				categoryBreakdown[cat] = (categoryBreakdown[cat] || 0) + amt;
+			}
 		}
 		return {
 			statusCode: 200,
@@ -475,60 +524,21 @@ export async function handleLocalClientDispatch<T = unknown>(
 			data: {
 				totalIncome,
 				totalExpense,
+				netSavings: totalIncome - totalExpense,
 				balance: totalIncome - totalExpense,
+				categoryBreakdown,
 				currency: "USD",
 			} as T,
 		};
 	}
 
 	if (pathname === "/finances/analytics" && method === "GET") {
-		const finances = getList(STORAGE_KEYS.FINANCES);
-		let income = 0;
-		let expense = 0;
-		const expenseCatTotals: Record<string, number> = {};
-		const incomeCatTotals: Record<string, number> = {};
-
-		for (const tx of finances) {
-			const amt = Number(tx.amount) || 0;
-			if (tx.type === "INCOME") {
-				income += amt;
-				const cat = String(tx.category || "General Income");
-				incomeCatTotals[cat] = (incomeCatTotals[cat] || 0) + amt;
-			}
-			if (tx.type === "EXPENSE") {
-				expense += amt;
-				const cat = String(tx.category || "General Expense");
-				expenseCatTotals[cat] = (expenseCatTotals[cat] || 0) + amt;
-			}
-		}
-
-		const expenseCategories = Object.entries(expenseCatTotals).map(([category, amount]) => ({
-			category,
-			amount,
-			percentage: expense > 0 ? Math.round((amount / expense) * 100) : 0,
-		}));
-
-		const incomeCategories = Object.entries(incomeCatTotals).map(([category, amount]) => ({
-			category,
-			amount,
-			percentage: income > 0 ? Math.round((amount / income) * 100) : 0,
-		}));
-
-		const netBalance = income - expense;
-		const savingsRate = income > 0 ? Math.max(0, Math.round((netBalance / income) * 100)) : 0;
-
+		const finances = getList<Record<string, unknown>>(STORAGE_KEYS.FINANCES);
+		const analytics = calculateLocalFinanceAnalytics(finances, query.period || "month", query.date);
 		return {
 			statusCode: 200,
 			success: true,
-			data: {
-				totalIncome: income,
-				totalExpense: expense,
-				netBalance,
-				savingsRate,
-				expenseCategories,
-				incomeCategories,
-				timeline: [],
-			} as T,
+			data: analytics as T,
 		};
 	}
 
@@ -683,11 +693,17 @@ export async function handleLocalClientDispatch<T = unknown>(
 	// 7. Trackers
 	if (pathname === "/trackers") {
 		if (method === "GET") {
-			const trackers = getList(STORAGE_KEYS.TRACKERS);
-			return { statusCode: 200, success: true, data: trackers as T };
+			const trackers = getList<Record<string, unknown>>(STORAGE_KEYS.TRACKERS).filter(
+				(t) => !t.isArchived,
+			);
+			const allLogs = getList<Record<string, unknown>>(STORAGE_KEYS.TRACKER_LOGS);
+			const targetDate = query.date || new Date().toISOString().slice(0, 10);
+
+			const formatted = trackers.map((t) => formatTrackerWithMonthStats(t, allLogs, targetDate));
+			return { statusCode: 200, success: true, data: formatted as T };
 		}
 		if (method === "POST") {
-			const trackers = getList(STORAGE_KEYS.TRACKERS);
+			const trackers = getList<Record<string, unknown>>(STORAGE_KEYS.TRACKERS);
 			const newTrk = {
 				id: generateId("trk"),
 				userId: getActiveUserId(),
@@ -707,39 +723,248 @@ export async function handleLocalClientDispatch<T = unknown>(
 			saveList(STORAGE_KEYS.TRACKERS, trackers);
 			return { statusCode: 201, success: true, data: newTrk as T };
 		}
+		if (method === "DELETE") {
+			saveList(STORAGE_KEYS.TRACKER_LOGS, []);
+			saveList(STORAGE_KEYS.TRACKERS, []);
+			return {
+				statusCode: 200,
+				success: true,
+				message: "All trackers deleted",
+				data: null as unknown as T,
+			};
+		}
 	}
 
 	if (pathname === "/trackers/logs" && method === "GET") {
-		const logs = getList(STORAGE_KEYS.TRACKER_LOGS);
+		const logs = getList<Record<string, unknown>>(STORAGE_KEYS.TRACKER_LOGS);
 		return { statusCode: 200, success: true, data: logs as T };
 	}
 
-	const trackerLogMatch = pathname.match(/^\/trackers\/([^/]+)\/logs$/);
-	if (trackerLogMatch && method === "POST") {
-		const trackerId = trackerLogMatch[1];
-		const logs = getList(STORAGE_KEYS.TRACKER_LOGS);
-		const date = String(body.date || new Date().toISOString().split("T")[0]);
-		const existingIdx = logs.findIndex((l) => l.trackerId === trackerId && l.date === date);
-
-		const entry = {
-			id: existingIdx >= 0 ? logs[existingIdx].id : generateId("trkl"),
-			trackerId,
-			userId: getActiveUserId(),
-			date,
-			value: Number(body.value) || 0,
-			status: body.status || "LOGGED",
-			notes: body.notes || null,
-			createdAt: new Date().toISOString(),
-			updatedAt: new Date().toISOString(),
-		};
-
-		if (existingIdx >= 0) {
-			logs[existingIdx] = entry;
-		} else {
-			logs.push(entry);
+	const trackerSettleMatch = pathname.match(/^\/trackers\/([^/]+)\/settle$/);
+	if (trackerSettleMatch && method === "POST") {
+		const trackerId = trackerSettleMatch[1];
+		const trackers = getList<Record<string, unknown>>(STORAGE_KEYS.TRACKERS);
+		const tracker = trackers.find((t) => t.id === trackerId);
+		if (!tracker) {
+			return {
+				statusCode: 404,
+				success: false,
+				message: "Tracker not found",
+				data: null as unknown as T,
+			};
 		}
+
+		const startDate = String(body.startDate || "");
+		const endDate = String(body.endDate || "");
+		const logs = getList<Record<string, unknown>>(STORAGE_KEYS.TRACKER_LOGS);
+
+		const unsettledLogs = logs.filter(
+			(l) =>
+				l.trackerId === trackerId &&
+				typeof l.date === "string" &&
+				l.date >= startDate &&
+				l.date <= endDate &&
+				!l.isSettled &&
+				(Number(l.value) || 0) > 0,
+		);
+
+		if (unsettledLogs.length === 0) {
+			return {
+				statusCode: 400,
+				success: false,
+				message: "No unsettled items found for the selected period.",
+				data: null as unknown as T,
+			};
+		}
+
+		let totalAmount = 0;
+		let totalUnits = 0;
+		const nowIso = new Date().toISOString();
+
+		for (const log of unsettledLogs) {
+			const val = Number(log.value) || 0;
+			const rate =
+				typeof log.unitPrice === "number"
+					? log.unitPrice
+					: typeof tracker.unitPrice === "number"
+						? (tracker.unitPrice as number)
+						: 0;
+			totalAmount += val * rate;
+			totalUnits += val;
+
+			log.isSettled = true;
+			log.settledAt = nowIso;
+			log.updatedAt = nowIso;
+		}
+		totalAmount = Number(totalAmount.toFixed(2));
 		saveList(STORAGE_KEYS.TRACKER_LOGS, logs);
-		return { statusCode: 201, success: true, data: entry as T };
+
+		const settlementDescription =
+			typeof body.notes === "string" && body.notes
+				? body.notes
+				: `Settlement: ${tracker.name} (${totalUnits} ${tracker.unitName}, ${startDate} to ${endDate})`;
+
+		const finances = getList<Record<string, unknown>>(STORAGE_KEYS.FINANCES);
+		const newTx = {
+			id: generateId("tx"),
+			userId: getActiveUserId(),
+			type: "EXPENSE",
+			amount: totalAmount,
+			category:
+				typeof body.category === "string"
+					? body.category
+					: (tracker.category as string) || "Food & Dining",
+			description: settlementDescription,
+			paymentMethod: typeof body.paymentMethod === "string" ? body.paymentMethod : "Cash",
+			date: nowIso,
+			createdAt: nowIso,
+			updatedAt: nowIso,
+		};
+		finances.unshift(newTx);
+		saveList(STORAGE_KEYS.FINANCES, finances);
+
+		return {
+			statusCode: 200,
+			success: true,
+			message: "Tracker settlement recorded in finances.",
+			data: {
+				transaction: newTx,
+				settledLogsCount: unsettledLogs.length,
+				totalAmount,
+				totalUnits,
+			} as T,
+		};
+	}
+
+	const trackerLogMatch = pathname.match(/^\/trackers\/([^/]+)\/logs?$/);
+	if (trackerLogMatch) {
+		const trackerId = trackerLogMatch[1];
+		if (method === "GET") {
+			const logs = getList<Record<string, unknown>>(STORAGE_KEYS.TRACKER_LOGS).filter(
+				(l) => l.trackerId === trackerId,
+			);
+			logs.sort((a, b) => String(b.date).localeCompare(String(a.date)));
+			return { statusCode: 200, success: true, data: logs as T };
+		}
+		if (method === "POST") {
+			const logs = getList<Record<string, unknown>>(STORAGE_KEYS.TRACKER_LOGS);
+			const date = String(body.date || new Date().toISOString().split("T")[0]);
+			const existingIdx = logs.findIndex((l) => l.trackerId === trackerId && l.date === date);
+
+			const entry = {
+				id: existingIdx >= 0 ? logs[existingIdx].id : generateId("trkl"),
+				trackerId,
+				userId: getActiveUserId(),
+				date,
+				value: Number(body.value) || 0,
+				status: body.status || "LOGGED",
+				unitPrice: body.unitPrice !== undefined ? Number(body.unitPrice) : undefined,
+				notes: body.notes !== undefined ? (body.notes ? String(body.notes) : null) : null,
+				isSettled: existingIdx >= 0 ? Boolean(logs[existingIdx].isSettled) : false,
+				settledAt: existingIdx >= 0 ? logs[existingIdx].settledAt : null,
+				createdAt: existingIdx >= 0 ? logs[existingIdx].createdAt : new Date().toISOString(),
+				updatedAt: new Date().toISOString(),
+			};
+
+			if (existingIdx >= 0) {
+				logs[existingIdx] = entry;
+			} else {
+				logs.push(entry);
+			}
+			saveList(STORAGE_KEYS.TRACKER_LOGS, logs);
+			return { statusCode: 201, success: true, data: entry as T };
+		}
+	}
+
+	const trackerSingleLogMatch = pathname.match(/^\/trackers\/([^/]+)\/logs?\/([^/]+)$/);
+	if (trackerSingleLogMatch) {
+		const logId = trackerSingleLogMatch[2];
+		const logs = getList<Record<string, unknown>>(STORAGE_KEYS.TRACKER_LOGS);
+		const idx = logs.findIndex((l) => l.id === logId);
+
+		if (idx >= 0) {
+			if (method === "PATCH") {
+				logs[idx] = {
+					...logs[idx],
+					value: body.value !== undefined ? Number(body.value) : logs[idx].value,
+					status: body.status !== undefined ? body.status : logs[idx].status,
+					unitPrice: body.unitPrice !== undefined ? Number(body.unitPrice) : logs[idx].unitPrice,
+					notes:
+						body.notes !== undefined ? (body.notes ? String(body.notes) : null) : logs[idx].notes,
+					isSettled: body.isSettled !== undefined ? Boolean(body.isSettled) : logs[idx].isSettled,
+					updatedAt: new Date().toISOString(),
+				};
+				saveList(STORAGE_KEYS.TRACKER_LOGS, logs);
+				return { statusCode: 200, success: true, data: logs[idx] as T };
+			}
+			if (method === "DELETE") {
+				const deleted = logs.splice(idx, 1)[0];
+				saveList(STORAGE_KEYS.TRACKER_LOGS, logs);
+				return { statusCode: 200, success: true, data: deleted as T };
+			}
+		}
+	}
+
+	const trackerMatch = pathname.match(/^\/trackers\/([^/]+)$/);
+	if (
+		trackerMatch &&
+		!pathname.includes("settle") &&
+		!pathname.includes("logs") &&
+		!pathname.includes("log")
+	) {
+		const trackerId = trackerMatch[1];
+		const trackers = getList<Record<string, unknown>>(STORAGE_KEYS.TRACKERS);
+		const trackerIdx = trackers.findIndex((t) => t.id === trackerId);
+
+		if (trackerIdx < 0) {
+			return {
+				statusCode: 404,
+				success: false,
+				message: "Tracker not found",
+				data: null as unknown as T,
+			};
+		}
+
+		const tracker = trackers[trackerIdx];
+
+		if (method === "GET") {
+			const now = new Date();
+			const targetYear = query.year ? Number(query.year) : now.getFullYear();
+			const targetMonth = query.month ? Number(query.month) : now.getMonth() + 1;
+			const allLogs = getList<Record<string, unknown>>(STORAGE_KEYS.TRACKER_LOGS);
+
+			const detail = buildLocalTrackerMonthDetail(tracker, allLogs, targetYear, targetMonth);
+			return { statusCode: 200, success: true, data: detail as T };
+		}
+
+		if (method === "PATCH") {
+			trackers[trackerIdx] = {
+				...trackers[trackerIdx],
+				...body,
+				defaultTarget:
+					body.defaultTarget !== undefined
+						? Number(body.defaultTarget)
+						: trackers[trackerIdx].defaultTarget,
+				unitPrice:
+					body.unitPrice !== undefined
+						? body.unitPrice
+							? Number(body.unitPrice)
+							: null
+						: trackers[trackerIdx].unitPrice,
+				updatedAt: new Date().toISOString(),
+			};
+			saveList(STORAGE_KEYS.TRACKERS, trackers);
+			return { statusCode: 200, success: true, data: trackers[trackerIdx] as T };
+		}
+
+		if (method === "DELETE") {
+			const deleted = trackers.splice(trackerIdx, 1)[0];
+			saveList(STORAGE_KEYS.TRACKERS, trackers);
+			const allLogs = getList<Record<string, unknown>>(STORAGE_KEYS.TRACKER_LOGS);
+			const remainingLogs = allLogs.filter((l) => l.trackerId !== trackerId);
+			saveList(STORAGE_KEYS.TRACKER_LOGS, remainingLogs);
+			return { statusCode: 200, success: true, data: deleted as T };
+		}
 	}
 
 	// 7. Sync & Backup Archive routes
@@ -941,6 +1166,26 @@ export async function handleLocalClientDispatch<T = unknown>(
 			message: restoreRes.message,
 			data: { summary: restoreRes.message } as T,
 		};
+	}
+
+	if (pathname === "/sync/bidirectional" && method === "POST") {
+		try {
+			const syncRes = await executeClientBidirectionalSync();
+			return {
+				statusCode: 200,
+				success: true,
+				message: syncRes.message,
+				data: { lastSyncAt: syncRes.lastSyncAt } as T,
+			};
+		} catch (err: unknown) {
+			return {
+				statusCode: 500,
+				success: false,
+				message:
+					err instanceof Error ? err.message : "Failed to execute two-way sync with Google Drive",
+				data: null as unknown as T,
+			};
+		}
 	}
 
 	if (pathname === "/sync/upload" && method === "POST") {

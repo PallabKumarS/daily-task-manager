@@ -708,10 +708,34 @@ export async function executeGoogleSyncUpload(
 	const accessToken = await getValidAccessToken(prisma, userId);
 	const archive = await createBackupArchive(userId, prisma);
 
+	const [tasks, routines, routineLogs, transactions, trackers, trackerLogs, categories, debtsLoans, repayments] =
+		await Promise.all([
+			prisma.task.findMany({ where: { userId }, orderBy: { createdAt: "asc" } }),
+			prisma.routine.findMany({ where: { userId }, orderBy: { createdAt: "asc" } }),
+			prisma.routineLog.findMany({ where: { userId }, orderBy: { date: "asc" } }),
+			prisma.transaction.findMany({ where: { userId }, orderBy: { date: "asc" } }),
+			prisma.dailyTracker.findMany({ where: { userId }, orderBy: { createdAt: "asc" } }),
+			prisma.dailyTrackerLog.findMany({ where: { userId }, orderBy: { date: "asc" } }),
+			prisma.categoryOption.findMany({ where: { userId }, orderBy: { name: "asc" } }),
+			prisma.debtLoan.findMany({ where: { userId }, orderBy: { date: "asc" } }),
+			prisma.debtLoanRepayment.findMany({ where: { userId }, orderBy: { date: "asc" } }),
+		]);
+
 	const backupPayload = {
 		exportedAt: new Date().toISOString(),
+		formatVersion: 2,
 		manifest: archive.manifest,
 		archiveBase64: archive.base64,
+		tasks,
+		routines,
+		routineLogs,
+		transactions,
+		finances: transactions,
+		trackers,
+		trackerLogs,
+		categories,
+		debtsLoans,
+		repayments,
 	};
 
 	const uploadResult = await uploadBackupToGoogleDrive(
@@ -747,9 +771,12 @@ export async function executeGoogleSyncRestore(
 		routines?: Array<Record<string, unknown>>;
 		routineLogs?: Array<Record<string, unknown>>;
 		transactions?: Array<Record<string, unknown>>;
+		finances?: Array<Record<string, unknown>>;
 		trackers?: Array<Record<string, unknown>>;
 		trackerLogs?: Array<Record<string, unknown>>;
 		categories?: Array<Record<string, unknown>>;
+		debtsLoans?: Array<Record<string, unknown>>;
+		repayments?: Array<Record<string, unknown>>;
 	};
 
 	let summary = "";
@@ -760,6 +787,7 @@ export async function executeGoogleSyncRestore(
 		Array.isArray(data.tasks) ||
 		Array.isArray(data.routines) ||
 		Array.isArray(data.transactions) ||
+		Array.isArray(data.finances) ||
 		Array.isArray(data.trackers) ||
 		Array.isArray(data.categories)
 	) {
@@ -767,10 +795,12 @@ export async function executeGoogleSyncRestore(
 			tasks: data.tasks || [],
 			routines: data.routines || [],
 			routineLogs: data.routineLogs || [],
-			transactions: data.transactions || [],
+			transactions: data.transactions || data.finances || [],
 			trackers: data.trackers || [],
 			trackerLogs: data.trackerLogs || [],
 			categories: data.categories || [],
+			debtsLoans: data.debtsLoans || [],
+			repayments: data.repayments || [],
 		});
 		summary = summarizeMergeReport(res);
 	}
@@ -781,5 +811,30 @@ export async function executeGoogleSyncRestore(
 			? `Workspace restored from Google Drive: ${summary}`
 			: "Workspace data successfully synced and restored from Google Drive",
 		summary,
+	};
+}
+
+export async function executeGoogleSyncBidirectional(
+	prisma: PrismaClient,
+	userId: string,
+): Promise<{ success: boolean; message: string; lastSyncAt: string }> {
+	let restoreSummary = "";
+	try {
+		const restoreRes = await executeGoogleSyncRestore(prisma, userId);
+		if (restoreRes.success) {
+			restoreSummary = restoreRes.summary || "";
+		}
+	} catch (restoreErr) {
+		console.warn("[DayPulse Server Sync] Cloud pull notice:", restoreErr);
+	}
+
+	const uploadResult = await executeGoogleSyncUpload(prisma, userId);
+
+	return {
+		success: true,
+		message: restoreSummary
+			? `Workspace synchronized with Google Drive (${restoreSummary})`
+			: "Workspace synchronized with Google Drive",
+		lastSyncAt: uploadResult.lastSyncAt,
 	};
 }

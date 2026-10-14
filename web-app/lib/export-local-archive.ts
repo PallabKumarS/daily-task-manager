@@ -77,17 +77,32 @@ export async function exportLocalArchive(): Promise<{
 		checksums: {},
 	};
 
+	const tasksJson = JSON.stringify(tasks, null, 2);
+	const routinesJson = JSON.stringify(routines, null, 2);
+	const routineLogsJson = JSON.stringify(routineLogs, null, 2);
+	const financesJson = JSON.stringify(finances, null, 2);
+	const trackersJson = JSON.stringify(trackers, null, 2);
+	const trackerLogsJson = JSON.stringify(trackerLogs, null, 2);
+	const categoriesJson = JSON.stringify(categories, null, 2);
+	const debtsLoansJson = JSON.stringify(debtsLoans, null, 2);
+	const repaymentsJson = JSON.stringify(repayments, null, 2);
+
 	zip.file("manifest.json", JSON.stringify(manifest, null, 2));
 	zip.file("user.json", JSON.stringify(user, null, 2));
-	zip.file("tasks.json", JSON.stringify(tasks, null, 2));
-	zip.file("routines.json", JSON.stringify(routines, null, 2));
-	zip.file("routine_logs.json", JSON.stringify(routineLogs, null, 2));
-	zip.file("finances.json", JSON.stringify(finances, null, 2));
-	zip.file("trackers.json", JSON.stringify(trackers, null, 2));
-	zip.file("tracker_logs.json", JSON.stringify(trackerLogs, null, 2));
-	zip.file("categories.json", JSON.stringify(categories, null, 2));
-	zip.file("debts_loans.json", JSON.stringify(debtsLoans, null, 2));
-	zip.file("repayments.json", JSON.stringify(repayments, null, 2));
+	zip.file("tasks.json", tasksJson);
+	zip.file("routines.json", routinesJson);
+	zip.file("routine-logs.json", routineLogsJson);
+	zip.file("routine_logs.json", routineLogsJson);
+	zip.file("transactions.json", financesJson);
+	zip.file("finances.json", financesJson);
+	zip.file("trackers.json", trackersJson);
+	zip.file("tracker-logs.json", trackerLogsJson);
+	zip.file("tracker_logs.json", trackerLogsJson);
+	zip.file("categories.json", categoriesJson);
+	zip.file("debts-loans.json", debtsLoansJson);
+	zip.file("debts_loans.json", debtsLoansJson);
+	zip.file("repayments.json", repaymentsJson);
+	zip.file("debt-repayments.json", repaymentsJson);
 
 	const base64 = await zip.generateAsync({
 		type: "base64",

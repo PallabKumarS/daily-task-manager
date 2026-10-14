@@ -21,6 +21,8 @@ export interface BackupManifest {
 		trackers: number;
 		trackerLogs: number;
 		categories: number;
+		debtsLoans: number;
+		repayments: number;
 	};
 	checksums: Record<string, string>;
 }
@@ -42,29 +44,57 @@ export async function createBackupArchive(
 ): Promise<ArchiveExportResult> {
 	const db = prisma || getPrismaClient();
 
-	const [user, tasks, routines, routineLogs, transactions, trackers, trackerLogs, categories] =
-		await Promise.all([
-			db.user.findUnique({ where: { id: userId } }),
-			db.task.findMany({ where: { userId }, orderBy: { createdAt: "asc" } }),
-			db.routine.findMany({ where: { userId }, orderBy: { createdAt: "asc" } }),
-			db.routineLog.findMany({ where: { userId }, orderBy: { date: "asc" } }),
-			db.transaction.findMany({
-				where: { userId },
-				orderBy: { date: "asc" },
-			}),
-			db.dailyTracker.findMany({
-				where: { userId },
-				orderBy: { createdAt: "asc" },
-			}),
-			db.dailyTrackerLog.findMany({
-				where: { userId },
-				orderBy: { date: "asc" },
-			}),
-			db.categoryOption.findMany({
-				where: { userId },
-				orderBy: { name: "asc" },
-			}),
-		]);
+	const [
+		user,
+		tasks,
+		routines,
+		routineLogs,
+		transactions,
+		trackers,
+		trackerLogs,
+		categories,
+		debtsLoans,
+		repayments,
+	] = await Promise.all([
+		db.user.findUnique({ where: { id: userId } }),
+		db.task.findMany({ where: { userId }, orderBy: { createdAt: "asc" } }),
+		db.routine.findMany({ where: { userId }, orderBy: { createdAt: "asc" } }),
+		db.routineLog.findMany({ where: { userId }, orderBy: { date: "asc" } }),
+		db.transaction.findMany({
+			where: { userId },
+			orderBy: { date: "asc" },
+		}),
+		db.dailyTracker.findMany({
+			where: { userId },
+			orderBy: { createdAt: "asc" },
+		}),
+		db.dailyTrackerLog.findMany({
+			where: { userId },
+			orderBy: { date: "asc" },
+		}),
+		db.categoryOption.findMany({
+			where: { userId },
+			orderBy: { name: "asc" },
+		}),
+		db.debtLoan.findMany({
+			where: { userId },
+			orderBy: { date: "asc" },
+		}),
+		db.debtLoanRepayment.findMany({
+			where: { userId },
+			orderBy: { date: "asc" },
+		}),
+	]);
+
+	const tasksJson = JSON.stringify(tasks, null, 2);
+	const routinesJson = JSON.stringify(routines, null, 2);
+	const routineLogsJson = JSON.stringify(routineLogs, null, 2);
+	const transactionsJson = JSON.stringify(transactions, null, 2);
+	const trackersJson = JSON.stringify(trackers, null, 2);
+	const trackerLogsJson = JSON.stringify(trackerLogs, null, 2);
+	const categoriesJson = JSON.stringify(categories, null, 2);
+	const debtsLoansJson = JSON.stringify(debtsLoans, null, 2);
+	const repaymentsJson = JSON.stringify(repayments, null, 2);
 
 	const files: Record<string, string> = {
 		"user.json": JSON.stringify(
@@ -80,13 +110,20 @@ export async function createBackupArchive(
 			null,
 			2,
 		),
-		"tasks.json": JSON.stringify(tasks, null, 2),
-		"routines.json": JSON.stringify(routines, null, 2),
-		"routine-logs.json": JSON.stringify(routineLogs, null, 2),
-		"transactions.json": JSON.stringify(transactions, null, 2),
-		"trackers.json": JSON.stringify(trackers, null, 2),
-		"tracker-logs.json": JSON.stringify(trackerLogs, null, 2),
-		"categories.json": JSON.stringify(categories, null, 2),
+		"tasks.json": tasksJson,
+		"routines.json": routinesJson,
+		"routine-logs.json": routineLogsJson,
+		"routine_logs.json": routineLogsJson,
+		"transactions.json": transactionsJson,
+		"finances.json": transactionsJson,
+		"trackers.json": trackersJson,
+		"tracker-logs.json": trackerLogsJson,
+		"tracker_logs.json": trackerLogsJson,
+		"categories.json": categoriesJson,
+		"debts-loans.json": debtsLoansJson,
+		"debts_loans.json": debtsLoansJson,
+		"repayments.json": repaymentsJson,
+		"debt-repayments.json": repaymentsJson,
 	};
 
 	const checksums: Record<string, string> = {};
@@ -96,7 +133,7 @@ export async function createBackupArchive(
 
 	const nowIso = new Date().toISOString();
 	const manifest: BackupManifest = {
-		formatVersion: 1,
+		formatVersion: 2,
 		appName: "DayPulse",
 		exportedAt: nowIso,
 		user: user
@@ -115,6 +152,8 @@ export async function createBackupArchive(
 			trackers: trackers.length,
 			trackerLogs: trackerLogs.length,
 			categories: categories.length,
+			debtsLoans: debtsLoans.length,
+			repayments: repayments.length,
 		},
 		checksums,
 	};

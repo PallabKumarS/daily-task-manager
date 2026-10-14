@@ -326,10 +326,30 @@ export async function uploadBackupToGoogleDrive(
 		}
 	}
 
+	const readRaw = (key: string) => {
+		try {
+			const raw = localStorage.getItem(key);
+			return raw ? JSON.parse(raw) : [];
+		} catch {
+			return [];
+		}
+	};
+
 	const backupPayload = JSON.stringify({
 		exportedAt: exportData.manifest.exportedAt,
+		formatVersion: 2,
 		manifest: exportData.manifest,
 		archiveBase64: exportData.base64,
+		tasks: readRaw("daypulse_local_tasks"),
+		routines: readRaw("daypulse_local_routines"),
+		routineLogs: readRaw("daypulse_local_routine_logs"),
+		transactions: readRaw("daypulse_local_finances"),
+		finances: readRaw("daypulse_local_finances"),
+		trackers: readRaw("daypulse_local_trackers"),
+		trackerLogs: readRaw("daypulse_local_tracker_logs"),
+		categories: readRaw("daypulse_local_categories"),
+		debtsLoans: readRaw("daypulse_local_debts_loans"),
+		repayments: readRaw("daypulse_local_debt_repayments"),
 	});
 
 	const boundary = "-------daypulse314159265";
@@ -427,13 +447,14 @@ export async function restoreGoogleDriveBackup(tokenOverride?: string) {
 	let restoreResult: Awaited<ReturnType<typeof restoreLocalArchive>>;
 
 	if (payload.archiveBase64 && typeof payload.archiveBase64 === "string") {
-		restoreResult = await restoreLocalArchive(payload.archiveBase64);
+		restoreResult = await restoreLocalArchive(payload.archiveBase64, payload);
 	} else if (
 		payload.data &&
 		typeof (payload.data as Record<string, unknown>).archiveBase64 === "string"
 	) {
 		restoreResult = await restoreLocalArchive(
 			(payload.data as Record<string, unknown>).archiveBase64 as string,
+			payload.data as Record<string, unknown>,
 		);
 	} else {
 		restoreResult = await restoreLocalArchive(undefined, payload);
@@ -454,5 +475,58 @@ export async function restoreGoogleDriveBackup(tokenOverride?: string) {
 		JSON.stringify({ lastSyncAt: now, status: "RESTORE_SUCCESS" }),
 	);
 
+	if (typeof window !== "undefined") {
+		window.dispatchEvent(new CustomEvent("daypulse:refresh"));
+		window.dispatchEvent(new CustomEvent("daypulse:sync-updated"));
+	}
+
 	return restoreResult;
+}
+
+export async function executeClientBidirectionalSync(
+	tokenOverride?: string,
+): Promise<{ success: boolean; message: string; lastSyncAt: string }> {
+	const accessToken = tokenOverride || (await getValidClientAccessToken());
+
+	let restoreSummary = "";
+	try {
+		const downloadRes = await downloadBackupFromGoogleDrive(accessToken);
+		if (downloadRes.success && downloadRes.data) {
+			const { restoreLocalArchive } = await import("./restore-local-archive");
+			const payload = downloadRes.data as Record<string, unknown>;
+			let restoreResult: Awaited<ReturnType<typeof restoreLocalArchive>>;
+
+			if (payload.archiveBase64 && typeof payload.archiveBase64 === "string") {
+				restoreResult = await restoreLocalArchive(payload.archiveBase64, payload);
+			} else if (
+				payload.data &&
+				typeof (payload.data as Record<string, unknown>).archiveBase64 === "string"
+			) {
+				restoreResult = await restoreLocalArchive(
+					(payload.data as Record<string, unknown>).archiveBase64 as string,
+					payload.data as Record<string, unknown>,
+				);
+			} else {
+				restoreResult = await restoreLocalArchive(undefined, payload);
+			}
+			restoreSummary = restoreResult.message || "";
+		}
+	} catch (downloadErr) {
+		console.warn("[DayPulse Client Sync] Cloud pull notice:", downloadErr);
+	}
+
+	const uploadRes = await uploadBackupToGoogleDrive(accessToken);
+
+	if (typeof window !== "undefined") {
+		window.dispatchEvent(new CustomEvent("daypulse:refresh"));
+		window.dispatchEvent(new CustomEvent("daypulse:sync-updated"));
+	}
+
+	return {
+		success: true,
+		message: restoreSummary
+			? `Workspace synchronized with Google Drive (${restoreSummary})`
+			: "Workspace synchronized with Google Drive",
+		lastSyncAt: uploadRes.lastSyncAt,
+	};
 }

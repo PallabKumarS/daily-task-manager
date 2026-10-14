@@ -426,12 +426,17 @@ function SettingsContent() {
 	const handleUploadGoogle = async () => {
 		setSyncingGoogle(true);
 		try {
-			const res = await api.post("/sync/upload");
+			let res = await api.post("/sync/bidirectional").catch(() => null);
+			if (!res?.success) {
+				res = await api.post("/sync/upload");
+			}
+
 			if (res.success) {
 				toast.success(res.message || "Google Drive sync completed!");
+				window.dispatchEvent(new CustomEvent("daypulse:refresh"));
 				fetchGoogleStatus();
 			} else {
-				toast.error(res.message || "Failed to backup to Google Drive");
+				toast.error(res.message || "Failed to sync with Google Drive");
 				if (res.message?.includes("expired") || res.message?.includes("reconnect")) {
 					setGoogleStatus((prev) => ({ ...prev, connected: false }));
 				}
@@ -604,7 +609,7 @@ function SettingsContent() {
 									className="gap-2 text-xs"
 								>
 									<RefreshCw className={`w-3.5 h-3.5 ${syncingGoogle ? "animate-spin" : ""}`} />
-									<span>{syncingGoogle ? "Syncing..." : "Sync & Backup Now"}</span>
+									<span>{syncingGoogle ? "Syncing..." : "Two-Way Cloud Sync"}</span>
 								</Button>
 								<Button
 									variant="outline"

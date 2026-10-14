@@ -40,6 +40,8 @@ export interface ArchiveRestoreResult {
 		trackers: number;
 		trackerLogs: number;
 		categories: number;
+		debtsLoans?: number;
+		repayments?: number;
 	};
 	mergeReport?: MergeReport;
 	summary?: string;
@@ -122,16 +124,21 @@ export async function extractArchiveCollections(zip: JSZip): Promise<{
 		}
 	}
 
-	const readJsonFromZip = async <T>(filename: string): Promise<T[]> => {
-		const file = zip.file(filename);
-		if (!file) return [];
-		try {
-			const text = await file.async("string");
-			const parsed = JSON.parse(text);
-			return Array.isArray(parsed) ? parsed : [];
-		} catch {
-			return [];
+	const readJsonFromZip = async <T>(filenames: string | string[]): Promise<T[]> => {
+		const names = Array.isArray(filenames) ? filenames : [filenames];
+		for (const name of names) {
+			const file = zip.file(name);
+			if (file) {
+				try {
+					const text = await file.async("string");
+					const parsed = JSON.parse(text);
+					if (Array.isArray(parsed) && parsed.length > 0) return parsed as T[];
+				} catch {
+					// continue
+				}
+			}
 		}
+		return [];
 	};
 
 	let user = manifest?.user || null;
@@ -145,16 +152,31 @@ export async function extractArchiveCollections(zip: JSZip): Promise<{
 		}
 	}
 
-	const [tasks, routines, routineLogs, transactions, trackers, trackerLogs, categories] =
-		await Promise.all([
-			readJsonFromZip<BackupRecord>("tasks.json"),
-			readJsonFromZip<BackupRecord>("routines.json"),
-			readJsonFromZip<BackupRecord>("routine-logs.json"),
-			readJsonFromZip<BackupRecord>("transactions.json"),
-			readJsonFromZip<BackupRecord>("trackers.json"),
-			readJsonFromZip<BackupRecord>("tracker-logs.json"),
-			readJsonFromZip<BackupRecord>("categories.json"),
-		]);
+	const [
+		tasks,
+		routines,
+		routineLogs,
+		transactions,
+		trackers,
+		trackerLogs,
+		categories,
+		debtsLoans,
+		repayments,
+	] = await Promise.all([
+		readJsonFromZip<BackupRecord>("tasks.json"),
+		readJsonFromZip<BackupRecord>("routines.json"),
+		readJsonFromZip<BackupRecord>(["routine-logs.json", "routine_logs.json"]),
+		readJsonFromZip<BackupRecord>(["transactions.json", "finances.json"]),
+		readJsonFromZip<BackupRecord>("trackers.json"),
+		readJsonFromZip<BackupRecord>(["tracker-logs.json", "tracker_logs.json"]),
+		readJsonFromZip<BackupRecord>("categories.json"),
+		readJsonFromZip<BackupRecord>(["debts-loans.json", "debts_loans.json"]),
+		readJsonFromZip<BackupRecord>([
+			"repayments.json",
+			"debt-repayments.json",
+			"debt_repayments.json",
+		]),
+	]);
 
 	return {
 		manifest,
@@ -167,6 +189,8 @@ export async function extractArchiveCollections(zip: JSZip): Promise<{
 			trackers,
 			trackerLogs,
 			categories,
+			debtsLoans,
+			repayments,
 		},
 	};
 }
@@ -201,13 +225,17 @@ export async function restoreBackupArchive(
 		manifest,
 		user,
 		restoredCounts: {
-			tasks: mergeReport.tasks.created + mergeReport.tasks.updated,
-			routines: mergeReport.routines.created + mergeReport.routines.updated,
-			routineLogs: mergeReport.routineLogs.created + mergeReport.routineLogs.updated,
-			transactions: mergeReport.transactions.created + mergeReport.transactions.updated,
-			trackers: mergeReport.trackers.created + mergeReport.trackers.updated,
-			trackerLogs: mergeReport.trackerLogs.created + mergeReport.trackerLogs.updated,
-			categories: mergeReport.categories.created + mergeReport.categories.updated,
+			tasks: (mergeReport.tasks?.created || 0) + (mergeReport.tasks?.updated || 0),
+			routines: (mergeReport.routines?.created || 0) + (mergeReport.routines?.updated || 0),
+			routineLogs: (mergeReport.routineLogs?.created || 0) + (mergeReport.routineLogs?.updated || 0),
+			transactions:
+				(mergeReport.transactions?.created || 0) + (mergeReport.transactions?.updated || 0),
+			trackers: (mergeReport.trackers?.created || 0) + (mergeReport.trackers?.updated || 0),
+			trackerLogs:
+				(mergeReport.trackerLogs?.created || 0) + (mergeReport.trackerLogs?.updated || 0),
+			categories: (mergeReport.categories?.created || 0) + (mergeReport.categories?.updated || 0),
+			debtsLoans: (mergeReport.debtsLoans?.created || 0) + (mergeReport.debtsLoans?.updated || 0),
+			repayments: (mergeReport.repayments?.created || 0) + (mergeReport.repayments?.updated || 0),
 		},
 		mergeReport,
 		summary,

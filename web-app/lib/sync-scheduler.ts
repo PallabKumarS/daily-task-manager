@@ -113,11 +113,16 @@ export async function executeScheduledSync(): Promise<{
 		let message = "";
 
 		if (isGoogleConnected) {
-			const uploadRes = await api.post<{ lastSyncAt?: string }>("/sync/upload");
-			if (uploadRes.success) {
-				message = uploadRes.message || "Synced to Google Drive successfully";
+			const syncRes = await api.post<{ lastSyncAt?: string }>("/sync/bidirectional");
+			if (syncRes.success) {
+				message = syncRes.message || "Synchronized with Google Drive successfully";
 			} else {
-				throw new Error(uploadRes.message || "Failed to sync to Google Drive");
+				const uploadRes = await api.post<{ lastSyncAt?: string }>("/sync/upload");
+				if (uploadRes.success) {
+					message = uploadRes.message || "Synced to Google Drive successfully";
+				} else {
+					throw new Error(syncRes.message || uploadRes.message || "Failed to sync to Google Drive");
+				}
 			}
 		} else {
 			const exportRes = await api.post<{

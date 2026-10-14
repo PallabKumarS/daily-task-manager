@@ -19,6 +19,7 @@ import { handleDebtLoanRoute } from "./debt-loan-handlers.js";
 import { calculateFinanceAnalytics } from "./finance-analytics.js";
 import {
 	clearLatestGoogleRestoreLoginResult,
+	executeGoogleSyncBidirectional,
 	executeGoogleSyncRestore,
 	executeGoogleSyncUpload,
 	getGoogleAuthUrl,
@@ -1766,6 +1767,34 @@ export async function handleIpcApiDispatch(req: IpcApiRequest): Promise<IpcApiRe
 				success: true,
 				data: { url, authUrl: url },
 			};
+		}
+
+		if (pathname === "/sync/bidirectional" && method === "POST") {
+			try {
+				const result = await executeGoogleSyncBidirectional(prisma, userId);
+				return {
+					statusCode: 200,
+					success: true,
+					message: result.message,
+					data: { lastSyncAt: result.lastSyncAt },
+				};
+			} catch (err: unknown) {
+				const msg = err instanceof Error ? err.message : String(err);
+				const isAuth =
+					msg.includes("expired") ||
+					msg.includes("401") ||
+					msg.includes("reconnect") ||
+					msg.includes("invalid_client") ||
+					msg.includes("invalid_grant");
+				return {
+					statusCode: isAuth ? 401 : 500,
+					success: false,
+					message: isAuth
+						? "Google Drive session has expired. Please reconnect your Google account in Settings."
+						: msg,
+					data: null,
+				};
+			}
 		}
 
 		if (pathname === "/sync/upload" && method === "POST") {
