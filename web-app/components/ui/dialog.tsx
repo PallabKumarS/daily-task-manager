@@ -53,7 +53,7 @@ export function Modal({
 	};
 
 	return (
-		<div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-5 md:p-8 overflow-y-auto bg-slate-950/80">
+		<div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-5 md:p-8 overflow-y-auto bg-slate-950/85">
 			<div
 				className="fixed inset-0 bg-slate-950/85 transition-opacity animate-in fade-in duration-150"
 				onClick={onClose}
@@ -65,11 +65,13 @@ export function Modal({
 				aria-modal="true"
 				aria-labelledby="modal-title"
 				className={cn(
-					"relative w-full max-w-[calc(100vw-1rem)] rounded-2xl sm:rounded-3xl border border-slate-700/80 bg-slate-900 p-4 sm:p-7 md:p-8 shadow-2xl shadow-black/90 z-10 max-h-[calc(100dvh-1.5rem)] sm:max-h-[90dvh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 my-auto",
+					"relative w-full rounded-t-3xl sm:rounded-3xl border-t border-x-0 border-b-0 sm:border border-slate-700/80 bg-slate-900 p-4 sm:p-7 md:p-8 shadow-2xl shadow-black/90 z-10 max-h-[calc(100dvh-0.5rem)] sm:max-h-[90dvh] flex flex-col overflow-hidden animate-in slide-in-from-bottom-3 sm:zoom-in-95 duration-200",
 					maxWidthClasses[maxWidth],
 					className,
 				)}
 			>
+				<div className="w-12 h-1.5 bg-slate-700/80 rounded-full mx-auto mb-3 sm:hidden shrink-0" />
+
 				<div className="flex items-start justify-between pb-3 sm:pb-5 border-b border-slate-800 shrink-0">
 					<div className="min-w-0 pr-2">
 						<h2 id="modal-title" className="text-base sm:text-xl font-bold text-slate-100 truncate">
@@ -91,7 +93,7 @@ export function Modal({
 					</button>
 				</div>
 
-				<div className="pt-3 sm:pt-5 pb-1 sm:pb-2 px-0.5 sm:px-2 overflow-y-auto overscroll-contain overflow-x-hidden min-w-0 w-full flex-1">
+				<div className="pt-3 sm:pt-5 pb-2 px-1 sm:px-2 overflow-y-auto overscroll-contain overflow-x-hidden min-w-0 w-full flex-auto min-h-0">
 					{children}
 				</div>
 			</div>
