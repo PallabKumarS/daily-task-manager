@@ -141,7 +141,7 @@ export function SyncScheduleCard() {
 				<div className="flex items-center gap-3">
 					<Button
 						type="button"
-						variant={config.enabled ? "emerald" : "secondary"}
+						variant={config.enabled ? "default" : "secondary"}
 						size="sm"
 						onClick={handleToggleEnabled}
 						className="gap-2 text-xs"
@@ -158,9 +158,7 @@ export function SyncScheduleCard() {
 						disabled={isSyncing}
 						className="gap-1.5 text-xs text-slate-300"
 					>
-						<RefreshCw
-							className={`w-3.5 h-3.5 ${isSyncing ? "animate-spin text-emerald-400" : ""}`}
-						/>
+						<RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? "animate-spin text-teal-400" : ""}`} />
 						<span>{isSyncing ? "Syncing..." : "Sync Now"}</span>
 					</Button>
 				</div>
@@ -176,7 +174,7 @@ export function SyncScheduleCard() {
 							onClick={() => handleModeChange("daily")}
 							className={`px-3 py-2 text-xs font-semibold rounded-xl border transition cursor-pointer text-left ${
 								config.scheduleMode === "daily"
-									? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
+									? "border-teal-500/40 bg-teal-500/10 text-teal-300"
 									: "border-slate-800 bg-slate-900 text-slate-400 hover:text-white"
 							}`}
 						>
@@ -191,7 +189,7 @@ export function SyncScheduleCard() {
 							onClick={() => handleModeChange("interval")}
 							className={`px-3 py-2 text-xs font-semibold rounded-xl border transition cursor-pointer text-left ${
 								config.scheduleMode === "interval"
-									? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
+									? "border-teal-500/40 bg-teal-500/10 text-teal-300"
 									: "border-slate-800 bg-slate-900 text-slate-400 hover:text-white"
 							}`}
 						>
@@ -249,7 +247,7 @@ export function SyncScheduleCard() {
 						{config.lastSyncStatus === "error" ? (
 							<AlertCircle className="w-3.5 h-3.5 text-rose-400" />
 						) : (
-							<CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+							<CheckCircle2 className="w-3.5 h-3.5 text-teal-400" />
 						)}
 						<span className="font-semibold uppercase text-[10px] tracking-wider">
 							Last Synchronized
@@ -270,13 +268,13 @@ export function SyncScheduleCard() {
 
 			{/* Hardware & Energy Efficiency Overview */}
 			<div className="rounded-2xl border border-slate-800/80 bg-slate-950/50 p-4 space-y-2">
-				<div className="flex items-center gap-2 text-xs font-semibold text-emerald-400">
+				<div className="flex items-center gap-2 text-xs font-semibold text-teal-400">
 					<ShieldCheck className="w-4 h-4" />
 					<span>Hardware-Optimized Background Execution</span>
 				</div>
 				<div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-slate-400 leading-relaxed pt-1">
 					<div className="flex items-start gap-2">
-						<Smartphone className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+						<Smartphone className="w-4 h-4 text-teal-400 shrink-0 mt-0.5" />
 						<div>
 							<strong className="text-slate-200 block">Mobile Wake-and-Sleep Engine</strong>
 							On Android, the OS wakes the app briefly at the exact scheduled time to perform sync

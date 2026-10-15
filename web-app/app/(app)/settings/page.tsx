@@ -555,7 +555,7 @@ function SettingsContent() {
 						<span
 							className={`text-xs px-2.5 py-1 rounded-full font-semibold border ${
 								googleStatus.connected
-									? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+									? "bg-teal-500/15 text-teal-300 border-teal-500/30"
 									: "bg-slate-800 text-slate-400 border-slate-700"
 							}`}
 						>
@@ -569,7 +569,7 @@ function SettingsContent() {
 					<div>
 						<p className="text-xs font-semibold text-slate-200">
 							Cloud Archive File:{" "}
-							<span className="text-emerald-400 font-mono">DayPulse_Backup.json</span>
+							<span className="text-teal-400 font-mono">DayPulse_Backup.json</span>
 						</p>
 						<p className="text-[11px] text-slate-400 mt-0.5">
 							{googleStatus.lastGoogleSyncAt
@@ -581,12 +581,7 @@ function SettingsContent() {
 					<div className="flex flex-wrap items-center gap-2">
 						{!googleStatus.connected ? (
 							<>
-								<Button
-									variant="emerald"
-									size="sm"
-									onClick={handleConnectGoogle}
-									className="gap-2 text-xs"
-								>
+								<Button size="sm" onClick={handleConnectGoogle} className="gap-2 text-xs">
 									<KeyRound className="w-4 h-4" />
 									<span>Connect Google Drive</span>
 								</Button>
@@ -602,7 +597,6 @@ function SettingsContent() {
 						) : (
 							<>
 								<Button
-									variant="emerald"
 									size="sm"
 									onClick={handleUploadGoogle}
 									disabled={syncingGoogle}
@@ -625,7 +619,7 @@ function SettingsContent() {
 									variant="ghost"
 									size="sm"
 									onClick={handleDisconnectGoogle}
-									className="text-red-400 hover:text-red-300 hover:bg-red-500/10 text-xs gap-1"
+									className="text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 text-xs gap-1"
 									title="Disconnect Google Account"
 								>
 									<Unlink className="w-3.5 h-3.5" />
@@ -654,7 +648,6 @@ function SettingsContent() {
 							/>
 							<Button
 								type="submit"
-								variant="emerald"
 								size="sm"
 								disabled={connectingCode || !manualCodeInput.trim()}
 								className="w-full sm:w-auto shrink-0 h-9 text-xs font-medium"
@@ -670,7 +663,7 @@ function SettingsContent() {
 					<button
 						type="button"
 						onClick={() => setShowSetupGuide(!showSetupGuide)}
-						className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-emerald-400 transition cursor-pointer font-medium"
+						className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-teal-400 transition cursor-pointer font-medium"
 					>
 						<span>
 							{showSetupGuide ? "Hide" : "Show"} Google Cloud OAuth setup instructions (.env)
@@ -694,7 +687,7 @@ function SettingsContent() {
 								</li>
 								<li>
 									Add Authorized Redirect URI:
-									<div className="mt-1 rounded-lg bg-slate-900 p-2 font-mono text-emerald-400 select-all border border-slate-800 text-[11px] break-all space-y-1">
+									<div className="mt-1 rounded-lg bg-slate-900 p-2 font-mono text-teal-400 select-all border border-slate-800 text-[11px] break-all space-y-1">
 										<div>https://day-pulse-web.vercel.app/api/v1/sync/google/callback</div>
 										<div className="text-slate-500 text-[10px]">
 											Desktop/Dev: http://localhost:5000/api/v1/sync/google/callback
@@ -743,7 +736,6 @@ function SettingsContent() {
 								</div>
 								<Button
 									type="submit"
-									variant="emerald"
 									size="sm"
 									disabled={savingGoogleCreds}
 									className="gap-2 text-xs"
@@ -759,7 +751,7 @@ function SettingsContent() {
 			{/* Manual Multi-Collection ZIP Archive & Offline Backup */}
 			<div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-xl space-y-4">
 				<div className="flex items-center gap-2 pb-3 border-b border-slate-800">
-					<FileText className="w-4 h-4 text-emerald-400" />
+					<FileText className="w-4 h-4 text-teal-400" />
 					<h2 className="text-sm font-bold text-white">
 						Multi-Collection ZIP Archive & Offline Backup
 					</h2>
@@ -768,7 +760,7 @@ function SettingsContent() {
 				<p className="text-xs text-slate-300 leading-relaxed">
 					Export all database collections (tasks, routines, routine logs, transactions, trackers,
 					tracker logs, categories) as individual JSON files bundled into a compressed ZIP archive (
-					<code className="text-emerald-400 font-mono">DayPulse_Backup.zip</code>
+					<code className="text-teal-400 font-mono">DayPulse_Backup.zip</code>
 					). Includes a verified manifest with SHA256 checksums and safe merge capability.
 				</p>
 
@@ -776,19 +768,14 @@ function SettingsContent() {
 					{/* Export ZIP */}
 					<div className="rounded-2xl border border-slate-800 bg-slate-950 p-5 space-y-3">
 						<div className="flex items-center gap-2 text-slate-200">
-							<Download className="w-4 h-4 text-emerald-400" />
+							<Download className="w-4 h-4 text-teal-400" />
 							<h3 className="text-xs font-bold uppercase tracking-wider">Export ZIP Archive</h3>
 						</div>
 						<p className="text-xs text-slate-400">
 							Generates a compressed multi-JSON archive of all your collections with metadata and
 							checksums.
 						</p>
-						<Button
-							variant="emerald"
-							size="sm"
-							onClick={handleExportBackup}
-							className="w-full gap-2 cursor-pointer"
-						>
+						<Button size="sm" onClick={handleExportBackup} className="w-full gap-2 cursor-pointer">
 							<Download className="w-4 h-4" />
 							<span>Export Backup ZIP</span>
 						</Button>
@@ -848,7 +835,7 @@ function SettingsContent() {
 							<span
 								className={`text-xs px-2.5 py-1 rounded-full font-semibold border ${
 									permission === "granted"
-										? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+										? "bg-teal-500/15 text-teal-300 border-teal-500/30"
 										: "bg-amber-500/10 text-amber-400 border-amber-500/30"
 								}`}
 							>
@@ -871,7 +858,7 @@ function SettingsContent() {
 						</div>
 						<Button
 							size="sm"
-							variant={soundEnabled ? "emerald" : "secondary"}
+							variant={soundEnabled ? "default" : "secondary"}
 							onClick={toggleSound}
 							className="gap-2 self-start sm:self-center"
 						>
@@ -882,7 +869,7 @@ function SettingsContent() {
 
 					<div className="pt-1">
 						<Button variant="outline" size="sm" onClick={testAlarm} className="gap-2">
-							<Bell className="w-4 h-4 text-emerald-400" />
+							<Bell className="w-4 h-4 text-teal-400" />
 							<span>Test Audio Chime & Notification Now</span>
 						</Button>
 					</div>
@@ -893,7 +880,7 @@ function SettingsContent() {
 			<div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-xl space-y-4">
 				<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
 					<div className="flex items-center gap-2">
-						<Tag className="w-4 h-4 text-emerald-400" />
+						<Tag className="w-4 h-4 text-teal-400" />
 						<h2 className="text-sm font-bold text-white">Categories & Custom Tags</h2>
 					</div>
 					<Button
@@ -903,7 +890,7 @@ function SettingsContent() {
 						onClick={() => setCategoryModalOpen(true)}
 						className="gap-2 text-xs border-slate-700/80 bg-slate-900/60 hover:bg-slate-800 text-slate-300"
 					>
-						<Tag className="w-3.5 h-3.5 text-emerald-400" />
+						<Tag className="w-3.5 h-3.5 text-teal-400" />
 						<span>Manage All Categories</span>
 					</Button>
 				</div>
@@ -919,7 +906,7 @@ function SettingsContent() {
 			{/* User Preferences */}
 			<div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-xl space-y-4">
 				<div className="flex items-center gap-2 pb-3 border-b border-slate-800">
-					<User className="w-4 h-4 text-emerald-400" />
+					<User className="w-4 h-4 text-teal-400" />
 					<h2 className="text-sm font-bold text-white">User Profile & Currency</h2>
 				</div>
 
@@ -942,7 +929,7 @@ function SettingsContent() {
 						allowManage={false}
 					/>
 
-					<Button type="submit" variant="emerald" size="sm" disabled={savingProfile}>
+					<Button type="submit" size="sm" disabled={savingProfile}>
 						{savingProfile ? "Saving..." : "Save Preferences"}
 					</Button>
 				</form>
@@ -951,7 +938,7 @@ function SettingsContent() {
 			{/* Account & Authentication */}
 			<div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-xl space-y-4">
 				<div className="flex items-center gap-2 pb-3 border-b border-slate-800">
-					<ShieldCheck className="w-4 h-4 text-emerald-400" />
+					<ShieldCheck className="w-4 h-4 text-teal-400" />
 					<h2 className="text-sm font-bold text-white">Account & Authentication</h2>
 				</div>
 
@@ -961,7 +948,7 @@ function SettingsContent() {
 						<p className="text-xs text-slate-400">{user?.email}</p>
 						<p className="text-[11px] text-slate-500 pt-0.5">
 							Default currency:{" "}
-							<span className="text-emerald-400 font-medium">{user?.currency || "USD"}</span>
+							<span className="text-teal-400 font-medium">{user?.currency || "USD"}</span>
 						</p>
 					</div>
 					<div className="flex items-center gap-2">
@@ -969,7 +956,7 @@ function SettingsContent() {
 							variant="outline"
 							size="sm"
 							onClick={() => logout()}
-							className="gap-2 border-red-900/50 text-red-400 hover:bg-red-950/40 text-xs"
+							className="gap-2 border-rose-900/50 text-rose-400 hover:bg-rose-950/40 text-xs"
 						>
 							<LogOut className="w-3.5 h-3.5" />
 							<span>Sign Out</span>

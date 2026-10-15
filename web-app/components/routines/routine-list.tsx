@@ -129,11 +129,11 @@ export function RoutineList({ routines, onToggle, onEdit, onRefresh, onAddNew }:
 	return (
 		<div className="space-y-6">
 			{/* Daily Progress Tracker Card */}
-			<div className="rounded-2xl border border-slate-800 bg-gradient-to-r from-emerald-950/40 via-slate-900 to-slate-900/90 p-5 backdrop-blur-xl">
+			<div className="rounded-2xl border border-slate-800 bg-gradient-to-r from-teal-950/30 via-slate-900 to-slate-900/90 p-5 backdrop-blur-xl">
 				<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
 					<div>
 						<div className="flex items-center gap-2">
-							<Sparkles className="w-4 h-4 text-emerald-400" />
+							<Sparkles className="w-4 h-4 text-teal-400" />
 							<h3 className="text-base font-bold text-white">Daily Habit Loop Completion</h3>
 						</div>
 						<p className="text-xs text-slate-400 mt-1">
@@ -153,7 +153,7 @@ export function RoutineList({ routines, onToggle, onEdit, onRefresh, onAddNew }:
 								<span>Clear All</span>
 							</Button>
 						)}
-						<Button variant="emerald" size="sm" onClick={onAddNew} className="gap-1.5">
+						<Button size="sm" onClick={onAddNew} className="gap-1.5">
 							<Plus className="w-4 h-4" />
 							<span>Add Routine</span>
 						</Button>
@@ -163,7 +163,7 @@ export function RoutineList({ routines, onToggle, onEdit, onRefresh, onAddNew }:
 				{/* Progress bar */}
 				<div className="mt-4 h-2.5 w-full rounded-full bg-slate-800 overflow-hidden">
 					<div
-						className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-500"
+						className="h-full rounded-full bg-gradient-to-r from-teal-500 to-indigo-400 transition-all duration-500"
 						style={{ width: `${progressPercent}%` }}
 					/>
 				</div>
@@ -177,7 +177,7 @@ export function RoutineList({ routines, onToggle, onEdit, onRefresh, onAddNew }:
 						Design daily routines with target time slots, advance alerts, and streak tracking to
 						build compound momentum.
 					</p>
-					<Button variant="emerald" size="sm" onClick={onAddNew} className="mt-4 gap-1.5">
+					<Button size="sm" onClick={onAddNew} className="mt-4 gap-1.5">
 						<Plus className="w-4 h-4" />
 						<span>Create First Routine</span>
 					</Button>
@@ -205,7 +205,7 @@ export function RoutineList({ routines, onToggle, onEdit, onRefresh, onAddNew }:
 											key={routine.id}
 											className={`flex items-start justify-between p-4 rounded-2xl border transition-all ${
 												routine.isCompletedToday
-													? "border-emerald-500/30 bg-emerald-950/10"
+													? "border-teal-500/30 bg-teal-950/10"
 													: "border-slate-800/80 bg-slate-900/60 hover:border-slate-700"
 											}`}
 										>
@@ -216,8 +216,8 @@ export function RoutineList({ routines, onToggle, onEdit, onRefresh, onAddNew }:
 													onClick={() => handleCheck(routine.id, routine.isCompletedToday)}
 													className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border transition cursor-pointer ${
 														routine.isCompletedToday
-															? "bg-emerald-500 border-emerald-400 text-slate-950"
-															: "border-slate-700 bg-slate-950 hover:border-emerald-500 text-transparent"
+															? "bg-teal-500 border-teal-400 text-slate-950"
+															: "border-slate-700 bg-slate-950 hover:border-teal-500 text-transparent"
 													}`}
 												>
 													<Check className="w-4 h-4 stroke-[3]" />
@@ -243,7 +243,7 @@ export function RoutineList({ routines, onToggle, onEdit, onRefresh, onAddNew }:
 													<div className="flex flex-wrap items-center gap-2 mt-2 text-[11px] text-slate-400">
 														{routine.targetTime && (
 															<div className="flex items-center gap-1 rounded-md bg-slate-800/80 px-2 py-0.5">
-																<Clock className="w-3 h-3 text-emerald-400" />
+																<Clock className="w-3 h-3 text-teal-400" />
 																<span>{routine.targetTime}</span>
 															</div>
 														)}
@@ -277,7 +277,7 @@ export function RoutineList({ routines, onToggle, onEdit, onRefresh, onAddNew }:
 												<button
 													type="button"
 													onClick={() => handleDelete(routine.id)}
-													className="p-1 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition cursor-pointer"
+													className="p-1 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer"
 													title="Delete Routine"
 												>
 													<Trash2 className="w-3.5 h-3.5" />

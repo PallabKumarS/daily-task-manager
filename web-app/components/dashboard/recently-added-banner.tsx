@@ -46,13 +46,13 @@ export function RecentlyAddedBanner({
 				return <ArrowUpRight className="w-5 h-5 text-emerald-400" />;
 			case "EVENT":
 			case "TASK":
-				return <CheckSquare className="w-5 h-5 text-sky-400" />;
+				return <CheckSquare className="w-5 h-5 text-indigo-400" />;
 			case "ROUTINE":
-				return <CalendarCheck className="w-5 h-5 text-amber-400" />;
+				return <CalendarCheck className="w-5 h-5 text-teal-400" />;
 			case "TRACKER":
 				return <Calculator className="w-5 h-5 text-purple-400" />;
 			default:
-				return <Sparkles className="w-5 h-5 text-emerald-400" />;
+				return <Sparkles className="w-5 h-5 text-teal-400" />;
 		}
 	};
 
@@ -72,7 +72,7 @@ export function RecentlyAddedBanner({
 				);
 			case "EVENT":
 				return (
-					<span className="rounded-md border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 text-[10px] font-bold text-sky-400 uppercase tracking-wider">
+					<span className="rounded-md border border-indigo-500/30 bg-indigo-500/10 px-2 py-0.5 text-[10px] font-bold text-indigo-400 uppercase tracking-wider">
 						Event Scheduled
 					</span>
 				);
@@ -84,7 +84,7 @@ export function RecentlyAddedBanner({
 				);
 			case "ROUTINE":
 				return (
-					<span className="rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-400 uppercase tracking-wider">
+					<span className="rounded-md border border-teal-500/30 bg-teal-500/10 px-2 py-0.5 text-[10px] font-bold text-teal-300 uppercase tracking-wider">
 						Routine Activated
 					</span>
 				);
@@ -100,18 +100,18 @@ export function RecentlyAddedBanner({
 	const getBorderAndBg = (type: RecentAdditionItem["type"]) => {
 		switch (type) {
 			case "EXPENSE":
-				return "border-rose-500/40 bg-gradient-to-r from-rose-950/40 via-zinc-900/90 to-zinc-900/80 shadow-rose-950/20";
+				return "border-rose-500/40 bg-gradient-to-r from-rose-950/40 via-slate-900/90 to-slate-900/80 shadow-rose-950/20";
 			case "INCOME":
-				return "border-emerald-500/40 bg-gradient-to-r from-emerald-950/40 via-zinc-900/90 to-zinc-900/80 shadow-emerald-950/20";
+				return "border-emerald-500/40 bg-gradient-to-r from-emerald-950/40 via-slate-900/90 to-slate-900/80 shadow-emerald-950/20";
 			case "EVENT":
 			case "TASK":
-				return "border-sky-500/40 bg-gradient-to-r from-sky-950/40 via-zinc-900/90 to-zinc-900/80 shadow-sky-950/20";
+				return "border-indigo-500/40 bg-gradient-to-r from-indigo-950/40 via-slate-900/90 to-slate-900/80 shadow-indigo-950/20";
 			case "ROUTINE":
-				return "border-amber-500/40 bg-gradient-to-r from-amber-950/40 via-zinc-900/90 to-zinc-900/80 shadow-amber-950/20";
+				return "border-teal-500/40 bg-gradient-to-r from-teal-950/40 via-slate-900/90 to-slate-900/80 shadow-teal-950/20";
 			case "TRACKER":
-				return "border-purple-500/40 bg-gradient-to-r from-purple-950/40 via-zinc-900/90 to-zinc-900/80 shadow-purple-950/20";
+				return "border-purple-500/40 bg-gradient-to-r from-purple-950/40 via-slate-900/90 to-slate-900/80 shadow-purple-950/20";
 			default:
-				return "border-zinc-800 bg-zinc-900/90";
+				return "border-slate-800 bg-slate-900/90";
 		}
 	};
 
@@ -132,24 +132,24 @@ export function RecentlyAddedBanner({
 			>
 				<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
 					<div className="flex items-start sm:items-center gap-3 min-w-0">
-						<div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-950/80 border border-zinc-800/80 shadow-inner">
+						<div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-950/80 border border-slate-800/80 shadow-inner">
 							{renderIcon(latestAddition.type)}
 						</div>
 
 						<div className="min-w-0">
 							<div className="flex items-center gap-2 flex-wrap">
 								{getTypeBadge(latestAddition.type)}
-								<span className="inline-flex items-center gap-1 text-[11px] text-zinc-400">
-									<Clock className="w-3 h-3 text-zinc-500" />
+								<span className="inline-flex items-center gap-1 text-[11px] text-slate-400">
+									<Clock className="w-3 h-3 text-slate-500" />
 									<span>Just added</span>
 								</span>
 								{latestAddition.category && (
-									<span className="rounded-md bg-zinc-800/90 px-2 py-0.5 text-[10px] text-zinc-300 border border-zinc-700/60 font-medium">
+									<span className="rounded-md bg-slate-800/90 px-2 py-0.5 text-[10px] text-slate-300 border border-slate-700/60 font-medium">
 										{latestAddition.category}
 									</span>
 								)}
 								{latestAddition.priority && (
-									<span className="rounded-md bg-zinc-800/90 px-2 py-0.5 text-[10px] text-zinc-300 border border-zinc-700/60 font-medium uppercase">
+									<span className="rounded-md bg-slate-800/90 px-2 py-0.5 text-[10px] text-slate-300 border border-slate-700/60 font-medium uppercase">
 										{latestAddition.priority}
 									</span>
 								)}

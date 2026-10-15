@@ -210,7 +210,7 @@ export default function TrackersPage() {
 							setEditingTracker(null);
 							setFormModalOpen(true);
 						}}
-						className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold flex items-center gap-1.5 shadow-md shadow-emerald-950"
+						className="flex items-center gap-1.5"
 					>
 						<Plus className="w-4 h-4" />
 						<span>New Tracker</span>
@@ -231,7 +231,7 @@ export default function TrackersPage() {
 					</button>
 
 					<div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs font-semibold text-slate-200">
-						<Calendar className="w-3.5 h-3.5 text-emerald-400" />
+						<Calendar className="w-3.5 h-3.5 text-teal-400" />
 						<span>{formattedDateLabel}</span>
 					</div>
 
@@ -248,7 +248,7 @@ export default function TrackersPage() {
 						<button
 							type="button"
 							onClick={handleSetToday}
-							className="px-3 py-1.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 text-xs font-semibold transition cursor-pointer"
+							className="px-3 py-1.5 rounded-xl bg-teal-500/15 hover:bg-teal-500/25 text-teal-300 border border-teal-500/30 text-xs font-semibold transition cursor-pointer"
 						>
 							Today
 						</button>
@@ -261,7 +261,7 @@ export default function TrackersPage() {
 						type="date"
 						value={selectedDate}
 						onChange={(e) => setSelectedDate(e.target.value)}
-						className="bg-slate-950 border border-slate-800 text-slate-300 px-3 py-1.5 rounded-xl text-xs focus:outline-none focus:border-emerald-500"
+						className="bg-slate-950 border border-slate-800 text-slate-300 px-3 py-1.5 rounded-xl text-xs focus:outline-none focus:border-teal-500"
 					/>
 				</div>
 			</div>
@@ -324,7 +324,7 @@ export default function TrackersPage() {
 			) : (
 				/* Empty State with Quick Starter Templates */
 				<div className="rounded-3xl border border-dashed border-slate-800 bg-slate-900/40 p-8 sm:p-12 text-center">
-					<div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-400">
+					<div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-teal-500/10 text-teal-400">
 						<Calculator className="w-7 h-7" />
 					</div>
 					<h2 className="mt-4 text-lg font-bold text-white">No Trackers Set Up Yet</h2>
@@ -347,12 +347,12 @@ export default function TrackersPage() {
 										unitName: "meals",
 										defaultTarget: 2,
 										unitPrice: 4.0,
-										color: "emerald",
+										color: "teal",
 									})
 								}
-								className="flex items-center gap-3 p-3.5 rounded-xl border border-slate-800 bg-slate-900/90 hover:border-emerald-500/40 hover:bg-slate-800/80 transition cursor-pointer"
+								className="flex items-center gap-3 p-3.5 rounded-xl border border-slate-800 bg-slate-900/90 hover:border-teal-500/40 hover:bg-slate-800/80 transition cursor-pointer"
 							>
-								<div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400">
+								<div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-500/10 text-teal-400">
 									<Utensils className="w-5 h-5" />
 								</div>
 								<div>

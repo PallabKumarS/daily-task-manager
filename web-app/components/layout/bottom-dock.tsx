@@ -25,7 +25,7 @@ export function BottomDock() {
 	const pathname = usePathname();
 
 	return (
-		<nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-slate-800 bg-slate-950/95 backdrop-blur-xl px-1 py-1.5 safe-area-pb">
+		<nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-border/80 bg-background/90 backdrop-blur-xl px-1 py-1.5 safe-area-pb">
 			<div className="flex items-center justify-around">
 				{DOCK_ITEMS.map((item) => {
 					const Icon = item.icon;
@@ -36,13 +36,13 @@ export function BottomDock() {
 							href={item.href}
 							className={cn(
 								"flex flex-col items-center justify-center py-1 px-1.5 rounded-xl transition duration-150 min-w-[48px]",
-								isActive ? "text-emerald-400 font-semibold" : "text-slate-400 hover:text-slate-200",
+								isActive ? "text-teal-300 font-semibold" : "text-slate-400 hover:text-slate-200",
 							)}
 						>
 							<div
 								className={cn(
 									"p-1 rounded-lg transition",
-									isActive && "bg-emerald-500/10 ring-1 ring-emerald-500/20",
+									isActive && "bg-teal-500/15 text-teal-400 ring-1 ring-teal-500/30",
 								)}
 							>
 								<Icon className="w-5 h-5" />

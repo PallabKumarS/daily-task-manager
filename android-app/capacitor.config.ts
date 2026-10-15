@@ -4,7 +4,7 @@ const config: CapacitorConfig = {
 	appId: "com.daypulse.tracker",
 	appName: "DayPulse",
 	webDir: "out",
-	backgroundColor: "#090a10",
+	backgroundColor: "#0b0f17",
 	server: {
 		androidScheme: "https",
 		cleartext: true,
@@ -12,7 +12,7 @@ const config: CapacitorConfig = {
 	plugins: {
 		LocalNotifications: {
 			smallIcon: "ic_stat_alarm",
-			iconColor: "#10b981",
+			iconColor: "#0d9488",
 			sound: "daypulse_alarm.wav",
 		},
 	},

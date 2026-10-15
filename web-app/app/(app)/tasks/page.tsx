@@ -126,10 +126,9 @@ export default function TasksPage() {
 				</div>
 				<div className="flex items-center gap-2 self-start sm:self-center">
 					<Button
-						variant="emerald"
 						size="sm"
 						onClick={handleAddNewAlarm}
-						className="gap-1.5 shadow-sm shadow-emerald-950/40"
+						className="gap-1.5 shadow-sm shadow-teal-950/40"
 					>
 						<BellRing className="w-4 h-4" />
 						<span>Set Alarm</span>

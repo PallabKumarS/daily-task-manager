@@ -22,7 +22,6 @@ import {
 	Sparkles,
 	Trash2,
 	TrendingUp,
-	Upload,
 } from "lucide-react";
 import Link from "next/link";
 import * as React from "react";
@@ -459,75 +458,60 @@ export function DashboardView({
 		<div className="space-y-6">
 			<RecentlyAddedBanner />
 
-			{/* Welcome Banner */}
-			<div className="rounded-3xl border border-slate-800 bg-gradient-to-br from-slate-900 via-slate-900/90 to-emerald-950/30 p-6 sm:p-8 backdrop-blur-xl relative overflow-hidden">
-				<div className="relative z-10 max-w-2xl">
-					<div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-400 mb-3">
-						<Sparkles className="w-3.5 h-3.5" />
-						<span>Standalone Workspace Active</span>
-					</div>
-					<h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
+			{/* Clean Header & Quick Actions */}
+			<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+				<div>
+					<h1 className="text-2xl font-bold tracking-tight text-white">
 						Welcome back, {user?.name || "Friend"}
-					</h2>
-					<p className="text-xs sm:text-sm text-slate-300 mt-2 leading-relaxed">
-						Track daily activities, sustain habit streaks, and keep a clear cumulative pulse over
-						your daily spendings and earnings.
+					</h1>
+					<p className="text-xs text-slate-400 mt-1">
+						Today&apos;s real-time pulse across habits, agenda, and cashflow
 					</p>
+				</div>
 
-					<div className="flex flex-wrap items-center gap-3 mt-5">
-						<Button
-							variant="emerald"
-							size="sm"
-							onClick={() => onOpenTaskModal()}
-							className="gap-1.5"
-						>
-							<Plus className="w-4 h-4" />
-							<span>Log Task / Event</span>
-						</Button>
-						<Button
-							variant="secondary"
-							size="sm"
-							onClick={() => onOpenRoutineModal()}
-							className="gap-1.5"
-						>
-							<Plus className="w-4 h-4" />
-							<span>New Routine</span>
-						</Button>
-						{onOpenTrackerModal && (
-							<Button
-								variant="secondary"
-								size="sm"
-								onClick={() => onOpenTrackerModal()}
-								className="gap-1.5"
-							>
-								<Plus className="w-4 h-4" />
-								<span>New Tracker</span>
-							</Button>
-						)}
-						<Button
-							variant="secondary"
-							size="sm"
-							onClick={() => onOpenTransactionModal()}
-							className="gap-1.5"
-						>
-							<Plus className="w-4 h-4" />
-							<span>Record Transaction</span>
-						</Button>
-					</div>
+				<div className="flex items-center gap-2 flex-wrap self-start sm:self-auto">
+					<Button
+						variant="emerald"
+						size="sm"
+						onClick={() => onOpenTaskModal()}
+						className="gap-1.5 shadow-sm shadow-teal-950/30"
+					>
+						<Plus className="w-4 h-4" />
+						<span>Log Task</span>
+					</Button>
+					<Button
+						variant="secondary"
+						size="sm"
+						onClick={() => onOpenRoutineModal()}
+						className="gap-1.5"
+					>
+						<Plus className="w-4 h-4" />
+						<span>New Routine</span>
+					</Button>
+					<Button
+						variant="secondary"
+						size="sm"
+						onClick={() => onOpenTransactionModal()}
+						className="gap-1.5"
+					>
+						<Plus className="w-4 h-4" />
+						<span>Spend / Income</span>
+					</Button>
 				</div>
 			</div>
 
-			{/* Empty Workspace Restore Banner */}
+			{/* Empty Workspace Welcome Card */}
 			{isWorkspaceEmpty && (
-				<div className="rounded-2xl border border-dashed border-emerald-500/30 bg-emerald-950/20 p-5 backdrop-blur-md flex flex-col md:flex-row md:items-center justify-between gap-4">
-					<div className="flex items-start gap-3">
-						<div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">
-							<Upload className="w-5 h-5" />
+				<div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-xl flex flex-col md:flex-row md:items-center justify-between gap-5">
+					<div className="flex items-start gap-3.5">
+						<div className="p-2.5 rounded-xl bg-teal-500/10 text-teal-400 border border-teal-500/20 shrink-0">
+							<Sparkles className="w-5 h-5" />
 						</div>
 						<div>
-							<h3 className="text-sm font-bold text-white">Have existing DayPulse data?</h3>
-							<p className="text-xs text-slate-400 mt-0.5">
-								Quickly restore your backup archive file or sync from your Google Drive backup.
+							<h3 className="text-sm font-bold text-white">Your Workspace is Fresh & Ready</h3>
+							<p className="text-xs text-slate-400 mt-1 max-w-md leading-relaxed">
+								Start logging your daily routines and expenses, or restore existing data from your
+								Google Drive or local file backup.
 							</p>
 						</div>
 					</div>
@@ -538,8 +522,8 @@ export function DashboardView({
 							onClick={() => setIsRestoreModalOpen(true)}
 							className="gap-1.5 text-xs"
 						>
-							<FileArchive className="w-3.5 h-3.5 text-emerald-400" />
-							<span>Restore Backup File</span>
+							<FileArchive className="w-3.5 h-3.5 text-teal-400" />
+							<span>Restore File Backup</span>
 						</Button>
 						<Button
 							variant="secondary"
@@ -547,7 +531,7 @@ export function DashboardView({
 							onClick={() => setIsGoogleModalOpen(true)}
 							className="gap-1.5 text-xs"
 						>
-							<Cloud className="w-3.5 h-3.5 text-blue-400" />
+							<Cloud className="w-3.5 h-3.5 text-indigo-400" />
 							<span>Google Drive Sync</span>
 						</Button>
 					</div>
@@ -569,18 +553,18 @@ export function DashboardView({
 							<span className="text-2xl font-black text-white">
 								{completedRoutines}/{routines.length}
 							</span>
-							<span className="text-xs font-semibold text-emerald-400">({routinePercent}%)</span>
+							<span className="text-xs font-semibold text-teal-400">({routinePercent}%)</span>
 						</div>
 						<div className="mt-3 h-2 w-full rounded-full bg-slate-800 overflow-hidden">
 							<div
-								className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-500"
+								className="h-full rounded-full bg-gradient-to-r from-teal-500 to-teal-400 transition-all duration-500"
 								style={{ width: `${routinePercent}%` }}
 							/>
 						</div>
 					</div>
 					<Link
 						href="/routines"
-						className="mt-4 flex items-center justify-between text-xs text-slate-400 hover:text-emerald-400 transition"
+						className="mt-4 flex items-center justify-between text-xs text-slate-400 hover:text-teal-400 transition"
 					>
 						<span>Manage Routines</span>
 						<ChevronRight className="w-3.5 h-3.5" />
@@ -618,7 +602,7 @@ export function DashboardView({
 					<div>
 						<div className="flex items-center justify-between text-slate-400">
 							<span className="text-xs font-bold uppercase tracking-wider">Scheduled Tasks</span>
-							<div className="rounded-xl bg-blue-500/10 p-2 text-blue-400 border border-blue-500/20">
+							<div className="rounded-xl bg-indigo-500/10 p-2 text-indigo-400 border border-indigo-500/20">
 								<CheckSquare className="w-4 h-4" />
 							</div>
 						</div>
@@ -632,7 +616,7 @@ export function DashboardView({
 					</div>
 					<Link
 						href="/tasks"
-						className="mt-4 flex items-center justify-between text-xs text-slate-400 hover:text-blue-400 transition"
+						className="mt-4 flex items-center justify-between text-xs text-slate-400 hover:text-indigo-400 transition"
 					>
 						<span>Manage Tasks</span>
 						<ChevronRight className="w-3.5 h-3.5" />
@@ -657,7 +641,7 @@ export function DashboardView({
 							</div>
 							<div>
 								<span className="text-[10px] text-slate-400">Spendings</span>
-								<p className="text-sm font-bold text-red-400">
+								<p className="text-sm font-bold text-rose-400">
 									-{formatCurrency(todayExpense, user?.currency || "USD")}
 								</p>
 							</div>
@@ -691,11 +675,11 @@ export function DashboardView({
 						onClick={() => setViewMode("STREAM")}
 						className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
 							viewMode === "STREAM"
-								? "bg-slate-800 text-white shadow-sm"
+								? "bg-slate-800 text-teal-300 shadow-sm"
 								: "text-slate-400 hover:text-white"
 						}`}
 					>
-						<ListFilter className="w-3.5 h-3.5 text-emerald-400" />
+						<ListFilter className="w-3.5 h-3.5 text-teal-400" />
 						<span>Today's Stream</span>
 					</button>
 					<button

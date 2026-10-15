@@ -210,7 +210,7 @@ export function RoutineFormModal({
 				<div className="space-y-1.5">
 					<Label htmlFor="title">Routine Title</Label>
 					<Input id="title" placeholder="e.g. Morning Workout & Hydration" {...register("title")} />
-					{errors.title && <p className="text-xs text-red-400">{errors.title.message}</p>}
+					{errors.title && <p className="text-xs text-rose-400">{errors.title.message}</p>}
 				</div>
 
 				<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -241,7 +241,7 @@ export function RoutineFormModal({
 									onClick={() => toggleDay(d.value)}
 									className={`flex-1 h-9 rounded-xl text-xs font-semibold transition cursor-pointer ${
 										isSelected
-											? "bg-emerald-500 text-slate-950 shadow-sm"
+											? "bg-teal-500 text-slate-950 shadow-sm"
 											: "bg-slate-800 text-slate-400 hover:text-white"
 									}`}
 									title={d.name}
@@ -270,7 +270,7 @@ export function RoutineFormModal({
 					<textarea
 						id="description"
 						rows={2}
-						className="flex w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-500/30 focus-visible:border-emerald-500 transition duration-150"
+						className="flex w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-teal-500/30 focus-visible:border-teal-500 transition duration-150"
 						placeholder="e.g. 500ml water, 20 pushups, stretch"
 						{...register("description")}
 					/>
@@ -280,7 +280,7 @@ export function RoutineFormModal({
 					<Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
 						Cancel
 					</Button>
-					<Button type="submit" variant="emerald" disabled={isSubmitting}>
+					<Button type="submit" disabled={isSubmitting}>
 						{isSubmitting ? "Saving..." : initialData ? "Save Changes" : "Create Routine"}
 					</Button>
 				</div>

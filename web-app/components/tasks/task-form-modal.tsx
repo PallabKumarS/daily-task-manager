@@ -412,7 +412,7 @@ export function TaskFormModal({
 		>
 			<form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
 				{/* Mode Switcher */}
-				<div className="grid grid-cols-2 gap-2 p-1 rounded-2xl bg-slate-950 border border-slate-800">
+				<div className="grid grid-cols-2 gap-2 p-1 rounded-2xl bg-slate-900/80 border border-slate-800">
 					<button
 						type="button"
 						onClick={() => {
@@ -423,11 +423,11 @@ export function TaskFormModal({
 						}}
 						className={`flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
 							modalMode === "ALARM"
-								? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-sm"
-								: "text-slate-400 hover:text-white"
+								? "bg-amber-500/15 text-amber-300 border border-amber-500/30 shadow-sm"
+								: "text-slate-400 hover:text-slate-200"
 						}`}
 					>
-						<BellRing className="w-3.5 h-3.5 text-emerald-400" />
+						<BellRing className="w-3.5 h-3.5 text-amber-400" />
 						<span>Alarm & Reminder</span>
 					</button>
 					<button
@@ -440,11 +440,11 @@ export function TaskFormModal({
 						}}
 						className={`flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
 							modalMode === "TASK"
-								? "bg-sky-500/20 text-sky-400 border border-sky-500/40 shadow-sm"
-								: "text-slate-400 hover:text-white"
+								? "bg-teal-500/15 text-teal-300 border border-teal-500/30 shadow-sm"
+								: "text-slate-400 hover:text-slate-200"
 						}`}
 					>
-						<CheckSquare className="w-3.5 h-3.5 text-sky-400" />
+						<CheckSquare className="w-3.5 h-3.5 text-teal-400" />
 						<span>Task Action Item</span>
 					</button>
 				</div>
@@ -461,7 +461,7 @@ export function TaskFormModal({
 						}
 						{...register("title")}
 					/>
-					{errors.title && <p className="text-xs text-red-400">{errors.title.message}</p>}
+					{errors.title && <p className="text-xs text-rose-400">{errors.title.message}</p>}
 				</div>
 
 				{/* Category & Priority only shown for Standard Task mode */}
@@ -506,7 +506,7 @@ export function TaskFormModal({
 								<div className="space-y-1.5">
 									<div className="flex items-center justify-between">
 										<Label htmlFor="dueDate">Target Date & Time</Label>
-										<span className="text-[11px] text-emerald-400 font-medium flex items-center gap-1">
+										<span className="text-[11px] text-teal-400 font-medium flex items-center gap-1">
 											<Calendar className="w-3 h-3" />
 											<span>Click box to pick</span>
 										</span>
@@ -522,7 +522,7 @@ export function TaskFormModal({
 								<div className="space-y-1.5">
 									<div className="flex items-center justify-between">
 										<Label htmlFor="startDate">From When (Start Date)</Label>
-										<span className="text-[11px] text-emerald-400 font-medium flex items-center gap-1">
+										<span className="text-[11px] text-teal-400 font-medium flex items-center gap-1">
 											<Calendar className="w-3 h-3" />
 											<span>Click box to pick</span>
 										</span>
@@ -546,7 +546,7 @@ export function TaskFormModal({
 							<div className="space-y-1.5">
 								<div className="flex items-center justify-between">
 									<Label htmlFor="dueDate">Alarm Target Date & Time</Label>
-									<span className="text-[11px] text-emerald-400 font-medium flex items-center gap-1">
+									<span className="text-[11px] text-amber-400 font-medium flex items-center gap-1">
 										<Calendar className="w-3 h-3" />
 										<span>Click box to pick</span>
 									</span>
@@ -562,7 +562,7 @@ export function TaskFormModal({
 							<div className="space-y-1.5">
 								<div className="flex items-center justify-between">
 									<Label htmlFor="startDate">Start Date</Label>
-									<span className="text-[11px] text-emerald-400 font-medium flex items-center gap-1">
+									<span className="text-[11px] text-amber-400 font-medium flex items-center gap-1">
 										<Calendar className="w-3 h-3" />
 										<span>Click box to pick</span>
 									</span>
@@ -579,13 +579,13 @@ export function TaskFormModal({
 				)}
 
 				{/* Recurrence Toggle Switch */}
-				<div className="rounded-2xl border border-slate-800 bg-gradient-to-r from-slate-900/90 via-slate-900/70 to-slate-950/80 p-3.5 transition">
+				<div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-3.5 transition">
 					<div className="flex items-center justify-between gap-3">
 						<div className="flex items-center gap-3">
 							<div
 								className={`p-2.5 rounded-xl border transition ${
 									isRecurring
-										? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
+										? "bg-teal-500/15 text-teal-400 border-teal-500/30"
 										: "bg-slate-800/80 text-slate-400 border-slate-700/60"
 								}`}
 							>
@@ -597,7 +597,7 @@ export function TaskFormModal({
 										Repeat this {selectedType === "EVENT" ? "Event" : "Task"}
 									</span>
 									{isRecurring && (
-										<span className="rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.2 text-[10px] font-bold">
+										<span className="rounded-full bg-teal-500/15 text-teal-300 border border-teal-500/30 px-2 py-0.2 text-[10px] font-bold">
 											Recurring
 										</span>
 									)}
@@ -614,7 +614,7 @@ export function TaskFormModal({
 							aria-checked={isRecurring}
 							onClick={() => setValue("isRecurring", !isRecurring)}
 							className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-								isRecurring ? "bg-emerald-500" : "bg-slate-700"
+								isRecurring ? "bg-teal-500" : "bg-slate-700"
 							}`}
 						>
 							<span
@@ -639,7 +639,7 @@ export function TaskFormModal({
 											onClick={() => setValue("repeatFrequency", freq)}
 											className={`py-2 rounded-lg text-xs font-bold transition cursor-pointer ${
 												repeatFrequency === freq
-													? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40"
+													? "bg-teal-500/20 text-teal-300 border border-teal-500/40"
 													: "text-slate-400 hover:text-white"
 											}`}
 										>
@@ -693,7 +693,7 @@ export function TaskFormModal({
 								<div className="space-y-1.5">
 									<div className="flex items-center justify-between">
 										<Label htmlFor="repeatTime">Alert Trigger Time of Day</Label>
-										<span className="text-[11px] text-emerald-400 font-medium flex items-center gap-1">
+										<span className="text-[11px] text-teal-400 font-medium flex items-center gap-1">
 											<Clock className="w-3 h-3" />
 											<span>Click box to pick</span>
 										</span>
@@ -717,7 +717,7 @@ export function TaskFormModal({
 										<button
 											type="button"
 											onClick={() => setShowAddTimeInput(true)}
-											className="flex items-center gap-1 text-[11px] font-semibold text-emerald-400 hover:text-emerald-300 transition cursor-pointer"
+											className="flex items-center gap-1 text-[11px] font-semibold text-teal-400 hover:text-teal-300 transition cursor-pointer"
 										>
 											<Plus className="w-3.5 h-3.5" />
 											<span>Add Extra Time of Day</span>
@@ -726,8 +726,8 @@ export function TaskFormModal({
 								</div>
 
 								<div className="flex flex-wrap items-center gap-2">
-									<span className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2.5 py-1 text-xs font-mono font-semibold">
-										<Clock className="w-3 h-3 text-emerald-400" />
+									<span className="inline-flex items-center gap-1.5 rounded-lg bg-teal-500/15 text-teal-300 border border-teal-500/30 px-2.5 py-1 text-xs font-mono font-semibold">
+										<Clock className="w-3 h-3 text-teal-400" />
 										<span>{repeatTime || "21:00"} (Primary)</span>
 									</span>
 
@@ -757,7 +757,7 @@ export function TaskFormModal({
 											onChange={(e) => setNewTimeInput(e.target.value)}
 											className="h-9 w-36"
 										/>
-										<Button type="button" size="sm" variant="emerald" onClick={handleAddExtraTime}>
+										<Button type="button" size="sm" onClick={handleAddExtraTime}>
 											Add Time
 										</Button>
 										<Button
@@ -784,7 +784,7 @@ export function TaskFormModal({
 											<button
 												type="button"
 												onClick={() => setDaysPreset("ALL")}
-												className="hover:text-emerald-400 transition cursor-pointer"
+												className="hover:text-teal-400 transition cursor-pointer"
 											>
 												Every Day
 											</button>
@@ -792,7 +792,7 @@ export function TaskFormModal({
 											<button
 												type="button"
 												onClick={() => setDaysPreset("WEEKDAYS")}
-												className="hover:text-emerald-400 transition cursor-pointer"
+												className="hover:text-teal-400 transition cursor-pointer"
 											>
 												Weekdays
 											</button>
@@ -800,7 +800,7 @@ export function TaskFormModal({
 											<button
 												type="button"
 												onClick={() => setDaysPreset("WEEKENDS")}
-												className="hover:text-emerald-400 transition cursor-pointer"
+												className="hover:text-teal-400 transition cursor-pointer"
 											>
 												Weekends
 											</button>
@@ -817,7 +817,7 @@ export function TaskFormModal({
 													onClick={() => toggleDay(d.value)}
 													className={`flex-1 h-9 rounded-xl text-xs font-semibold transition cursor-pointer ${
 														isSelected
-															? "bg-emerald-500 text-slate-950 shadow-sm"
+															? "bg-teal-500 text-slate-950 shadow-sm"
 															: "bg-slate-800 text-slate-400 hover:text-white"
 													}`}
 													title={d.name}
@@ -891,7 +891,7 @@ export function TaskFormModal({
 										onClick={() => setValue("repeatEndType", "NEVER")}
 										className={`py-2 rounded-xl text-xs font-semibold transition cursor-pointer border ${
 											repeatEndType === "NEVER"
-												? "bg-emerald-500/20 text-emerald-400 border-emerald-500/40"
+												? "bg-teal-500/20 text-teal-300 border-teal-500/40"
 												: "bg-slate-950 text-slate-400 border-slate-800 hover:text-white"
 										}`}
 									>
@@ -902,7 +902,7 @@ export function TaskFormModal({
 										onClick={() => setValue("repeatEndType", "COUNT")}
 										className={`py-2 rounded-xl text-xs font-semibold transition cursor-pointer border ${
 											repeatEndType === "COUNT"
-												? "bg-emerald-500/20 text-emerald-400 border-emerald-500/40"
+												? "bg-teal-500/20 text-teal-300 border-teal-500/40"
 												: "bg-slate-950 text-slate-400 border-slate-800 hover:text-white"
 										}`}
 									>
@@ -913,7 +913,7 @@ export function TaskFormModal({
 										onClick={() => setValue("repeatEndType", "UNTIL_DATE")}
 										className={`py-2 rounded-xl text-xs font-semibold transition cursor-pointer border ${
 											repeatEndType === "UNTIL_DATE"
-												? "bg-emerald-500/20 text-emerald-400 border-emerald-500/40"
+												? "bg-teal-500/20 text-teal-300 border-teal-500/40"
 												: "bg-slate-950 text-slate-400 border-slate-800 hover:text-white"
 										}`}
 									>
@@ -937,7 +937,7 @@ export function TaskFormModal({
 									<div className="pt-1 space-y-1.5">
 										<div className="flex items-center justify-between">
 											<Label htmlFor="repeatUntil">Repeat Until Date</Label>
-											<span className="text-[11px] text-emerald-400 font-medium flex items-center gap-1">
+											<span className="text-[11px] text-teal-400 font-medium flex items-center gap-1">
 												<Calendar className="w-3 h-3" />
 												<span>Click box to pick</span>
 											</span>
@@ -955,54 +955,67 @@ export function TaskFormModal({
 					)}
 				</div>
 
-				{/* Ring count & Frequency options (Alarm mode) */}
-				{modalMode === "ALARM" ? (
-					<>
-						<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-							<CustomSelect
-								label="How Many Times to Ring Alarm"
-								value={String(ringCount)}
-								group="RING_COUNT"
-								onChange={(val) => setRingCount(Number.parseInt(val, 10))}
-								options={RING_COUNT_OPTIONS}
-							/>
+				{/* Sound & Notification Settings (Progressive Disclosure) */}
+				<details className="group rounded-2xl border border-slate-800 bg-slate-900/40 transition">
+					<summary className="flex items-center justify-between px-3.5 py-3 cursor-pointer select-none text-xs font-semibold text-slate-300 hover:text-white">
+						<span className="flex items-center gap-2">
+							<BellRing className="w-3.5 h-3.5 text-teal-400" />
+							<span>Alert Sound & Notification Details</span>
+						</span>
+						<span className="text-[11px] text-slate-500 group-open:rotate-180 transition-transform">
+							▼
+						</span>
+					</summary>
+					<div className="p-3.5 pt-1 space-y-4 border-t border-slate-800/60">
+						{modalMode === "ALARM" ? (
+							<>
+								<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+									<CustomSelect
+										label="How Many Times to Ring Alarm"
+										value={String(ringCount)}
+										group="RING_COUNT"
+										onChange={(val) => setRingCount(Number.parseInt(val, 10))}
+										options={RING_COUNT_OPTIONS}
+									/>
 
-							<CustomSelect
-								label="Ring Frequency / Interval Between Rings"
-								value={String(ringInterval)}
-								group="RING_INTERVAL"
-								onChange={(val) => setRingInterval(Number.parseInt(val, 10))}
-								options={RING_INTERVAL_OPTIONS}
-							/>
-						</div>
+									<CustomSelect
+										label="Ring Frequency / Interval Between Rings"
+										value={String(ringInterval)}
+										group="RING_INTERVAL"
+										onChange={(val) => setRingInterval(Number.parseInt(val, 10))}
+										options={RING_INTERVAL_OPTIONS}
+									/>
+								</div>
 
-						<CustomSelect
-							label="When to Show Notification (Advance Notice)"
-							value={String(selectedRemind ?? 0)}
-							group="REMINDER_TIME"
-							onChange={(val) => {
-								const parsed = Number.parseInt(val, 10);
-								setValue("remindBeforeMinutes", Number.isNaN(parsed) ? 0 : parsed, {
-									shouldValidate: true,
-								});
-							}}
-							options={REMINDER_OPTIONS}
-						/>
-					</>
-				) : (
-					<CustomSelect
-						label="Advance Notification & Audio Chime Alert"
-						value={String(selectedRemind ?? 0)}
-						group="REMINDER_TIME"
-						onChange={(val) => {
-							const parsed = Number.parseInt(val, 10);
-							setValue("remindBeforeMinutes", Number.isNaN(parsed) ? 0 : parsed, {
-								shouldValidate: true,
-							});
-						}}
-						options={REMINDER_OPTIONS}
-					/>
-				)}
+								<CustomSelect
+									label="When to Show Notification (Advance Notice)"
+									value={String(selectedRemind ?? 0)}
+									group="REMINDER_TIME"
+									onChange={(val) => {
+										const parsed = Number.parseInt(val, 10);
+										setValue("remindBeforeMinutes", Number.isNaN(parsed) ? 0 : parsed, {
+											shouldValidate: true,
+										});
+									}}
+									options={REMINDER_OPTIONS}
+								/>
+							</>
+						) : (
+							<CustomSelect
+								label="Advance Notification & Audio Chime Alert"
+								value={String(selectedRemind ?? 0)}
+								group="REMINDER_TIME"
+								onChange={(val) => {
+									const parsed = Number.parseInt(val, 10);
+									setValue("remindBeforeMinutes", Number.isNaN(parsed) ? 0 : parsed, {
+										shouldValidate: true,
+									});
+								}}
+								options={REMINDER_OPTIONS}
+							/>
+						)}
+					</div>
+				</details>
 
 				{/* Description / Instructions */}
 				<div className="space-y-1.5">
@@ -1010,7 +1023,7 @@ export function TaskFormModal({
 					<textarea
 						id="description"
 						rows={2}
-						className="flex w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-500/30 focus-visible:border-emerald-500 transition duration-150"
+						className="flex w-full rounded-xl border border-slate-850 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-teal-500/30 focus-visible:border-teal-500 transition duration-150"
 						placeholder={
 							modalMode === "ALARM"
 								? "e.g. Turn on water heater, take morning vitamins"
@@ -1025,7 +1038,7 @@ export function TaskFormModal({
 					<Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
 						Cancel
 					</Button>
-					<Button type="submit" variant="emerald" disabled={isSubmitting}>
+					<Button type="submit" disabled={isSubmitting}>
 						{isSubmitting
 							? "Saving..."
 							: initialData

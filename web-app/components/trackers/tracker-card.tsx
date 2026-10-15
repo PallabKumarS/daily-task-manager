@@ -32,10 +32,16 @@ interface TrackerCardProps {
 
 const COLOR_ACCENTS: Record<string, { border: string; bg: string; text: string; glow: string }> = {
 	emerald: {
-		border: "border-emerald-500/30",
-		bg: "bg-emerald-500/10",
-		text: "text-emerald-400",
-		glow: "shadow-emerald-500/10",
+		border: "border-teal-500/30",
+		bg: "bg-teal-500/10",
+		text: "text-teal-400",
+		glow: "shadow-teal-500/10",
+	},
+	teal: {
+		border: "border-teal-500/30",
+		bg: "bg-teal-500/10",
+		text: "text-teal-400",
+		glow: "shadow-teal-500/10",
 	},
 	cyan: {
 		border: "border-cyan-500/30",
@@ -318,7 +324,7 @@ export function TrackerCard({
 							type="button"
 							disabled={isUpdating}
 							onClick={() => handleUpdateCount(currentValue + 1, "LOGGED")}
-							className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-600 border border-emerald-500/40 text-white hover:bg-emerald-500 transition active:scale-95 disabled:opacity-40 cursor-pointer shadow-md shadow-emerald-950/50"
+							className="flex h-11 w-11 items-center justify-center rounded-xl bg-teal-600 border border-teal-500/40 text-white hover:bg-teal-500 transition active:scale-95 disabled:opacity-40 cursor-pointer shadow-md shadow-teal-950/50"
 							title="Increase by 1"
 						>
 							<Plus className="w-5 h-5" />
@@ -345,7 +351,7 @@ export function TrackerCard({
 							className={cn(
 								"py-1.5 px-2 rounded-lg text-[11px] font-semibold transition cursor-pointer border text-center",
 								currentValue === 1 && status !== "CANCELLED"
-									? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+									? "bg-teal-500/20 text-teal-300 border-teal-500/40"
 									: "bg-slate-900 text-slate-300 hover:text-white hover:bg-slate-800 border-slate-800",
 							)}
 						>
@@ -357,7 +363,7 @@ export function TrackerCard({
 							className={cn(
 								"py-1.5 px-2 rounded-lg text-[11px] font-semibold transition cursor-pointer border text-center",
 								currentValue === tracker.defaultTarget && status !== "CANCELLED"
-									? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+									? "bg-teal-500/20 text-teal-300 border-teal-500/40"
 									: "bg-slate-900 text-slate-300 hover:text-white hover:bg-slate-800 border-slate-800",
 							)}
 						>
@@ -391,7 +397,7 @@ export function TrackerCard({
 								value={notes}
 								onChange={(e) => setNotes(e.target.value)}
 								placeholder="Reason or notes (e.g. Canceled dinner)..."
-								className="flex-1 rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1 text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
+								className="flex-1 rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-1 text-xs text-slate-200 focus:outline-none focus:border-teal-500"
 								onKeyDown={(e) => {
 									if (e.key === "Enter") handleSaveNote();
 									if (e.key === "Escape") setIsEditingNote(false);
@@ -400,7 +406,7 @@ export function TrackerCard({
 							<button
 								type="button"
 								onClick={handleSaveNote}
-								className="px-2.5 py-1 rounded-lg bg-emerald-600 text-[11px] font-semibold text-white hover:bg-emerald-500 cursor-pointer"
+								className="px-2.5 py-1 rounded-lg bg-teal-600 text-[11px] font-semibold text-white hover:bg-teal-500 cursor-pointer"
 							>
 								Save
 							</button>
@@ -410,7 +416,7 @@ export function TrackerCard({
 							<button
 								type="button"
 								onClick={() => setIsEditingNote(true)}
-								className="flex items-center gap-1.5 text-[11px] text-slate-400 hover:text-emerald-400 transition cursor-pointer truncate max-w-full"
+								className="flex items-center gap-1.5 text-[11px] text-slate-400 hover:text-teal-400 transition cursor-pointer truncate max-w-full"
 							>
 								<FileText className="w-3.5 h-3.5 shrink-0" />
 								<span className="truncate">
@@ -457,7 +463,7 @@ export function TrackerCard({
 						<button
 							type="button"
 							onClick={() => onOpenSettle(tracker)}
-							className="py-2 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-semibold text-white transition cursor-pointer shadow-sm shadow-emerald-950 flex items-center gap-1.5"
+							className="py-2 px-3.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-xs font-semibold text-white transition cursor-pointer shadow-sm shadow-teal-950 flex items-center gap-1.5"
 						>
 							<Receipt className="w-3.5 h-3.5" />
 							<span>Settle</span>

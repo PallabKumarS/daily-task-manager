@@ -119,7 +119,7 @@ export function OnboardingModal({ isOpen, initialView = "CHOICE" }: OnboardingMo
 					<div className="space-y-6">
 						<div className="text-center space-y-2">
 							<div className="inline-flex items-center gap-2.5">
-								<div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-400 text-slate-950 shadow-md shadow-emerald-500/20">
+								<div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-tr from-teal-600 to-cyan-400 text-slate-950 shadow-md shadow-teal-500/20">
 									<Activity className="w-6 h-6 stroke-[2.5]" />
 								</div>
 								<span className="text-2xl font-black text-white">DayPulse</span>
@@ -137,17 +137,17 @@ export function OnboardingModal({ isOpen, initialView = "CHOICE" }: OnboardingMo
 							<button
 								type="button"
 								onClick={() => setActiveView("REGISTER")}
-								className="group flex items-start gap-4 p-4 rounded-2xl border border-emerald-500/30 bg-emerald-950/20 hover:bg-emerald-950/40 hover:border-emerald-500/50 transition-all text-left cursor-pointer shadow-lg shadow-emerald-500/5"
+								className="group flex items-start gap-4 p-4 rounded-2xl border border-teal-500/30 bg-teal-950/20 hover:bg-teal-950/40 hover:border-teal-500/50 transition-all text-left cursor-pointer shadow-lg shadow-teal-500/5"
 							>
-								<div className="h-10 w-10 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
+								<div className="h-10 w-10 rounded-xl bg-teal-500/20 border border-teal-500/30 flex items-center justify-center text-teal-400 shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
 									<UserPlus className="w-5 h-5" />
 								</div>
 								<div className="flex-1 min-w-0">
 									<div className="flex items-center justify-between">
-										<p className="text-sm font-semibold text-white group-hover:text-emerald-300 transition-colors">
+										<p className="text-sm font-semibold text-white group-hover:text-teal-300 transition-colors">
 											Create New Account
 										</p>
-										<Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+										<Sparkles className="w-3.5 h-3.5 text-teal-400" />
 									</div>
 									<p className="text-xs text-slate-400 mt-1 leading-relaxed">
 										Start a clean workspace with your name, email, and preferred currency.
@@ -217,7 +217,7 @@ export function OnboardingModal({ isOpen, initialView = "CHOICE" }: OnboardingMo
 								onClick={() => setIsServerModalOpen(true)}
 								className="inline-flex items-center gap-1.5 text-[11px] text-slate-400 hover:text-slate-200 transition-colors py-1 px-3 rounded-full border border-slate-800 bg-slate-950/60"
 							>
-								<Server className="w-3 h-3 text-emerald-400" />
+								<Server className="w-3 h-3 text-teal-400" />
 								<span>Server: {serverBadge}</span>
 							</button>
 						</div>
@@ -235,7 +235,7 @@ export function OnboardingModal({ isOpen, initialView = "CHOICE" }: OnboardingMo
 								<ArrowLeft className="w-4 h-4" />
 								<span>Back to Options</span>
 							</button>
-							<span className="text-xs font-semibold text-emerald-400">Account Sign In</span>
+							<span className="text-xs font-semibold text-teal-400">Account Sign In</span>
 						</div>
 
 						<div className="space-y-1">
@@ -259,7 +259,9 @@ export function OnboardingModal({ isOpen, initialView = "CHOICE" }: OnboardingMo
 									/>
 								</div>
 								{loginForm.formState.errors.email && (
-									<p className="text-xs text-red-400">{loginForm.formState.errors.email.message}</p>
+									<p className="text-xs text-rose-400">
+										{loginForm.formState.errors.email.message}
+									</p>
 								)}
 							</div>
 
@@ -276,7 +278,7 @@ export function OnboardingModal({ isOpen, initialView = "CHOICE" }: OnboardingMo
 									/>
 								</div>
 								{loginForm.formState.errors.password && (
-									<p className="text-xs text-red-400">
+									<p className="text-xs text-rose-400">
 										{loginForm.formState.errors.password.message}
 									</p>
 								)}
@@ -284,7 +286,6 @@ export function OnboardingModal({ isOpen, initialView = "CHOICE" }: OnboardingMo
 
 							<Button
 								type="submit"
-								variant="emerald"
 								disabled={loginForm.formState.isSubmitting}
 								className="w-full gap-2 mt-2 h-11"
 							>
@@ -298,7 +299,7 @@ export function OnboardingModal({ isOpen, initialView = "CHOICE" }: OnboardingMo
 							<button
 								type="button"
 								onClick={() => setActiveView("REGISTER")}
-								className="text-emerald-400 font-semibold hover:underline cursor-pointer"
+								className="text-teal-400 font-semibold hover:underline cursor-pointer"
 							>
 								Create Account
 							</button>
@@ -317,7 +318,7 @@ export function OnboardingModal({ isOpen, initialView = "CHOICE" }: OnboardingMo
 								<ArrowLeft className="w-4 h-4" />
 								<span>Back to Options</span>
 							</button>
-							<span className="text-xs font-semibold text-emerald-400">Create Account</span>
+							<span className="text-xs font-semibold text-teal-400">Create Account</span>
 						</div>
 
 						<div className="space-y-1">
@@ -340,7 +341,7 @@ export function OnboardingModal({ isOpen, initialView = "CHOICE" }: OnboardingMo
 									/>
 								</div>
 								{registerForm.formState.errors.name && (
-									<p className="text-xs text-red-400">
+									<p className="text-xs text-rose-400">
 										{registerForm.formState.errors.name.message}
 									</p>
 								)}
@@ -359,7 +360,7 @@ export function OnboardingModal({ isOpen, initialView = "CHOICE" }: OnboardingMo
 									/>
 								</div>
 								{registerForm.formState.errors.email && (
-									<p className="text-xs text-red-400">
+									<p className="text-xs text-rose-400">
 										{registerForm.formState.errors.email.message}
 									</p>
 								)}
@@ -378,7 +379,7 @@ export function OnboardingModal({ isOpen, initialView = "CHOICE" }: OnboardingMo
 									/>
 								</div>
 								{registerForm.formState.errors.password && (
-									<p className="text-xs text-red-400">
+									<p className="text-xs text-rose-400">
 										{registerForm.formState.errors.password.message}
 									</p>
 								)}
@@ -394,7 +395,6 @@ export function OnboardingModal({ isOpen, initialView = "CHOICE" }: OnboardingMo
 
 							<Button
 								type="submit"
-								variant="emerald"
 								disabled={registerForm.formState.isSubmitting}
 								className="w-full gap-2 mt-2 h-11"
 							>
@@ -410,7 +410,7 @@ export function OnboardingModal({ isOpen, initialView = "CHOICE" }: OnboardingMo
 							<button
 								type="button"
 								onClick={() => setActiveView("LOGIN")}
-								className="text-emerald-400 font-semibold hover:underline cursor-pointer"
+								className="text-teal-400 font-semibold hover:underline cursor-pointer"
 							>
 								Sign In
 							</button>

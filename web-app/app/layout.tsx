@@ -32,7 +32,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-	themeColor: "#090d16",
+	themeColor: "#0b0f17",
 	width: "device-width",
 	initialScale: 1,
 	maximumScale: 1,
@@ -56,7 +56,7 @@ export default function RootLayout({
 					}
 				</script>
 			</head>
-			<body className="min-h-full flex flex-col bg-slate-950 text-slate-100 selection:bg-emerald-500/30 selection:text-emerald-300">
+			<body className="min-h-full flex flex-col bg-background text-foreground selection:bg-teal-500/30 selection:text-teal-200">
 				<DesktopTitlebar />
 				<AuthProvider>
 					<NotificationProvider>
@@ -68,7 +68,8 @@ export default function RootLayout({
 								richColors
 								closeButton
 								toastOptions={{
-									className: "rounded-xl border border-slate-800 bg-slate-900 text-slate-100",
+									className:
+										"rounded-xl border border-slate-800/90 bg-slate-900/95 text-slate-100 shadow-xl",
 								}}
 							/>
 						</ConfirmProvider>

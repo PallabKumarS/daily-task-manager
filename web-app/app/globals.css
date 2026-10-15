@@ -3,25 +3,25 @@
 :root {
 	--titlebar-height: 0px;
 	color-scheme: dark;
-	--background: #090a10;
-	--foreground: #ffffff;
-	--card: #11131e;
-	--card-foreground: #ffffff;
-	--popover: #11131e;
-	--popover-foreground: #ffffff;
-	--primary: #10b981;
-	--primary-foreground: #022c22;
-	--secondary: #161928;
+	--background: #0b0f17;
+	--foreground: #f8fafc;
+	--card: #111827;
+	--card-foreground: #f8fafc;
+	--popover: #111827;
+	--popover-foreground: #f8fafc;
+	--primary: #0d9488;
+	--primary-foreground: #f0fdfa;
+	--secondary: #182234;
 	--secondary-foreground: #f8fafc;
-	--muted: #161928;
+	--muted: #182234;
 	--muted-foreground: #94a3b8;
-	--accent: #059669;
-	--accent-foreground: #ecfdf5;
+	--accent: #14b8a6;
+	--accent-foreground: #f0fdfa;
 	--destructive: #f43f5e;
 	--destructive-foreground: #fff1f2;
-	--border: #1f2336;
-	--input: #161928;
-	--ring: #10b981;
+	--border: #1f293d;
+	--input: #182234;
+	--ring: #14b8a6;
 }
 
 @theme inline {
@@ -56,7 +56,7 @@ html.is-electron {
 
 html,
 body {
-	background-color: #090a10 !important;
+	background-color: #0b0f17;
 	color: var(--foreground);
 	font-feature-settings:
 		"rlig" 1,
@@ -75,12 +75,12 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-	background: #23273c;
+	background: #1f293d;
 	border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-	background: #363c5a;
+	background: #334155;
 }
 
 /* High-Visibility Date & Time Picker Indicators */
@@ -107,5 +107,5 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover,
 input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
 	filter: invert(1) brightness(1.4);
 	opacity: 1;
-	background-color: rgba(16, 185, 129, 0.25);
+	background-color: rgba(20, 184, 166, 0.25);
 }

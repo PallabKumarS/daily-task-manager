@@ -15,11 +15,11 @@ public class MainActivity extends BridgeActivity {
         super.onCreate(savedInstanceState);
         getWindow().setBackgroundDrawableResource(R.color.backgroundDark);
         if (getWindow().getDecorView() != null) {
-            getWindow().getDecorView().setBackgroundColor(Color.parseColor("#090A10"));
+            getWindow().getDecorView().setBackgroundColor(Color.parseColor("#0B0F17"));
         }
 
         if (getBridge() != null && getBridge().getWebView() != null) {
-            getBridge().getWebView().setBackgroundColor(Color.parseColor("#090A10"));
+            getBridge().getWebView().setBackgroundColor(Color.parseColor("#0B0F17"));
 
             getBridge().getWebView().post(() -> {
                 try {

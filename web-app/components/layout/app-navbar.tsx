@@ -47,7 +47,7 @@ export function AppNavbar({ onQuickAdd }: AppNavbarProps) {
 			<div className="flex items-center gap-3">
 				{/* Mobile Logo Brand */}
 				<Link href="/dashboard" className="md:hidden flex items-center gap-2">
-					<div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500 text-slate-950">
+					<div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-tr from-teal-600 to-teal-400 text-slate-950 shadow-sm shadow-teal-500/20">
 						<Activity className="w-4 h-4 stroke-[2.5]" />
 					</div>
 					<span className="text-base font-extrabold text-white">DayPulse</span>
@@ -55,7 +55,7 @@ export function AppNavbar({ onQuickAdd }: AppNavbarProps) {
 
 				{/* Date on Tablet/Desktop */}
 				<div className="hidden sm:flex items-center gap-2 text-xs text-slate-400">
-					<Calendar className="w-4 h-4 text-emerald-400" />
+					<Calendar className="w-4 h-4 text-teal-400" />
 					<span>{readableDate || "Today"}</span>
 				</div>
 			</div>
@@ -66,7 +66,7 @@ export function AppNavbar({ onQuickAdd }: AppNavbarProps) {
 						<button
 							type="button"
 							onClick={() => setIsQuickLogOpen((prev) => !prev)}
-							className="flex items-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 px-3.5 py-2 text-xs font-semibold text-white shadow-sm shadow-emerald-950/40 transition cursor-pointer active:scale-95"
+							className="flex items-center gap-1.5 rounded-xl bg-teal-600 hover:bg-teal-500 px-3.5 py-2 text-xs font-semibold text-white shadow-sm shadow-teal-950/40 transition cursor-pointer active:scale-95"
 						>
 							<Plus className="w-4 h-4" />
 							<span className="hidden sm:inline">Quick Log</span>
@@ -78,7 +78,7 @@ export function AppNavbar({ onQuickAdd }: AppNavbarProps) {
 						</button>
 
 						{isQuickLogOpen && (
-							<div className="absolute right-0 top-full mt-1.5 flex flex-col w-48 rounded-2xl border border-slate-700/80 bg-slate-900/95 p-1.5 shadow-2xl shadow-black/80 backdrop-blur-2xl z-50 animate-in fade-in zoom-in-95 duration-150">
+							<div className="absolute right-0 top-full mt-1.5 flex flex-col w-52 rounded-2xl border border-slate-700/80 bg-slate-900/95 p-1.5 shadow-2xl shadow-black/80 backdrop-blur-2xl z-50 animate-in fade-in zoom-in-95 duration-150">
 								<button
 									type="button"
 									onClick={() => {
@@ -87,24 +87,10 @@ export function AppNavbar({ onQuickAdd }: AppNavbarProps) {
 									}}
 									className="flex items-center gap-2.5 w-full text-left px-3 py-2 text-xs font-medium text-slate-200 hover:text-white hover:bg-slate-800/80 rounded-xl transition cursor-pointer"
 								>
-									<div className="flex h-6 w-6 items-center justify-center rounded-lg bg-teal-500/10 text-teal-400">
+									<div className="flex h-6 w-6 items-center justify-center rounded-lg bg-teal-500/15 text-teal-300">
 										<Clock className="w-3.5 h-3.5" />
 									</div>
 									<span>New Routine</span>
-								</button>
-
-								<button
-									type="button"
-									onClick={() => {
-										setIsQuickLogOpen(false);
-										onQuickAdd("alarm");
-									}}
-									className="flex items-center gap-2.5 w-full text-left px-3 py-2 text-xs font-medium text-slate-200 hover:text-white hover:bg-slate-800/80 rounded-xl transition cursor-pointer"
-								>
-									<div className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400">
-										<BellRing className="w-3.5 h-3.5" />
-									</div>
-									<span>New Alarm / Alert</span>
 								</button>
 
 								<button
@@ -115,10 +101,24 @@ export function AppNavbar({ onQuickAdd }: AppNavbarProps) {
 									}}
 									className="flex items-center gap-2.5 w-full text-left px-3 py-2 text-xs font-medium text-slate-200 hover:text-white hover:bg-slate-800/80 rounded-xl transition cursor-pointer"
 								>
-									<div className="flex h-6 w-6 items-center justify-center rounded-lg bg-blue-500/10 text-blue-400">
+									<div className="flex h-6 w-6 items-center justify-center rounded-lg bg-indigo-500/15 text-indigo-300">
 										<CheckSquare className="w-3.5 h-3.5" />
 									</div>
 									<span>New Task</span>
+								</button>
+
+								<button
+									type="button"
+									onClick={() => {
+										setIsQuickLogOpen(false);
+										onQuickAdd("alarm");
+									}}
+									className="flex items-center gap-2.5 w-full text-left px-3 py-2 text-xs font-medium text-slate-200 hover:text-white hover:bg-slate-800/80 rounded-xl transition cursor-pointer"
+								>
+									<div className="flex h-6 w-6 items-center justify-center rounded-lg bg-amber-500/15 text-amber-300">
+										<BellRing className="w-3.5 h-3.5" />
+									</div>
+									<span>Alarm / Alert</span>
 								</button>
 
 								<button
@@ -129,10 +129,10 @@ export function AppNavbar({ onQuickAdd }: AppNavbarProps) {
 									}}
 									className="flex items-center gap-2.5 w-full text-left px-3 py-2 text-xs font-medium text-slate-200 hover:text-white hover:bg-slate-800/80 rounded-xl transition cursor-pointer"
 								>
-									<div className="flex h-6 w-6 items-center justify-center rounded-lg bg-purple-500/10 text-purple-400">
+									<div className="flex h-6 w-6 items-center justify-center rounded-lg bg-purple-500/15 text-purple-300">
 										<Calculator className="w-3.5 h-3.5" />
 									</div>
-									<span>New Daily Tracker</span>
+									<span>Daily Tracker</span>
 								</button>
 
 								<button
@@ -143,7 +143,7 @@ export function AppNavbar({ onQuickAdd }: AppNavbarProps) {
 									}}
 									className="flex items-center gap-2.5 w-full text-left px-3 py-2 text-xs font-medium text-slate-200 hover:text-white hover:bg-slate-800/80 rounded-xl transition cursor-pointer"
 								>
-									<div className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400">
+									<div className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-300">
 										<DollarSign className="w-3.5 h-3.5" />
 									</div>
 									<span>Spend / Earning</span>

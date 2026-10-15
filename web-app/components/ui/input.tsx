@@ -23,7 +23,7 @@ export const Input = React.forwardRef<
 			type={type}
 			onClick={handleClick}
 			className={cn(
-				"flex h-10 w-full rounded-xl border border-slate-700/80 bg-slate-900/80 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-500/30 focus-visible:border-emerald-500 transition duration-150 disabled:cursor-not-allowed disabled:opacity-50",
+				"flex h-10 w-full rounded-xl border border-slate-700/80 bg-slate-900/80 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-teal-500/30 focus-visible:border-teal-500 transition duration-150 disabled:cursor-not-allowed disabled:opacity-50",
 				isPickerType && "cursor-pointer [color-scheme:dark]",
 				className,
 			)}

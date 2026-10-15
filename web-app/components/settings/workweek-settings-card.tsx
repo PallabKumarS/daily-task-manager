@@ -69,7 +69,7 @@ export function WorkweekSettingsCard() {
 		<div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-xl space-y-5">
 			<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
 				<div className="flex items-center gap-2.5">
-					<div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-md shadow-emerald-500/20">
+					<div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-teal-600 to-cyan-500 flex items-center justify-center text-white shadow-md shadow-teal-500/20">
 						<Calendar className="w-5 h-5" />
 					</div>
 					<div>
@@ -109,7 +109,7 @@ export function WorkweekSettingsCard() {
 								onClick={() => setStartDay(opt.value)}
 								className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 border ${
 									startDay === opt.value
-										? "bg-emerald-500/15 text-emerald-400 border-emerald-500/40 shadow-sm"
+										? "bg-teal-500/15 text-teal-300 border-teal-500/40 shadow-sm"
 										: "bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-200 hover:bg-slate-850"
 								}`}
 							>
@@ -127,8 +127,8 @@ export function WorkweekSettingsCard() {
 							Configured Weekend Days
 						</label>
 						<span className="text-[10px] text-slate-400">
-							Weekends: <strong className="text-emerald-400">{formattedWeekends || "None"}</strong>{" "}
-							• Workdays: <strong className="text-slate-200">{formattedWeekdays}</strong>
+							Weekends: <strong className="text-teal-400">{formattedWeekends || "None"}</strong> •
+							Workdays: <strong className="text-slate-200">{formattedWeekdays}</strong>
 						</span>
 					</div>
 					<p className="text-[11px] text-slate-400">
@@ -171,7 +171,7 @@ export function WorkweekSettingsCard() {
 						onClick={() => setAutoSync(!autoSync)}
 						className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer border ${
 							autoSync
-								? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+								? "bg-teal-500/15 text-teal-300 border-teal-500/30"
 								: "bg-slate-800 text-slate-400 border-slate-700 hover:text-white"
 						}`}
 					>
@@ -180,7 +180,7 @@ export function WorkweekSettingsCard() {
 				</div>
 
 				<div className="pt-2 flex justify-end">
-					<Button type="button" variant="emerald" size="sm" onClick={handleSave} className="gap-2">
+					<Button type="button" size="sm" onClick={handleSave} className="gap-2">
 						<Check className="w-4 h-4" />
 						<span>Save Workweek Preferences</span>
 					</Button>

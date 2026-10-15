@@ -278,7 +278,7 @@ export function TaskList({ tasks, onToggleStatus, onEdit, onRefresh, onAddNew }:
 							onClick={() => setFilterType("TASK")}
 							className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
 								filterType === "TASK"
-									? "bg-emerald-500/20 text-emerald-400"
+									? "bg-teal-500/20 text-teal-300 border border-teal-500/40"
 									: "text-slate-400 hover:text-white"
 							}`}
 						>
@@ -289,7 +289,7 @@ export function TaskList({ tasks, onToggleStatus, onEdit, onRefresh, onAddNew }:
 							onClick={() => setFilterType("EVENT")}
 							className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
 								filterType === "EVENT"
-									? "bg-amber-500/20 text-amber-400"
+									? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
 									: "text-slate-400 hover:text-white"
 							}`}
 						>
@@ -300,7 +300,7 @@ export function TaskList({ tasks, onToggleStatus, onEdit, onRefresh, onAddNew }:
 							onClick={() => setFilterType("RECURRING")}
 							className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer flex items-center gap-1 ${
 								filterType === "RECURRING"
-									? "bg-teal-500/20 text-teal-400"
+									? "bg-teal-500/20 text-teal-300 border border-teal-500/40"
 									: "text-slate-400 hover:text-white"
 							}`}
 						>
@@ -327,7 +327,7 @@ export function TaskList({ tasks, onToggleStatus, onEdit, onRefresh, onAddNew }:
 							onClick={() => setFilterStatus("PENDING")}
 							className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
 								filterStatus === "PENDING"
-									? "bg-emerald-500/20 text-emerald-400"
+									? "bg-teal-500/20 text-teal-300 border border-teal-500/40"
 									: "text-slate-400 hover:text-white"
 							}`}
 						>
@@ -359,7 +359,7 @@ export function TaskList({ tasks, onToggleStatus, onEdit, onRefresh, onAddNew }:
 							<span>Clear All</span>
 						</Button>
 					)}
-					<Button variant="emerald" size="sm" onClick={onAddNew} className="gap-1.5">
+					<Button size="sm" onClick={onAddNew} className="gap-1.5">
 						<Plus className="w-4 h-4" />
 						<span>New Item</span>
 					</Button>
@@ -376,7 +376,7 @@ export function TaskList({ tasks, onToggleStatus, onEdit, onRefresh, onAddNew }:
 							Plan your day with precision. Add due dates to receive audio chimes and native system
 							reminders.
 						</p>
-						<Button variant="emerald" size="sm" onClick={onAddNew} className="mt-4 gap-1.5">
+						<Button size="sm" onClick={onAddNew} className="mt-4 gap-1.5">
 							<Plus className="w-4 h-4" />
 							<span>Create Task or Event</span>
 						</Button>
@@ -407,8 +407,8 @@ export function TaskList({ tasks, onToggleStatus, onEdit, onRefresh, onAddNew }:
 										onClick={() => handleToggle(item)}
 										className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border transition cursor-pointer ${
 											isCompleted
-												? "bg-emerald-500 border-emerald-400 text-slate-950"
-												: "border-slate-700 bg-slate-950 hover:border-emerald-500 text-transparent"
+												? "bg-teal-500 border-teal-400 text-slate-950"
+												: "border-slate-700 bg-slate-950 hover:border-teal-500 text-transparent"
 										}`}
 									>
 										<Check className="w-4 h-4 stroke-[3]" />
@@ -443,13 +443,13 @@ export function TaskList({ tasks, onToggleStatus, onEdit, onRefresh, onAddNew }:
 												<span
 													className={`rounded-md px-2 py-0.5 text-[10px] font-semibold flex items-center gap-1 border ${
 														isCompleted
-															? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
+															? "bg-teal-500/15 text-teal-300 border-teal-500/30"
 															: "bg-teal-500/15 text-teal-300 border-teal-500/30"
 													}`}
 												>
 													{isCompleted ? (
 														<>
-															<Check className="w-3 h-3 text-emerald-400" />
+															<Check className="w-3 h-3 text-teal-400" />
 															<span>Done for Today • Next alarm tomorrow</span>
 														</>
 													) : (
@@ -469,8 +469,8 @@ export function TaskList({ tasks, onToggleStatus, onEdit, onRefresh, onAddNew }:
 										<div className="flex flex-wrap items-center gap-2.5 mt-2.5 text-[11px] text-slate-400">
 											{/* Last Triggered Badge */}
 											{item.lastTriggeredDate && (
-												<div className="flex items-center gap-1.5 text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 rounded-md px-2 py-0.5 text-[11px] font-semibold">
-													<BellRing className="w-3 h-3 text-emerald-400" />
+												<div className="flex items-center gap-1.5 text-teal-300 bg-teal-500/15 border border-teal-500/30 rounded-md px-2 py-0.5 text-[11px] font-semibold">
+													<BellRing className="w-3 h-3 text-teal-400" />
 													<span>Ran: {formatTriggeredTime(item.lastTriggeredDate)}</span>
 												</div>
 											)}
@@ -479,7 +479,7 @@ export function TaskList({ tasks, onToggleStatus, onEdit, onRefresh, onAddNew }:
 												<div
 													className={`flex items-center gap-1 rounded-md px-2 py-0.5 font-medium ${
 														!isCompleted && dueInfo.isOverdue
-															? "bg-red-500/10 text-red-400 border border-red-500/20"
+															? "bg-rose-500/10 text-rose-400 border border-rose-500/20"
 															: "bg-slate-800 text-slate-300"
 													}`}
 												>
@@ -504,7 +504,7 @@ export function TaskList({ tasks, onToggleStatus, onEdit, onRefresh, onAddNew }:
 											{/* Multi-ring configuration details */}
 											{(item.type === "EVENT" || item.category === "Alarm") && (
 												<div className="flex items-center gap-1 text-slate-300 bg-slate-800/80 border border-slate-700/60 rounded-md px-2 py-0.5 font-medium">
-													<Volume2 className="w-3 h-3 text-emerald-400" />
+													<Volume2 className="w-3 h-3 text-teal-400" />
 													<span>
 														{alarmConfig.ringCount === 0
 															? "Continuous Ring"
@@ -516,12 +516,12 @@ export function TaskList({ tasks, onToggleStatus, onEdit, onRefresh, onAddNew }:
 
 											{item.remindBeforeMinutes > 0 ? (
 												<div className="flex items-center gap-1 text-slate-400">
-													<Bell className="w-3 h-3 text-emerald-400" />
+													<Bell className="w-3 h-3 text-teal-400" />
 													<span>{item.remindBeforeMinutes}m advance notice</span>
 												</div>
 											) : (
 												<div className="flex items-center gap-1 text-slate-400">
-													<Bell className="w-3 h-3 text-emerald-400" />
+													<Bell className="w-3 h-3 text-teal-400" />
 													<span>Exact time chime</span>
 												</div>
 											)}
@@ -534,10 +534,10 @@ export function TaskList({ tasks, onToggleStatus, onEdit, onRefresh, onAddNew }:
 									<button
 										type="button"
 										onClick={() => handleTestAlarm(item)}
-										className="flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 transition cursor-pointer active:scale-95"
+										className="flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 transition cursor-pointer active:scale-95"
 										title="Test Alarm Audio & Log Execution"
 									>
-										<BellRing className="w-3.5 h-3.5 text-emerald-400" />
+										<BellRing className="w-3.5 h-3.5 text-amber-400" />
 										<span className="hidden sm:inline">Test Alarm</span>
 									</button>
 
@@ -552,7 +552,7 @@ export function TaskList({ tasks, onToggleStatus, onEdit, onRefresh, onAddNew }:
 									<button
 										type="button"
 										onClick={() => handleDelete(item.id)}
-										className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition cursor-pointer"
+										className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer"
 										title="Delete"
 									>
 										<Trash2 className="w-3.5 h-3.5" />

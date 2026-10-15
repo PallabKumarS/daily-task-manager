@@ -46,15 +46,17 @@ export function AppSidebar() {
 		<aside className="hidden md:flex flex-col w-64 h-[calc(100vh-var(--titlebar-height,0px))] max-h-[calc(100vh-var(--titlebar-height,0px))] sticky top-[var(--titlebar-height,0px)] border-r border-border/80 bg-background/80 p-4 shrink-0 select-none overflow-hidden transition-[top,height] duration-150">
 			{/* Fixed Brand Header */}
 			<div className="flex items-center gap-3 px-2 py-1 mb-5 shrink-0">
-				<div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 text-slate-950 shadow-lg shadow-emerald-500/20 shrink-0">
+				<div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-teal-600 to-teal-400 text-slate-950 shadow-md shadow-teal-500/20 shrink-0">
 					<Activity className="w-5 h-5 stroke-[2.5]" />
 				</div>
 				<div className="min-w-0">
 					<div className="flex items-center gap-1.5">
 						<span className="text-base font-extrabold tracking-tight text-white">DayPulse</span>
-						<span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
+						<span className="flex h-2 w-2 rounded-full bg-teal-400 animate-pulse" />
 					</div>
-					<p className="text-[11px] text-slate-400 font-medium truncate">Routines & Wealth Flow</p>
+					<p className="text-[11px] text-slate-400 font-medium truncate">
+						Habits, Agenda & Cashflow
+					</p>
 				</div>
 			</div>
 
@@ -70,12 +72,12 @@ export function AppSidebar() {
 							className={cn(
 								"flex items-center gap-3.5 px-3 py-2.5 rounded-xl text-sm font-medium transition duration-150",
 								isActive
-									? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold shadow-sm"
+									? "bg-teal-500/10 text-teal-300 border border-teal-500/20 font-semibold shadow-sm"
 									: "text-slate-400 hover:text-slate-200 hover:bg-slate-900/80",
 							)}
 						>
 							<Icon
-								className={cn("w-4 h-4 shrink-0", isActive ? "text-emerald-400" : "text-slate-400")}
+								className={cn("w-4 h-4 shrink-0", isActive ? "text-teal-400" : "text-slate-400")}
 							/>
 							<span className="truncate">{item.label}</span>
 						</Link>
