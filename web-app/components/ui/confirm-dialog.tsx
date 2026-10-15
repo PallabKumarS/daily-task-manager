@@ -97,7 +97,7 @@ export function ConfirmDialog({
 	};
 
 	return (
-		<div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+		<div className="fixed inset-0 z-[70] flex items-center justify-center p-4 overflow-y-auto bg-slate-950/70 backdrop-blur-sm">
 			{/* Backdrop */}
 			<div
 				className="fixed inset-0 bg-slate-950/70 transition-opacity animate-in fade-in duration-150"
@@ -112,7 +112,7 @@ export function ConfirmDialog({
 				aria-labelledby="confirm-dialog-title"
 				aria-describedby={description ? "confirm-dialog-description" : undefined}
 				className={cn(
-					"relative w-full max-w-lg rounded-3xl border border-slate-700/80 bg-slate-900 p-6 sm:p-7 shadow-2xl shadow-black/90 z-10 flex flex-col animate-in zoom-in-95 duration-200",
+					"relative w-full max-w-lg my-auto rounded-3xl border border-slate-700/80 bg-slate-900 p-6 sm:p-7 shadow-2xl shadow-black/90 z-10 flex flex-col animate-in zoom-in-95 duration-200",
 				)}
 			>
 				<button
