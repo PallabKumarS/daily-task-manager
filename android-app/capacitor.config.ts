@@ -10,6 +10,9 @@ const config: CapacitorConfig = {
 		cleartext: true,
 	},
 	plugins: {
+		SystemBars: {
+			insetsHandling: "disable",
+		},
 		LocalNotifications: {
 			smallIcon: "ic_stat_alarm",
 			iconColor: "#0d9488",

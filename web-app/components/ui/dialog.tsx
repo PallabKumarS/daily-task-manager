@@ -53,7 +53,7 @@ export function Modal({
 	};
 
 	return (
-		<div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 md:p-8 overflow-y-auto bg-slate-950/85 backdrop-blur-sm">
+		<div className="fixed inset-0 z-50 flex justify-center p-3 sm:p-6 md:p-8 overflow-y-auto bg-slate-950/85 backdrop-blur-sm">
 			<div
 				className="fixed inset-0 bg-slate-950/85 transition-opacity animate-in fade-in duration-150"
 				onClick={onClose}

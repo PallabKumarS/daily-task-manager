@@ -4,7 +4,9 @@ import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
+import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
@@ -14,8 +16,15 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(NativeGoogleAuthPlugin.class);
         super.onCreate(savedInstanceState);
         getWindow().setBackgroundDrawableResource(R.color.backgroundDark);
-        if (getWindow().getDecorView() != null) {
-            getWindow().getDecorView().setBackgroundColor(Color.parseColor("#0B0F17"));
+        View decorView = getWindow().getDecorView();
+        if (decorView != null) {
+            decorView.setBackgroundColor(Color.parseColor("#0B0F17"));
+            ViewCompat.setOnApplyWindowInsetsListener(decorView, (v, insets) -> {
+                v.setPadding(0, 0, 0, 0);
+                return new WindowInsetsCompat.Builder(insets)
+                    .setInsets(WindowInsetsCompat.Type.ime(), Insets.NONE)
+                    .build();
+            });
         }
 
         if (getBridge() != null && getBridge().getWebView() != null) {
@@ -23,14 +32,20 @@ public class MainActivity extends BridgeActivity {
 
             getBridge().getWebView().post(() -> {
                 try {
-                    View parent = (View) getBridge().getWebView().getParent();
+                    View webView = getBridge().getWebView();
+                    View parent = (View) webView.getParent();
+                    androidx.core.view.OnApplyWindowInsetsListener insetsListener = (v, insets) -> {
+                        v.setPadding(0, 0, 0, 0);
+                        return new WindowInsetsCompat.Builder(insets)
+                            .setInsets(WindowInsetsCompat.Type.ime(), Insets.NONE)
+                            .build();
+                    };
+
                     if (parent != null) {
-                        ViewCompat.setOnApplyWindowInsetsListener(parent, (v, insets) -> {
-                            v.setPadding(0, 0, 0, 0);
-                            return insets;
-                        });
+                        ViewCompat.setOnApplyWindowInsetsListener(parent, insetsListener);
                     }
-                    getBridge().getWebView().requestApplyInsets();
+                    ViewCompat.setOnApplyWindowInsetsListener(webView, insetsListener);
+                    webView.requestApplyInsets();
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
