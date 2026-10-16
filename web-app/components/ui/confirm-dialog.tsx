@@ -97,7 +97,7 @@ export function ConfirmDialog({
 	};
 
 	return (
-		<div className="fixed inset-0 z-[70] flex justify-center p-4 overflow-y-auto bg-slate-950/70 backdrop-blur-sm">
+		<div className="fixed inset-0 z-[70] flex justify-center p-4 pb-12 overflow-y-auto bg-slate-950/70 backdrop-blur-sm">
 			{/* Backdrop */}
 			<div
 				className="fixed inset-0 bg-slate-950/70 transition-opacity animate-in fade-in duration-150"

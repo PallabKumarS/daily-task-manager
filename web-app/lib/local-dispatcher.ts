@@ -18,6 +18,36 @@ import { calculateLocalFinanceAnalytics } from "./local-finance-analytics";
 import { buildLocalTrackerMonthDetail, formatTrackerWithMonthStats } from "./local-tracker-stats";
 import { restoreLocalArchive } from "./restore-local-archive";
 
+export interface LocalDebtLoanRecord {
+	id: string;
+	userId?: string;
+	type?: string;
+	personName?: string;
+	amount?: number;
+	paidAmount?: number;
+	remainingAmount?: number;
+	status?: string;
+	date?: string;
+	dueDate?: string | null;
+	description?: string | null;
+	initialTransactionId?: string | null;
+	createdAt?: string;
+	updatedAt?: string;
+}
+
+export interface LocalRepaymentRecord {
+	id: string;
+	debtLoanId: string;
+	userId?: string;
+	amount?: number;
+	date?: string;
+	paymentMethod?: string;
+	notes?: string | null;
+	transactionId?: string | null;
+	createdAt?: string;
+	updatedAt?: string;
+}
+
 export interface LocalStoreState {
 	tasks: Array<Record<string, unknown>>;
 	routines: Array<Record<string, unknown>>;
@@ -567,28 +597,144 @@ export async function handleLocalClientDispatch<T = unknown>(
 
 	// 5. Debt & Loan routes
 	if (pathname === "/debts-loans") {
+		const list = getList<LocalDebtLoanRecord>(STORAGE_KEYS.DEBTS_LOANS);
+		const repayments = getList<LocalRepaymentRecord>(STORAGE_KEYS.REPAYMENTS);
+
 		if (method === "GET") {
-			const list = getList(STORAGE_KEYS.DEBTS_LOANS);
-			const repayments = getList(STORAGE_KEYS.REPAYMENTS);
-			const withRepayments = list.map((item) => ({
-				...item,
-				repayments: repayments.filter((r) => r.debtLoanId === item.id),
-			}));
-			return { statusCode: 200, success: true, data: withRepayments as T };
+			const typeFilter = query.type ? query.type.toUpperCase() : "ALL";
+			const statusFilter = query.status ? query.status.toUpperCase() : "ALL";
+			const search = (query.search || "").trim().toLowerCase();
+
+			const formattedList = list.map((item) => {
+				const amount = Number(item.amount) || 0;
+				const paidAmount = Number(item.paidAmount) || 0;
+				const remainingAmount = Math.max(0, Number((amount - paidAmount).toFixed(2)));
+				const itemRepayments = repayments
+					.filter((r) => r.debtLoanId === item.id)
+					.map((r) => ({
+						...r,
+						amount: Number(r.amount) || 0,
+						date: typeof r.date === "string" ? r.date : new Date().toISOString(),
+					}))
+					.sort((a, b) => new Date(String(b.date)).getTime() - new Date(String(a.date)).getTime());
+
+				return {
+					...item,
+					amount,
+					paidAmount,
+					remainingAmount,
+					status: item.status === "SETTLED" || remainingAmount <= 0 ? "SETTLED" : "ACTIVE",
+					date: typeof item.date === "string" ? item.date : new Date().toISOString(),
+					dueDate: item.dueDate ? String(item.dueDate) : null,
+					description: item.description ? String(item.description) : null,
+					repayments: itemRepayments,
+				};
+			});
+
+			let totalDebt = 0;
+			let totalLoan = 0;
+			let activeDebtCount = 0;
+			let activeLoanCount = 0;
+			let settledCount = 0;
+			let totalSettledAmount = 0;
+
+			for (const item of formattedList) {
+				const rem = Number(item.remainingAmount) || 0;
+				const amt = Number(item.amount) || 0;
+				if (item.status === "SETTLED") {
+					settledCount += 1;
+					totalSettledAmount += amt;
+				} else if (item.type === "DEBT") {
+					activeDebtCount += 1;
+					totalDebt += rem;
+				} else if (item.type === "LOAN") {
+					activeLoanCount += 1;
+					totalLoan += rem;
+				}
+			}
+
+			const filtered = formattedList.filter((item) => {
+				if (typeFilter !== "ALL" && item.type !== typeFilter) return false;
+				if (statusFilter !== "ALL" && item.status !== statusFilter) return false;
+				if (search) {
+					const nameMatch = String(item.personName || "")
+						.toLowerCase()
+						.includes(search);
+					const descMatch = String(item.description || "")
+						.toLowerCase()
+						.includes(search);
+					if (!nameMatch && !descMatch) return false;
+				}
+				return true;
+			});
+
+			return {
+				statusCode: 200,
+				success: true,
+				data: {
+					debtsLoans: filtered,
+					summary: {
+						totalDebt: Number(totalDebt.toFixed(2)),
+						totalLoan: Number(totalLoan.toFixed(2)),
+						netBalance: Number((totalLoan - totalDebt).toFixed(2)),
+						activeDebtCount,
+						activeLoanCount,
+						settledCount,
+						totalSettledAmount: Number(totalSettledAmount.toFixed(2)),
+					},
+				} as T,
+			};
 		}
+
 		if (method === "POST") {
-			const list = getList(STORAGE_KEYS.DEBTS_LOANS);
+			const rawType = String(body.type || "DEBT").toUpperCase();
+			const type = rawType === "LOAN" ? "LOAN" : "DEBT";
+			const personName = String(body.personName || "Unknown").trim();
+			const amount = Number(body.amount) || 0;
+			const description = typeof body.description === "string" ? body.description.trim() : null;
+			const paymentMethod =
+				typeof body.paymentMethod === "string" ? body.paymentMethod.trim() : "Cash";
+			const txDate = body.date
+				? new Date(String(body.date)).toISOString()
+				: new Date().toISOString();
+			const dueDate = body.dueDate ? new Date(String(body.dueDate)).toISOString() : null;
+
+			const isDebt = type === "DEBT";
+			const txType = isDebt ? "INCOME" : "EXPENSE";
+			const txCategory = isDebt ? "Debt / Borrowed" : "Loan Given";
+			const txDesc = isDebt
+				? `Borrowed from ${personName}${description ? ` - ${description}` : ""}`
+				: `Loan to ${personName}${description ? ` - ${description}` : ""}`;
+
+			const txId = generateId("tx");
+			const finances = getList(STORAGE_KEYS.FINANCES);
+			finances.unshift({
+				id: txId,
+				userId: getActiveUserId(),
+				type: txType,
+				amount,
+				category: txCategory,
+				description: txDesc,
+				paymentMethod,
+				date: txDate,
+				createdAt: new Date().toISOString(),
+				updatedAt: new Date().toISOString(),
+			});
+			saveList(STORAGE_KEYS.FINANCES, finances);
+
 			const newItem = {
 				id: generateId("dl"),
 				userId: getActiveUserId(),
-				type: body.type || "DEBT",
-				personName: body.personName || "Unknown",
-				amount: Number(body.amount) || 0,
+				type,
+				personName,
+				amount,
 				paidAmount: 0,
+				remainingAmount: amount,
 				status: "ACTIVE",
-				date: body.date || new Date().toISOString(),
-				dueDate: body.dueDate || null,
-				description: body.description || null,
+				date: txDate,
+				dueDate,
+				description,
+				initialTransactionId: txId,
 				createdAt: new Date().toISOString(),
 				updatedAt: new Date().toISOString(),
 				repayments: [],
@@ -596,77 +742,283 @@ export async function handleLocalClientDispatch<T = unknown>(
 			list.unshift(newItem);
 			saveList(STORAGE_KEYS.DEBTS_LOANS, list);
 
-			// Add finance transaction automatically
+			return {
+				statusCode: 201,
+				success: true,
+				message: `${isDebt ? "Debt" : "Loan"} recorded successfully`,
+				data: newItem as T,
+			};
+		}
+	}
+
+	const dlRepayMatch = pathname.match(/^\/debts-loans\/([^/]+)\/repay$/);
+	if (dlRepayMatch && method === "POST") {
+		const debtLoanId = dlRepayMatch[1];
+		const list = getList<LocalDebtLoanRecord>(STORAGE_KEYS.DEBTS_LOANS);
+		const idx = list.findIndex((i) => i.id === debtLoanId);
+		if (idx >= 0) {
+			const item = list[idx];
+			const totalAmount = Number(item.amount) || 0;
+			const currentPaid = Number(item.paidAmount) || 0;
+			const remaining = Math.max(0, totalAmount - currentPaid);
+
+			const inputAmount = Number(body.amount) || 0;
+			const repayAmount = Number(Math.min(inputAmount, remaining).toFixed(2));
+			if (repayAmount <= 0) {
+				return {
+					statusCode: 400,
+					success: false,
+					message: "Debt or loan is already completely settled",
+					data: null as unknown as T,
+				};
+			}
+
+			const notes = typeof body.notes === "string" ? body.notes.trim() : null;
+			const paymentMethod =
+				typeof body.paymentMethod === "string" ? body.paymentMethod.trim() : "Cash";
+			const repayDate = body.date
+				? new Date(String(body.date)).toISOString()
+				: new Date().toISOString();
+
+			const isDebt = item.type === "DEBT";
+			const txType = isDebt ? "EXPENSE" : "INCOME";
+			const txCategory = isDebt ? "Debt Repayment" : "Loan Return";
+			const txDesc = isDebt
+				? `Debt repayment to ${item.personName}${notes ? ` - ${notes}` : ""}`
+				: `Loan return from ${item.personName}${notes ? ` - ${notes}` : ""}`;
+
+			const txId = generateId("tx");
 			const finances = getList(STORAGE_KEYS.FINANCES);
-			const isDebt = newItem.type === "DEBT";
 			finances.unshift({
-				id: generateId("tx"),
+				id: txId,
 				userId: getActiveUserId(),
-				type: isDebt ? "INCOME" : "EXPENSE",
-				amount: newItem.amount,
-				category: isDebt ? "Debt (Borrowed)" : "Loan (Lent)",
-				description: `${isDebt ? "Borrowed from" : "Lent to"} ${newItem.personName}`,
-				paymentMethod: "Cash",
-				date: newItem.date,
+				type: txType,
+				amount: repayAmount,
+				category: txCategory,
+				description: txDesc,
+				paymentMethod,
+				date: repayDate,
 				createdAt: new Date().toISOString(),
 				updatedAt: new Date().toISOString(),
 			});
 			saveList(STORAGE_KEYS.FINANCES, finances);
 
-			return { statusCode: 201, success: true, data: newItem as T };
-		}
-	}
-
-	const dlRepaymentMatch = pathname.match(/^\/debts-loans\/([^/]+)\/repayments$/);
-	if (dlRepaymentMatch && method === "POST") {
-		const debtLoanId = dlRepaymentMatch[1];
-		const list = getList(STORAGE_KEYS.DEBTS_LOANS);
-		const idx = list.findIndex((i) => i.id === debtLoanId);
-		if (idx >= 0) {
-			const item = list[idx];
-			const repayAmount = Number(body.amount) || 0;
-			const repayments = getList(STORAGE_KEYS.REPAYMENTS);
+			const repayments = getList<LocalRepaymentRecord>(STORAGE_KEYS.REPAYMENTS);
 			const newRepayment = {
 				id: generateId("rep"),
 				debtLoanId,
 				userId: getActiveUserId(),
 				amount: repayAmount,
-				date: body.date || new Date().toISOString(),
-				paymentMethod: body.paymentMethod || "Cash",
-				notes: body.notes || null,
+				date: repayDate,
+				paymentMethod,
+				notes,
+				transactionId: txId,
 				createdAt: new Date().toISOString(),
 				updatedAt: new Date().toISOString(),
 			};
 			repayments.unshift(newRepayment);
 			saveList(STORAGE_KEYS.REPAYMENTS, repayments);
 
-			const updatedPaid = Number(item.paidAmount || 0) + repayAmount;
+			const newPaidAmount = Number((currentPaid + repayAmount).toFixed(2));
+			const isSettled = newPaidAmount >= totalAmount;
+
 			list[idx] = {
 				...item,
-				paidAmount: updatedPaid,
-				status: updatedPaid >= Number(item.amount) ? "SETTLED" : "ACTIVE",
+				paidAmount: newPaidAmount,
+				remainingAmount: Math.max(0, Number((totalAmount - newPaidAmount).toFixed(2))),
+				status: isSettled ? "SETTLED" : "ACTIVE",
 				updatedAt: new Date().toISOString(),
 			};
 			saveList(STORAGE_KEYS.DEBTS_LOANS, list);
 
-			// Add finance transaction for repayment
-			const finances = getList(STORAGE_KEYS.FINANCES);
-			const isDebt = item.type === "DEBT";
-			finances.unshift({
-				id: generateId("tx"),
-				userId: getActiveUserId(),
-				type: isDebt ? "EXPENSE" : "INCOME",
-				amount: repayAmount,
-				category: isDebt ? "Debt Repayment" : "Loan Received",
-				description: `Repayment for ${item.personName}`,
-				paymentMethod: newRepayment.paymentMethod,
-				date: newRepayment.date,
-				createdAt: new Date().toISOString(),
-				updatedAt: new Date().toISOString(),
-			});
-			saveList(STORAGE_KEYS.FINANCES, finances);
+			const itemRepayments = repayments
+				.filter((r) => r.debtLoanId === debtLoanId)
+				.map((r) => ({
+					...r,
+					amount: Number(r.amount) || 0,
+					date: typeof r.date === "string" ? r.date : new Date().toISOString(),
+				}));
 
-			return { statusCode: 201, success: true, data: newRepayment as T };
+			const serialized = {
+				...list[idx],
+				amount: totalAmount,
+				paidAmount: newPaidAmount,
+				remainingAmount: Math.max(0, Number((totalAmount - newPaidAmount).toFixed(2))),
+				status: isSettled ? "SETTLED" : "ACTIVE",
+				repayments: itemRepayments,
+			};
+
+			return {
+				statusCode: 201,
+				success: true,
+				message: `Repayment of ${repayAmount} recorded successfully`,
+				data: {
+					debtLoan: serialized,
+					repayment: newRepayment,
+				} as T,
+			};
+		}
+	}
+
+	const dlRepaymentDeleteMatch = pathname.match(/^\/debts-loans\/([^/]+)\/repayments\/([^/]+)$/);
+	if (dlRepaymentDeleteMatch && method === "DELETE") {
+		const debtLoanId = dlRepaymentDeleteMatch[1];
+		const repaymentId = dlRepaymentDeleteMatch[2];
+
+		const repayments = getList<LocalRepaymentRecord>(STORAGE_KEYS.REPAYMENTS);
+		const repIdx = repayments.findIndex((r) => r.id === repaymentId && r.debtLoanId === debtLoanId);
+		if (repIdx >= 0) {
+			const rep = repayments.splice(repIdx, 1)[0];
+			saveList(STORAGE_KEYS.REPAYMENTS, repayments);
+
+			if (rep.transactionId) {
+				const finances = getList(STORAGE_KEYS.FINANCES);
+				const txIdx = finances.findIndex((f) => f.id === rep.transactionId);
+				if (txIdx >= 0) {
+					finances.splice(txIdx, 1);
+					saveList(STORAGE_KEYS.FINANCES, finances);
+				}
+			}
+
+			const list = getList<LocalDebtLoanRecord>(STORAGE_KEYS.DEBTS_LOANS);
+			const itemIdx = list.findIndex((i) => i.id === debtLoanId);
+			if (itemIdx >= 0) {
+				const item = list[itemIdx];
+				const total = Number(item.amount) || 0;
+				const currentPaid = Number(item.paidAmount) || 0;
+				const newPaid = Math.max(0, Number((currentPaid - Number(rep.amount)).toFixed(2)));
+				list[itemIdx] = {
+					...item,
+					paidAmount: newPaid,
+					remainingAmount: Math.max(0, Number((total - newPaid).toFixed(2))),
+					status: newPaid >= total ? "SETTLED" : "ACTIVE",
+					updatedAt: new Date().toISOString(),
+				};
+				saveList(STORAGE_KEYS.DEBTS_LOANS, list);
+			}
+
+			return {
+				statusCode: 200,
+				success: true,
+				message: "Repayment reversed",
+				data: null as unknown as T,
+			};
+		}
+	}
+
+	const singleDlMatch = pathname.match(/^\/debts-loans\/([^/]+)$/);
+	if (singleDlMatch && !pathname.endsWith("/repay")) {
+		const debtLoanId = singleDlMatch[1];
+		const list = getList<LocalDebtLoanRecord>(STORAGE_KEYS.DEBTS_LOANS);
+		const idx = list.findIndex((i) => i.id === debtLoanId);
+
+		if (idx >= 0) {
+			const repayments = getList<LocalRepaymentRecord>(STORAGE_KEYS.REPAYMENTS);
+			const existing = list[idx];
+			const totalAmount = Number(existing.amount) || 0;
+			const paidAmount = Number(existing.paidAmount) || 0;
+
+			if (method === "GET") {
+				const itemRepayments = repayments.filter((r) => r.debtLoanId === debtLoanId);
+				const serialized = {
+					...existing,
+					amount: totalAmount,
+					paidAmount,
+					remainingAmount: Math.max(0, Number((totalAmount - paidAmount).toFixed(2))),
+					repayments: itemRepayments,
+				};
+				return { statusCode: 200, success: true, data: serialized as T };
+			}
+
+			if (method === "PATCH") {
+				const updated = {
+					...existing,
+					personName:
+						typeof body.personName === "string" && body.personName.trim()
+							? body.personName.trim()
+							: existing.personName,
+					description:
+						body.description !== undefined
+							? typeof body.description === "string"
+								? body.description.trim()
+								: null
+							: existing.description,
+					dueDate:
+						body.dueDate !== undefined
+							? body.dueDate
+								? String(body.dueDate)
+								: null
+							: existing.dueDate,
+					date: body.date ? String(body.date) : existing.date,
+					status:
+						body.status === "ACTIVE" || body.status === "SETTLED" ? body.status : existing.status,
+					updatedAt: new Date().toISOString(),
+				};
+				list[idx] = updated;
+				saveList(STORAGE_KEYS.DEBTS_LOANS, list);
+
+				if (existing.initialTransactionId && (body.personName || body.description !== undefined)) {
+					const finances = getList(STORAGE_KEYS.FINANCES);
+					const txIdx = finances.findIndex((f) => f.id === existing.initialTransactionId);
+					if (txIdx >= 0) {
+						const isDebt = existing.type === "DEBT";
+						const nextName = updated.personName;
+						const nextDesc = updated.description;
+						finances[txIdx] = {
+							...finances[txIdx],
+							description: isDebt
+								? `Borrowed from ${nextName}${nextDesc ? ` - ${nextDesc}` : ""}`
+								: `Loan to ${nextName}${nextDesc ? ` - ${nextDesc}` : ""}`,
+							updatedAt: new Date().toISOString(),
+						};
+						saveList(STORAGE_KEYS.FINANCES, finances);
+					}
+				}
+
+				const itemRepayments = repayments.filter((r) => r.debtLoanId === debtLoanId);
+				const serialized = {
+					...updated,
+					amount: totalAmount,
+					paidAmount,
+					remainingAmount: Math.max(0, Number((totalAmount - paidAmount).toFixed(2))),
+					repayments: itemRepayments,
+				};
+				return { statusCode: 200, success: true, data: serialized as T };
+			}
+
+			if (method === "DELETE") {
+				list.splice(idx, 1);
+				saveList(STORAGE_KEYS.DEBTS_LOANS, list);
+
+				if (existing.initialTransactionId) {
+					const finances = getList(STORAGE_KEYS.FINANCES);
+					const filteredFinances = finances.filter((f) => f.id !== existing.initialTransactionId);
+					saveList(STORAGE_KEYS.FINANCES, filteredFinances);
+				}
+
+				const repTxIds = new Set(
+					repayments
+						.filter((r) => r.debtLoanId === debtLoanId && typeof r.transactionId === "string")
+						.map((r) => r.transactionId as string),
+				);
+				const remainingReps = repayments.filter((r) => r.debtLoanId !== debtLoanId);
+				saveList(STORAGE_KEYS.REPAYMENTS, remainingReps);
+
+				if (repTxIds.size > 0) {
+					const finances = getList(STORAGE_KEYS.FINANCES);
+					const filteredFinances = finances.filter(
+						(f) => typeof f.id !== "string" || !repTxIds.has(f.id),
+					);
+					saveList(STORAGE_KEYS.FINANCES, filteredFinances);
+				}
+
+				return {
+					statusCode: 200,
+					success: true,
+					message: "Debt or loan and linked transactions deleted",
+					data: null as unknown as T,
+				};
+			}
 		}
 	}
 

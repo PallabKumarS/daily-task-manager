@@ -13,6 +13,10 @@ const config: CapacitorConfig = {
 		SystemBars: {
 			insetsHandling: "disable",
 		},
+		Keyboard: {
+			resize: "body",
+			resizeOnFullScreen: true,
+		},
 		LocalNotifications: {
 			smallIcon: "ic_stat_alarm",
 			iconColor: "#0d9488",

@@ -32,12 +32,26 @@ export function Modal({
 			}
 		};
 
+		const handleFocusIn = (e: FocusEvent) => {
+			const target = e.target as HTMLElement | null;
+			if (
+				target &&
+				(target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT")
+			) {
+				setTimeout(() => {
+					target.scrollIntoView({ block: "nearest", behavior: "smooth" });
+				}, 150);
+			}
+		};
+
 		window.addEventListener("keydown", handleKeyDown);
+		window.addEventListener("focusin", handleFocusIn);
 		const originalOverflow = document.body.style.overflow;
 		document.body.style.overflow = "hidden";
 
 		return () => {
 			window.removeEventListener("keydown", handleKeyDown);
+			window.removeEventListener("focusin", handleFocusIn);
 			document.body.style.overflow = originalOverflow;
 		};
 	}, [isOpen, onClose]);
@@ -53,7 +67,7 @@ export function Modal({
 	};
 
 	return (
-		<div className="fixed inset-0 z-50 flex justify-center p-3 sm:p-6 md:p-8 overflow-y-auto bg-slate-950/85 backdrop-blur-sm">
+		<div className="fixed inset-0 z-50 flex justify-center p-3 pb-12 sm:p-6 md:p-8 overflow-y-auto bg-slate-950/85 backdrop-blur-sm">
 			<div
 				className="fixed inset-0 bg-slate-950/85 transition-opacity animate-in fade-in duration-150"
 				onClick={onClose}
