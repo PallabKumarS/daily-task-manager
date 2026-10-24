@@ -110,7 +110,7 @@ export function DebtLoanCard({
 						</div>
 
 						<div className="min-w-0">
-							<h4 className="text-sm font-bold text-white truncate flex items-center gap-1.5">
+							<h4 className="text-sm font-bold text-foreground truncate flex items-center gap-1.5">
 								<span>{item.personName}</span>
 							</h4>
 							<p className="text-[11px] text-slate-400 truncate">
@@ -222,7 +222,7 @@ export function DebtLoanCard({
 						<button
 							type="button"
 							onClick={() => setExpandedHistory(!expandedHistory)}
-							className="text-[11px] font-semibold text-slate-400 hover:text-white flex items-center justify-between w-full py-1 cursor-pointer"
+							className="text-[11px] font-semibold text-slate-400 hover:text-foreground flex items-center justify-between w-full py-1 cursor-pointer"
 						>
 							<span className="flex items-center gap-1.5">
 								<Receipt className="w-3 h-3 text-emerald-400" />
@@ -243,7 +243,7 @@ export function DebtLoanCard({
 										className="flex items-center justify-between py-1.5 text-[11px] text-slate-300"
 									>
 										<div>
-											<span className="font-semibold text-white">
+											<span className="font-semibold text-foreground">
 												{formatCurrency(rep.amount, currency)}
 											</span>
 											<span className="text-slate-500 ml-1.5">
@@ -277,7 +277,7 @@ export function DebtLoanCard({
 						variant="ghost"
 						size="sm"
 						onClick={() => onEdit(item)}
-						className="h-8 w-8 p-0 text-slate-400 hover:text-white hover:bg-slate-800"
+						className="h-8 w-8 p-0 text-slate-400 hover:text-foreground hover:bg-slate-800"
 						title="Edit"
 					>
 						<Edit2 className="w-3.5 h-3.5" />
@@ -286,7 +286,7 @@ export function DebtLoanCard({
 						variant="ghost"
 						size="sm"
 						onClick={() => onDelete(item.id, item.personName)}
-						className="h-8 w-8 p-0 text-slate-400 hover:text-rose-400 hover:bg-rose-950/20"
+						className="h-8 w-8 p-0 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10"
 						title="Delete record & linked transactions"
 					>
 						<Trash2 className="w-3.5 h-3.5" />

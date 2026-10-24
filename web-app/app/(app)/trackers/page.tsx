@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
+import { useContextDock } from "@/components/layout/context-dock";
 import { useAuth } from "@/components/providers/auth-provider";
 import { TrackerCard } from "@/components/trackers/tracker-card";
 import { TrackerDetailModal } from "@/components/trackers/tracker-detail-modal";
@@ -21,6 +22,7 @@ import { TrackerFormModal } from "@/components/trackers/tracker-form-modal";
 import { TrackerSettlementModal } from "@/components/trackers/tracker-settlement-modal";
 import type { DailyTrackerItem } from "@/components/trackers/tracker-types";
 import { Button } from "@/components/ui/button";
+import { CardDeck } from "@/components/ui/card-deck";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { api } from "@/lib/api-client";
 import { formatCurrency } from "@/lib/currency-symbols";
@@ -36,6 +38,7 @@ const getTodayDateString = (): string => {
 export default function TrackersPage() {
 	const { user } = useAuth();
 	const confirm = useConfirm();
+	const { setCustomSlot } = useContextDock();
 	const [trackers, setTrackers] = React.useState<DailyTrackerItem[]>([]);
 	const [loading, setLoading] = React.useState(true);
 	const [selectedDate, setSelectedDate] = React.useState<string>(getTodayDateString());
@@ -60,7 +63,7 @@ export default function TrackersPage() {
 				setTrackers(res.data);
 			}
 		} catch {
-			// silently handle network error
+			// Silently handle network error
 		} finally {
 			setLoading(false);
 		}
@@ -109,27 +112,27 @@ export default function TrackersPage() {
 		}
 	};
 
-	const handlePrevDay = () => {
+	const handlePrevDay = React.useCallback(() => {
 		const d = new Date(`${selectedDate}T00:00:00`);
 		d.setDate(d.getDate() - 1);
 		const year = d.getFullYear();
 		const month = String(d.getMonth() + 1).padStart(2, "0");
 		const day = String(d.getDate()).padStart(2, "0");
 		setSelectedDate(`${year}-${month}-${day}`);
-	};
+	}, [selectedDate]);
 
-	const handleNextDay = () => {
+	const handleNextDay = React.useCallback(() => {
 		const d = new Date(`${selectedDate}T00:00:00`);
 		d.setDate(d.getDate() + 1);
 		const year = d.getFullYear();
 		const month = String(d.getMonth() + 1).padStart(2, "0");
 		const day = String(d.getDate()).padStart(2, "0");
 		setSelectedDate(`${year}-${month}-${day}`);
-	};
+	}, [selectedDate]);
 
-	const handleSetToday = () => {
+	const handleSetToday = React.useCallback(() => {
 		setSelectedDate(getTodayDateString());
-	};
+	}, []);
 
 	const handleCreateTemplate = async (template: {
 		name: string;
@@ -163,7 +166,55 @@ export default function TrackersPage() {
 		});
 	}, [selectedDate]);
 
-	// Total summary calculations
+	React.useEffect(() => {
+		setCustomSlot(
+			<div className="flex items-center justify-between gap-2 w-full">
+				<div className="flex items-center gap-1">
+					<button
+						type="button"
+						onClick={handlePrevDay}
+						className="flex h-8 w-8 items-center justify-center rounded-xl bg-surface-2 text-muted-foreground hover:text-foreground cursor-pointer"
+						aria-label="Previous day"
+					>
+						<ChevronLeft className="w-4 h-4" />
+					</button>
+					<span className="px-2 text-xs font-bold text-foreground truncate max-w-[130px]">
+						{isToday ? "Today" : formattedDateLabel}
+					</span>
+					<button
+						type="button"
+						onClick={handleNextDay}
+						className="flex h-8 w-8 items-center justify-center rounded-xl bg-surface-2 text-muted-foreground hover:text-foreground cursor-pointer"
+						aria-label="Next day"
+					>
+						<ChevronRight className="w-4 h-4" />
+					</button>
+					{!isToday && (
+						<button
+							type="button"
+							onClick={handleSetToday}
+							className="px-2 py-1 rounded-lg bg-primary-soft text-routine-fg text-xs font-semibold cursor-pointer"
+						>
+							Today
+						</button>
+					)}
+				</div>
+				<button
+					type="button"
+					onClick={() => {
+						setEditingTracker(null);
+						setFormModalOpen(true);
+					}}
+					className="inline-flex items-center gap-1.5 rounded-xl bg-teal-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm cursor-pointer shrink-0"
+				>
+					<Plus className="w-3.5 h-3.5" />
+					<span>Tracker</span>
+				</button>
+			</div>,
+		);
+		return () => setCustomSlot(null);
+	}, [setCustomSlot, handlePrevDay, handleNextDay, handleSetToday, isToday, formattedDateLabel]);
+
 	const totalUnsettledCost = trackers.reduce(
 		(sum, t) => sum + (t.monthStats?.unsettledCost || 0),
 		0,
@@ -178,16 +229,35 @@ export default function TrackersPage() {
 
 	const totalTodayUnits = trackers.reduce((sum, t) => sum + (t.todayValue || 0), 0);
 
+	const renderSingleCard = (tracker: DailyTrackerItem) => (
+		<TrackerCard
+			tracker={tracker}
+			selectedDate={selectedDate}
+			onRefresh={fetchTrackers}
+			onOpenDetails={(t) => {
+				setActiveDetailTracker(t);
+				setDetailModalOpen(true);
+			}}
+			onOpenEdit={(t) => {
+				setEditingTracker(t);
+				setFormModalOpen(true);
+			}}
+			onOpenSettle={(t) => {
+				setActiveSettleTracker(t);
+				setSettlementModalOpen(true);
+			}}
+		/>
+	);
+
 	return (
 		<div className="space-y-6">
-			{/* Top Header */}
 			<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 				<div>
-					<h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2.5">
+					<h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
 						<span>Daily Trackers & Counters</span>
 					</h1>
-					<p className="text-xs text-slate-400 mt-1">
-						Log daily variable meals, metered deliveries, and habits. Automatic monthly billing
+					<p className="text-xs sm:text-sm text-muted-foreground mt-1">
+						Log daily variable meals, metered deliveries, and habits with monthly billing
 						calculation and ledger settlement.
 					</p>
 				</div>
@@ -198,7 +268,7 @@ export default function TrackersPage() {
 							type="button"
 							variant="outline"
 							onClick={handleClearAll}
-							className="gap-1.5 border-rose-900/40 text-rose-400 hover:bg-rose-950/30 hover:text-rose-300 hover:border-rose-800"
+							className="gap-1.5 border-rose-500/30 text-expense-fg hover:bg-expense-soft"
 						>
 							<Trash2 className="w-4 h-4" />
 							<span>Clear All</span>
@@ -218,27 +288,26 @@ export default function TrackersPage() {
 				</div>
 			</div>
 
-			{/* Date Navigation & Period Controls */}
-			<div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-800 bg-slate-900/60 p-3 backdrop-blur-xl">
+			<div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface p-3 shadow-[var(--shadow-card)]">
 				<div className="flex items-center gap-2">
 					<button
 						type="button"
 						onClick={handlePrevDay}
-						className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-950 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+						className="flex h-9 w-9 items-center justify-center rounded-xl bg-surface-2 border border-border text-muted-foreground hover:text-foreground transition cursor-pointer"
 						title="Previous Day"
 					>
 						<ChevronLeft className="w-4 h-4" />
 					</button>
 
-					<div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs font-semibold text-slate-200">
-						<Calendar className="w-3.5 h-3.5 text-teal-400" />
+					<div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-surface-2 border border-border text-xs font-semibold text-foreground">
+						<Calendar className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
 						<span>{formattedDateLabel}</span>
 					</div>
 
 					<button
 						type="button"
 						onClick={handleNextDay}
-						className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-950 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+						className="flex h-9 w-9 items-center justify-center rounded-xl bg-surface-2 border border-border text-muted-foreground hover:text-foreground transition cursor-pointer"
 						title="Next Day"
 					>
 						<ChevronRight className="w-4 h-4" />
@@ -248,93 +317,89 @@ export default function TrackersPage() {
 						<button
 							type="button"
 							onClick={handleSetToday}
-							className="px-3 py-1.5 rounded-xl bg-teal-500/15 hover:bg-teal-500/25 text-teal-300 border border-teal-500/30 text-xs font-semibold transition cursor-pointer"
+							className="px-3 py-1.5 rounded-xl bg-primary-soft hover:opacity-90 text-routine-fg border border-teal-500/30 text-xs font-semibold transition cursor-pointer"
 						>
 							Today
 						</button>
 					)}
 				</div>
 
-				{/* Date picker input */}
 				<div className="flex items-center gap-2">
 					<input
 						type="date"
 						value={selectedDate}
 						onChange={(e) => setSelectedDate(e.target.value)}
-						className="bg-slate-950 border border-slate-800 text-slate-300 px-3 py-1.5 rounded-xl text-xs focus:outline-none focus:border-teal-500"
+						className="bg-surface-2 border border-border text-foreground px-3 py-1.5 rounded-xl text-xs focus:outline-none focus:border-teal-500"
 					/>
 				</div>
 			</div>
 
-			{/* KPI Overview Summary Ribbon */}
 			<div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-				<div className="rounded-2xl border border-slate-800/80 bg-slate-900/60 p-4">
-					<span className="text-[11px] font-medium text-slate-400">Active Trackers</span>
-					<p className="mt-1 text-2xl font-extrabold text-white">{trackers.length}</p>
-				</div>
-
-				<div className="rounded-2xl border border-slate-800/80 bg-slate-900/60 p-4">
-					<span className="text-[11px] font-medium text-slate-400">Logged Today</span>
-					<p className="mt-1 text-2xl font-extrabold text-slate-200">
-						{totalTodayUnits} <span className="text-xs font-normal text-slate-400">units</span>
+				<div className="rounded-2xl border border-border bg-surface p-4 shadow-[var(--shadow-card)]">
+					<span className="text-xs font-semibold text-muted-foreground">Active Trackers</span>
+					<p className="mt-1 text-2xl font-extrabold text-foreground tabular-nums">
+						{trackers.length}
 					</p>
 				</div>
 
-				<div className="rounded-2xl border border-slate-800/80 bg-slate-900/60 p-4">
-					<span className="text-[11px] font-medium text-slate-400">Today&apos;s Spend</span>
-					<p className="mt-1 text-2xl font-extrabold text-slate-200">
+				<div className="rounded-2xl border border-border bg-surface p-4 shadow-[var(--shadow-card)]">
+					<span className="text-xs font-semibold text-muted-foreground">Logged Today</span>
+					<p className="mt-1 text-2xl font-extrabold text-foreground tabular-nums">
+						{totalTodayUnits}{" "}
+						<span className="text-xs font-normal text-muted-foreground">units</span>
+					</p>
+				</div>
+
+				<div className="rounded-2xl border border-border bg-surface p-4 shadow-[var(--shadow-card)]">
+					<span className="text-xs font-semibold text-muted-foreground">Today&apos;s Spend</span>
+					<p className="mt-1 text-2xl font-extrabold text-foreground tabular-nums">
 						{formatCurrency(totalTodayCost, user?.currency || "USD")}
 					</p>
 				</div>
 
-				<div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4">
-					<span className="text-[11px] font-medium text-amber-400">Total Unpaid Due</span>
-					<p className="mt-1 text-2xl font-extrabold text-amber-300">
+				<div className="rounded-2xl border border-amber-500/30 bg-alarm-soft p-4 shadow-[var(--shadow-card)]">
+					<span className="text-xs font-semibold text-alarm-fg">Total Unpaid Due</span>
+					<p className="mt-1 text-2xl font-extrabold text-alarm-fg tabular-nums">
 						{formatCurrency(totalUnsettledCost, user?.currency || "USD")}
 					</p>
 				</div>
 			</div>
 
-			{/* Trackers List */}
 			{loading ? (
-				<div className="py-20 text-center text-xs text-slate-400">Loading daily trackers...</div>
-			) : trackers.length > 0 ? (
-				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-					{trackers.map((tracker) => (
-						<TrackerCard
-							key={tracker.id}
-							tracker={tracker}
-							selectedDate={selectedDate}
-							onRefresh={fetchTrackers}
-							onOpenDetails={(t) => {
-								setActiveDetailTracker(t);
-								setDetailModalOpen(true);
-							}}
-							onOpenEdit={(t) => {
-								setEditingTracker(t);
-								setFormModalOpen(true);
-							}}
-							onOpenSettle={(t) => {
-								setActiveSettleTracker(t);
-								setSettlementModalOpen(true);
-							}}
-						/>
-					))}
+				<div className="py-20 text-center text-xs text-muted-foreground">
+					Loading daily trackers...
 				</div>
+			) : trackers.length > 0 ? (
+				<CardDeck
+					items={trackers}
+					keyExtractor={(t) => t.id}
+					storageKey="trackers"
+					defaultMode="deck"
+					desktopColumns={2}
+					title="Active Trackers"
+					subtitle="Browse cards with Previous / Next buttons or switch to All"
+					renderCard={(tracker) => renderSingleCard(tracker)}
+					renderGrid={(allTrackers) => (
+						<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+							{allTrackers.map((tracker) => (
+								<div key={tracker.id}>{renderSingleCard(tracker)}</div>
+							))}
+						</div>
+					)}
+				/>
 			) : (
-				/* Empty State with Quick Starter Templates */
-				<div className="rounded-3xl border border-dashed border-slate-800 bg-slate-900/40 p-8 sm:p-12 text-center">
-					<div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-teal-500/10 text-teal-400">
+				<div className="rounded-3xl border border-dashed border-border-strong bg-surface/60 p-8 sm:p-12 text-center">
+					<div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-soft text-routine-fg">
 						<Calculator className="w-7 h-7" />
 					</div>
-					<h2 className="mt-4 text-lg font-bold text-white">No Trackers Set Up Yet</h2>
-					<p className="mt-1.5 text-xs text-slate-400 max-w-md mx-auto">
+					<h2 className="mt-4 text-lg font-bold text-foreground">No Trackers Set Up Yet</h2>
+					<p className="mt-1.5 text-xs sm:text-sm text-muted-foreground max-w-md mx-auto">
 						Track daily variable meals, milk delivery, water supplies, or daily habits with 1-click
 						counters and monthly billing calculation.
 					</p>
 
 					<div className="mt-8 max-w-xl mx-auto">
-						<p className="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-3">
+						<p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
 							Quick Start with a Template:
 						</p>
 						<div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
@@ -350,14 +415,14 @@ export default function TrackersPage() {
 										color: "teal",
 									})
 								}
-								className="flex items-center gap-3 p-3.5 rounded-xl border border-slate-800 bg-slate-900/90 hover:border-teal-500/40 hover:bg-slate-800/80 transition cursor-pointer"
+								className="flex items-center gap-3 p-3.5 rounded-xl border border-border bg-surface hover:border-teal-500/40 hover:bg-surface-2 transition cursor-pointer"
 							>
-								<div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-500/10 text-teal-400">
+								<div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-routine-soft text-routine-fg">
 									<Utensils className="w-5 h-5" />
 								</div>
 								<div>
-									<p className="text-xs font-bold text-white">Daily Meals (Tiffin)</p>
-									<p className="text-[11px] text-slate-400">2 meals/day · $4.00 each</p>
+									<p className="text-xs font-bold text-foreground">Daily Meals (Tiffin)</p>
+									<p className="text-xs text-muted-foreground">2 meals/day · $4.00 each</p>
 								</div>
 							</button>
 
@@ -373,14 +438,14 @@ export default function TrackersPage() {
 										color: "cyan",
 									})
 								}
-								className="flex items-center gap-3 p-3.5 rounded-xl border border-slate-800 bg-slate-900/90 hover:border-cyan-500/40 hover:bg-slate-800/80 transition cursor-pointer"
+								className="flex items-center gap-3 p-3.5 rounded-xl border border-border bg-surface hover:border-cyan-500/40 hover:bg-surface-2 transition cursor-pointer"
 							>
-								<div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-400">
+								<div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400">
 									<Milk className="w-5 h-5" />
 								</div>
 								<div>
-									<p className="text-xs font-bold text-white">Milk Delivery</p>
-									<p className="text-[11px] text-slate-400">1 liter/day · $2.00 each</p>
+									<p className="text-xs font-bold text-foreground">Milk Delivery</p>
+									<p className="text-xs text-muted-foreground">1 liter/day · $2.00 each</p>
 								</div>
 							</button>
 
@@ -396,14 +461,14 @@ export default function TrackersPage() {
 										color: "blue",
 									})
 								}
-								className="flex items-center gap-3 p-3.5 rounded-xl border border-slate-800 bg-slate-900/90 hover:border-blue-500/40 hover:bg-slate-800/80 transition cursor-pointer"
+								className="flex items-center gap-3 p-3.5 rounded-xl border border-border bg-surface hover:border-blue-500/40 hover:bg-surface-2 transition cursor-pointer"
 							>
-								<div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-400">
+								<div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400">
 									<Droplet className="w-5 h-5" />
 								</div>
 								<div>
-									<p className="text-xs font-bold text-white">Water Glasses</p>
-									<p className="text-[11px] text-slate-400">8 glasses/day · Habit</p>
+									<p className="text-xs font-bold text-foreground">Water Glasses</p>
+									<p className="text-xs text-muted-foreground">8 glasses/day · Habit</p>
 								</div>
 							</button>
 
@@ -419,14 +484,14 @@ export default function TrackersPage() {
 										color: "violet",
 									})
 								}
-								className="flex items-center gap-3 p-3.5 rounded-xl border border-slate-800 bg-slate-900/90 hover:border-violet-500/40 hover:bg-slate-800/80 transition cursor-pointer"
+								className="flex items-center gap-3 p-3.5 rounded-xl border border-border bg-surface hover:border-violet-500/40 hover:bg-surface-2 transition cursor-pointer"
 							>
-								<div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 text-violet-400">
+								<div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-tracker-soft text-tracker-fg">
 									<BookOpen className="w-5 h-5" />
 								</div>
 								<div>
-									<p className="text-xs font-bold text-white">Study Sessions</p>
-									<p className="text-[11px] text-slate-400">4 sessions/day · Habit</p>
+									<p className="text-xs font-bold text-foreground">Study Sessions</p>
+									<p className="text-xs text-muted-foreground">4 sessions/day · Habit</p>
 								</div>
 							</button>
 						</div>
@@ -434,7 +499,6 @@ export default function TrackersPage() {
 				</div>
 			)}
 
-			{/* Tracker Form Modal */}
 			<TrackerFormModal
 				isOpen={formModalOpen}
 				onClose={() => setFormModalOpen(false)}
@@ -442,7 +506,6 @@ export default function TrackersPage() {
 				initialData={editingTracker}
 			/>
 
-			{/* Tracker Detail Month Modal */}
 			<TrackerDetailModal
 				isOpen={detailModalOpen}
 				onClose={() => setDetailModalOpen(false)}
@@ -455,7 +518,6 @@ export default function TrackersPage() {
 				onRefreshParent={fetchTrackers}
 			/>
 
-			{/* Tracker Settlement Modal */}
 			<TrackerSettlementModal
 				isOpen={settlementModalOpen}
 				onClose={() => setSettlementModalOpen(false)}

@@ -519,7 +519,7 @@ export function CustomSelect({
 											className={`group flex items-center justify-between rounded-xl px-2.5 py-1.5 text-xs font-medium transition ${
 												isSelected
 													? "bg-emerald-500/15 text-emerald-400 font-semibold"
-													: "text-slate-300 hover:bg-slate-800/80 hover:text-white"
+													: "text-slate-300 hover:bg-slate-800/80 hover:text-foreground"
 											}`}
 										>
 											<button

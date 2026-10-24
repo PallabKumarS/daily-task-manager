@@ -22,7 +22,7 @@ export function HeroSection() {
 				</div>
 
 				{/* Heading */}
-				<h1 className="text-4xl sm:text-6xl md:text-7xl font-black tracking-tight text-white max-w-4xl mx-auto leading-[1.1]">
+				<h1 className="text-4xl sm:text-6xl md:text-7xl font-black tracking-tight text-foreground max-w-4xl mx-auto leading-[1.1]">
 					Command Your Day.{" "}
 					<span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent">
 						Master Your Wealth.
@@ -111,7 +111,7 @@ export function HeroSection() {
 						{/* Habit loop preview */}
 						<div className="rounded-2xl border border-slate-800/80 bg-slate-900/60 p-4">
 							<div className="flex items-center justify-between text-xs text-slate-400 mb-2">
-								<span className="font-semibold text-white">Daily Habit Loop</span>
+								<span className="font-semibold text-foreground">Daily Habit Loop</span>
 								<span className="text-emerald-400 font-bold">80% Done</span>
 							</div>
 							<div className="space-y-2">
@@ -127,7 +127,7 @@ export function HeroSection() {
 									</div>
 									<span className="line-through text-slate-500">Deep Work Sprint (90m)</span>
 								</div>
-								<div className="flex items-center gap-2.5 p-2 rounded-xl bg-emerald-950/30 border border-emerald-500/30 text-xs text-slate-200">
+								<div className="flex items-center gap-2.5 p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-slate-200">
 									<div className="h-4 w-4 rounded-md border border-slate-600" />
 									<span>Evening Review & Budget</span>
 								</div>
@@ -137,7 +137,7 @@ export function HeroSection() {
 						{/* Upcoming Task preview */}
 						<div className="rounded-2xl border border-slate-800/80 bg-slate-900/60 p-4">
 							<div className="flex items-center justify-between text-xs text-slate-400 mb-2">
-								<span className="font-semibold text-white">Upcoming Alerts</span>
+								<span className="font-semibold text-foreground">Upcoming Alerts</span>
 								<span className="text-amber-400 font-bold">15m lead time</span>
 							</div>
 							<div className="space-y-2">
@@ -165,7 +165,7 @@ export function HeroSection() {
 						{/* Cumulative Cashflow preview */}
 						<div className="rounded-2xl border border-slate-800/80 bg-slate-900/60 p-4">
 							<div className="flex items-center justify-between text-xs text-slate-400 mb-2">
-								<span className="font-semibold text-white">Cumulative Flow</span>
+								<span className="font-semibold text-foreground">Cumulative Flow</span>
 								<span className="text-emerald-400 font-bold">+52% Savings</span>
 							</div>
 							<div className="mt-2 text-xl font-black text-emerald-400">+$4,820.00</div>

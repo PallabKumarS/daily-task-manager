@@ -121,7 +121,7 @@ export function ServerConfigModal({ isOpen, onClose, onSaved }: ServerConfigModa
 							variant="outline"
 							size="sm"
 							onClick={() => handleQuickPreset("http://192.168.1.100:49275")}
-							className="text-[11px] h-8 justify-start gap-1.5 border-slate-800 bg-slate-900/40 text-slate-300 hover:text-white"
+							className="text-[11px] h-8 justify-start gap-1.5 border-slate-800 bg-slate-900/40 text-slate-300 hover:text-foreground"
 						>
 							<Laptop className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
 							<span className="truncate">Desktop LAN (:49275)</span>
@@ -131,7 +131,7 @@ export function ServerConfigModal({ isOpen, onClose, onSaved }: ServerConfigModa
 							variant="outline"
 							size="sm"
 							onClick={() => handleQuickPreset("http://localhost:5000")}
-							className="text-[11px] h-8 justify-start gap-1.5 border-slate-800 bg-slate-900/40 text-slate-300 hover:text-white"
+							className="text-[11px] h-8 justify-start gap-1.5 border-slate-800 bg-slate-900/40 text-slate-300 hover:text-foreground"
 						>
 							<Wifi className="w-3.5 h-3.5 text-teal-400 shrink-0" />
 							<span className="truncate">Dev Server (:5000)</span>
@@ -143,8 +143,8 @@ export function ServerConfigModal({ isOpen, onClose, onSaved }: ServerConfigModa
 					<div
 						className={`rounded-xl border p-3 flex items-start gap-2.5 text-xs ${
 							testResult.ok
-								? "border-emerald-900/50 bg-emerald-950/20 text-emerald-300"
-								: "border-red-900/50 bg-red-950/20 text-red-300"
+								? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+								: "border-red-500/30 bg-red-500/10 text-red-300"
 						}`}
 					>
 						{testResult.ok ? (

@@ -39,7 +39,7 @@ export function CategoryBreakdown({
 						className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
 							activeTab === "EXPENSE"
 								? "bg-red-500/20 text-red-400"
-								: "text-slate-400 hover:text-white"
+								: "text-slate-400 hover:text-foreground"
 						}`}
 					>
 						Expenses
@@ -50,7 +50,7 @@ export function CategoryBreakdown({
 						className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
 							activeTab === "INCOME"
 								? "bg-emerald-500/20 text-emerald-400"
-								: "text-slate-400 hover:text-white"
+								: "text-slate-400 hover:text-foreground"
 						}`}
 					>
 						Earnings

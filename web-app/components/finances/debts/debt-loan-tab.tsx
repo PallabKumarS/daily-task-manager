@@ -13,6 +13,7 @@ import {
 import * as React from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { CardDeck } from "@/components/ui/card-deck";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { api } from "@/lib/api-client";
@@ -47,7 +48,6 @@ export function DebtLoanTab({ currency, onLedgerChanged }: DebtLoanTabProps) {
 	);
 	const [searchQuery, setSearchQuery] = React.useState("");
 
-	// Modals
 	const [createModalOpen, setCreateModalOpen] = React.useState(false);
 	const [editingItem, setEditingItem] = React.useState<DebtLoanItem | null>(null);
 	const [repayingItem, setRepayingItem] = React.useState<DebtLoanItem | null>(null);
@@ -75,7 +75,7 @@ export function DebtLoanTab({ currency, onLedgerChanged }: DebtLoanTabProps) {
 				);
 			}
 		} catch {
-			// ignore network err
+			// Ignore network error
 		} finally {
 			setLoading(false);
 		}
@@ -147,7 +147,6 @@ export function DebtLoanTab({ currency, onLedgerChanged }: DebtLoanTabProps) {
 		setRepayingItem(item);
 	};
 
-	// Filter and search
 	const filteredItems = React.useMemo(() => {
 		return items.filter((item) => {
 			if (activeFilter === "DEBTS" && (item.type !== "DEBT" || item.status === "SETTLED")) {
@@ -171,102 +170,104 @@ export function DebtLoanTab({ currency, onLedgerChanged }: DebtLoanTabProps) {
 		});
 	}, [items, activeFilter, searchQuery]);
 
+	const renderSingleCard = (item: DebtLoanItem) => (
+		<DebtLoanCard
+			item={item}
+			currency={currency}
+			onEdit={handleEdit}
+			onDelete={handleDelete}
+			onRepay={handleRepay}
+			onDeleteRepayment={handleDeleteRepayment}
+		/>
+	);
+
 	return (
 		<div className="space-y-6">
-			{/* KPI Summary Cards */}
 			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-				{/* Total You Owe */}
-				<div className="p-4 rounded-2xl border border-amber-500/20 bg-gradient-to-br from-slate-900/80 to-amber-950/20 shadow-sm flex flex-col justify-between">
-					<div className="flex items-center justify-between text-slate-400">
-						<span className="text-xs font-semibold uppercase tracking-wider">I Owe (Debts)</span>
-						<div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+				<div className="p-4 rounded-2xl border border-amber-500/30 bg-alarm-soft shadow-[var(--shadow-card)] flex flex-col justify-between">
+					<div className="flex items-center justify-between text-alarm-fg">
+						<span className="text-xs font-bold uppercase tracking-wider">I Owe (Debts)</span>
+						<div className="w-8 h-8 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-alarm-fg">
 							<WalletCards className="w-4 h-4" />
 						</div>
 					</div>
 					<div className="mt-3">
-						<div className="text-2xl font-black text-amber-300">
+						<div className="text-2xl font-black text-alarm-fg tabular-nums">
 							{formatCurrency(summary.totalDebt, currency)}
 						</div>
-						<div className="text-[11px] text-slate-400 mt-1">
+						<div className="text-xs text-muted-foreground mt-1">
 							{summary.activeDebtCount} active borrowed{" "}
 							{summary.activeDebtCount === 1 ? "entry" : "entries"}
 						</div>
 					</div>
 				</div>
 
-				{/* Total Owed To You */}
-				<div className="p-4 rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-slate-900/80 to-emerald-950/20 shadow-sm flex flex-col justify-between">
-					<div className="flex items-center justify-between text-slate-400">
-						<span className="text-xs font-semibold uppercase tracking-wider">
-							Owed to Me (Loans)
-						</span>
-						<div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+				<div className="p-4 rounded-2xl border border-emerald-500/30 bg-income-soft shadow-[var(--shadow-card)] flex flex-col justify-between">
+					<div className="flex items-center justify-between text-income-fg">
+						<span className="text-xs font-bold uppercase tracking-wider">Owed to Me (Loans)</span>
+						<div className="w-8 h-8 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-income-fg">
 							<HandCoins className="w-4 h-4" />
 						</div>
 					</div>
 					<div className="mt-3">
-						<div className="text-2xl font-black text-emerald-300">
+						<div className="text-2xl font-black text-income-fg tabular-nums">
 							{formatCurrency(summary.totalLoan, currency)}
 						</div>
-						<div className="text-[11px] text-slate-400 mt-1">
+						<div className="text-xs text-muted-foreground mt-1">
 							{summary.activeLoanCount} active lent{" "}
 							{summary.activeLoanCount === 1 ? "entry" : "entries"}
 						</div>
 					</div>
 				</div>
 
-				{/* Net Balance */}
-				<div className="p-4 rounded-2xl border border-slate-800 bg-slate-900/80 shadow-sm flex flex-col justify-between">
-					<div className="flex items-center justify-between text-slate-400">
-						<span className="text-xs font-semibold uppercase tracking-wider">Net Position</span>
-						<div className="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300">
+				<div className="p-4 rounded-2xl border border-border bg-surface shadow-[var(--shadow-card)] flex flex-col justify-between">
+					<div className="flex items-center justify-between text-muted-foreground">
+						<span className="text-xs font-bold uppercase tracking-wider">Net Position</span>
+						<div className="w-8 h-8 rounded-lg bg-surface-2 border border-border flex items-center justify-center text-foreground">
 							<Scale className="w-4 h-4" />
 						</div>
 					</div>
 					<div className="mt-3">
 						<div
-							className={`text-2xl font-black ${
-								summary.netBalance >= 0 ? "text-emerald-300" : "text-amber-300"
+							className={`text-2xl font-black tabular-nums ${
+								summary.netBalance >= 0 ? "text-income-fg" : "text-alarm-fg"
 							}`}
 						>
 							{formatCurrency(summary.netBalance, currency)}
 						</div>
-						<div className="text-[11px] text-slate-400 mt-1">
+						<div className="text-xs text-muted-foreground mt-1">
 							{summary.netBalance >= 0 ? "Net receivable position" : "Net payable obligation"}
 						</div>
 					</div>
 				</div>
 
-				{/* Settled Archive */}
-				<div className="p-4 rounded-2xl border border-slate-800 bg-slate-900/60 shadow-sm flex flex-col justify-between">
-					<div className="flex items-center justify-between text-slate-400">
-						<span className="text-xs font-semibold uppercase tracking-wider">Settled in Full</span>
-						<div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+				<div className="p-4 rounded-2xl border border-border bg-surface shadow-[var(--shadow-card)] flex flex-col justify-between">
+					<div className="flex items-center justify-between text-muted-foreground">
+						<span className="text-xs font-bold uppercase tracking-wider">Settled in Full</span>
+						<div className="w-8 h-8 rounded-lg bg-income-soft border border-emerald-500/20 flex items-center justify-center text-income-fg">
 							<CheckCheck className="w-4 h-4" />
 						</div>
 					</div>
 					<div className="mt-3">
-						<div className="text-2xl font-black text-slate-200">
+						<div className="text-2xl font-black text-foreground tabular-nums">
 							{formatCurrency(summary.totalSettledAmount, currency)}
 						</div>
-						<div className="text-[11px] text-slate-400 mt-1">
+						<div className="text-xs text-muted-foreground mt-1">
 							{summary.settledCount} completely settled records
 						</div>
 					</div>
 				</div>
 			</div>
 
-			{/* Filter Controls & Search */}
-			<div className="flex flex-col md:flex-row md:items-center justify-between gap-3 p-3.5 rounded-2xl border border-slate-800 bg-slate-900/60 backdrop-blur-xl">
-				{/* Sub-Tabs */}
-				<div className="flex items-center rounded-xl bg-slate-950 p-1 border border-slate-800 overflow-x-auto">
+			<div className="flex flex-col md:flex-row md:items-center justify-between gap-3 p-3.5 rounded-2xl border border-border bg-surface shadow-[var(--shadow-card)]">
+				<div className="flex items-center rounded-xl bg-surface-2 p-1 border border-border overflow-x-auto">
 					<button
 						type="button"
 						onClick={() => setActiveFilter("ALL")}
 						className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer whitespace-nowrap ${
 							activeFilter === "ALL"
-								? "bg-slate-800 text-white shadow-sm"
-								: "text-slate-400 hover:text-white"
+								? "bg-surface text-foreground shadow-xs border border-border"
+								: "text-muted-foreground hover:text-foreground"
 						}`}
 					>
 						All ({items.length})
@@ -277,8 +278,8 @@ export function DebtLoanTab({ currency, onLedgerChanged }: DebtLoanTabProps) {
 						onClick={() => setActiveFilter("DEBTS")}
 						className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer whitespace-nowrap ${
 							activeFilter === "DEBTS"
-								? "bg-amber-500/20 text-amber-300 border border-amber-500/30 shadow-sm"
-								: "text-slate-400 hover:text-white"
+								? "bg-alarm-soft text-alarm-fg border border-amber-500/30 shadow-xs"
+								: "text-muted-foreground hover:text-foreground"
 						}`}
 					>
 						I Owe ({summary.activeDebtCount})
@@ -289,8 +290,8 @@ export function DebtLoanTab({ currency, onLedgerChanged }: DebtLoanTabProps) {
 						onClick={() => setActiveFilter("LOANS")}
 						className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer whitespace-nowrap ${
 							activeFilter === "LOANS"
-								? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shadow-sm"
-								: "text-slate-400 hover:text-white"
+								? "bg-income-soft text-income-fg border border-emerald-500/30 shadow-xs"
+								: "text-muted-foreground hover:text-foreground"
 						}`}
 					>
 						Owed to Me ({summary.activeLoanCount})
@@ -301,23 +302,22 @@ export function DebtLoanTab({ currency, onLedgerChanged }: DebtLoanTabProps) {
 						onClick={() => setActiveFilter("SETTLED")}
 						className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer whitespace-nowrap ${
 							activeFilter === "SETTLED"
-								? "bg-slate-800 text-slate-200 border border-slate-700 shadow-sm"
-								: "text-slate-400 hover:text-white"
+								? "bg-surface text-foreground border border-border shadow-xs"
+								: "text-muted-foreground hover:text-foreground"
 						}`}
 					>
 						Settled ({summary.settledCount})
 					</button>
 				</div>
 
-				{/* Search & Actions */}
 				<div className="flex items-center gap-2">
 					<div className="relative min-w-[180px] sm:min-w-[220px]">
-						<Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+						<Search className="w-3.5 h-3.5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
 						<Input
 							placeholder="Search person or notes..."
 							value={searchQuery}
 							onChange={(e) => setSearchQuery(e.target.value)}
-							className="pl-8 bg-slate-950 border-slate-800 text-white placeholder:text-slate-500 text-xs h-9"
+							className="pl-8 text-xs h-9"
 						/>
 					</div>
 
@@ -333,17 +333,18 @@ export function DebtLoanTab({ currency, onLedgerChanged }: DebtLoanTabProps) {
 				</div>
 			</div>
 
-			{/* Cards Grid */}
 			{loading && items.length === 0 ? (
-				<div className="py-20 text-center text-slate-400 text-xs">Loading debts and loans...</div>
+				<div className="py-20 text-center text-muted-foreground text-xs">
+					Loading debts and loans...
+				</div>
 			) : filteredItems.length === 0 ? (
-				<div className="py-16 text-center rounded-2xl border border-dashed border-slate-800 bg-slate-900/30 p-6 space-y-3">
-					<div className="w-12 h-12 rounded-2xl bg-slate-800/80 border border-slate-700/60 mx-auto flex items-center justify-center text-slate-400">
+				<div className="py-16 text-center rounded-2xl border border-dashed border-border-strong bg-surface/60 p-6 space-y-3">
+					<div className="w-12 h-12 rounded-2xl bg-surface-2 border border-border mx-auto flex items-center justify-center text-muted-foreground">
 						<WalletCards className="w-6 h-6" />
 					</div>
 					<div>
-						<h4 className="text-sm font-bold text-white">No entries found</h4>
-						<p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
+						<h4 className="text-sm font-bold text-foreground">No entries found</h4>
+						<p className="text-xs text-muted-foreground mt-1 max-w-md mx-auto">
 							{searchQuery
 								? "No records match your search criteria. Try a different person name or clear the search filter."
 								: "Track cash borrowed from others or loans given to colleagues and friends with automated ledger sync."}
@@ -355,9 +356,9 @@ export function DebtLoanTab({ currency, onLedgerChanged }: DebtLoanTabProps) {
 							variant="outline"
 							size="sm"
 							onClick={() => handleOpenAdd("DEBT")}
-							className="gap-1.5 border-amber-500/30 text-amber-300 hover:bg-amber-500/10"
+							className="gap-1.5 border-amber-500/30 text-alarm-fg hover:bg-alarm-soft"
 						>
-							<ArrowDownRight className="w-3.5 h-3.5 text-amber-400" />
+							<ArrowDownRight className="w-3.5 h-3.5 text-amber-500" />
 							<span>I Borrowed Money</span>
 						</Button>
 
@@ -373,22 +374,25 @@ export function DebtLoanTab({ currency, onLedgerChanged }: DebtLoanTabProps) {
 					</div>
 				</div>
 			) : (
-				<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-					{filteredItems.map((item) => (
-						<DebtLoanCard
-							key={item.id}
-							item={item}
-							currency={currency}
-							onEdit={handleEdit}
-							onDelete={handleDelete}
-							onRepay={handleRepay}
-							onDeleteRepayment={handleDeleteRepayment}
-						/>
-					))}
-				</div>
+				<CardDeck
+					items={filteredItems}
+					keyExtractor={(item) => item.id}
+					storageKey="debts_loans"
+					defaultMode="deck"
+					desktopColumns={2}
+					title="Debts & Loans Cards"
+					subtitle="Browse records with Previous / Next buttons or switch to All"
+					renderCard={(item) => renderSingleCard(item)}
+					renderGrid={(allItems) => (
+						<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+							{allItems.map((item) => (
+								<div key={item.id}>{renderSingleCard(item)}</div>
+							))}
+						</div>
+					)}
+				/>
 			)}
 
-			{/* Modals */}
 			<DebtLoanModal
 				isOpen={createModalOpen}
 				onClose={() => setCreateModalOpen(false)}

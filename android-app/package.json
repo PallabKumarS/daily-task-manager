@@ -1,6 +1,6 @@
 {
 	"name": "android-app",
-	"version": "1.0.21",
+	"version": "1.0.22",
 	"author": "Pallab Kumar Sarker",
 	"description": "DayPulse Capacitor Android Client",
 	"type": "module",

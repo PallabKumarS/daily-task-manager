@@ -126,13 +126,13 @@ export function TrackerSettlementModal({
 				<div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4">
 					<div className="flex items-center justify-between">
 						<span className="text-xs font-medium text-emerald-300">Unsettled Units:</span>
-						<span className="text-sm font-bold text-white">
+						<span className="text-sm font-bold text-foreground">
 							{tracker.monthStats.unsettledUnits} {tracker.unitName}
 						</span>
 					</div>
 					<div className="mt-1 flex items-center justify-between">
 						<span className="text-xs font-medium text-emerald-300">Rate:</span>
-						<span className="text-sm font-bold text-white">
+						<span className="text-sm font-bold text-foreground">
 							{formatCurrency(tracker.unitPrice || 0, tracker.currency)} / {tracker.unitName}
 						</span>
 					</div>

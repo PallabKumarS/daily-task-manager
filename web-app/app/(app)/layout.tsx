@@ -1,11 +1,13 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { usePathname, useRouter } from "next/navigation";
 import * as React from "react";
 import { TransactionFormModal } from "@/components/finances/transaction-form-modal";
 import { AppNavbar } from "@/components/layout/app-navbar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { BottomDock } from "@/components/layout/bottom-dock";
+import { ContextDockProvider, MobileContextDock } from "@/components/layout/context-dock";
 import { useAuth } from "@/components/providers/auth-provider";
 import { RoutineFormModal } from "@/components/routines/routine-form-modal";
 import { TaskFormModal } from "@/components/tasks/task-form-modal";
@@ -14,6 +16,7 @@ import { TrackerFormModal } from "@/components/trackers/tracker-form-modal";
 export default function AppLayout({ children }: { children: React.ReactNode }) {
 	const { user, loading } = useAuth();
 	const router = useRouter();
+	const pathname = usePathname();
 
 	const [routineModalOpen, setRoutineModalOpen] = React.useState(false);
 	const [taskModalOpen, setTaskModalOpen] = React.useState(false);
@@ -42,66 +45,66 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 	};
 
 	const handleRefresh = () => {
-		// Dispatches refresh event so active views can update
 		window.dispatchEvent(new CustomEvent("daypulse:refresh"));
 	};
 
-	if (loading) {
+	if (loading || !user) {
 		return (
-			<div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-400">
+			<div className="min-h-screen flex items-center justify-center bg-background text-muted-foreground">
 				<div className="flex flex-col items-center gap-3">
-					<div className="h-8 w-8 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
-					<p className="text-xs">Connecting to DayPulse...</p>
-				</div>
-			</div>
-		);
-	}
-
-	if (!user) {
-		return (
-			<div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-400">
-				<div className="flex flex-col items-center gap-3">
-					<div className="h-8 w-8 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
-					<p className="text-xs">Authenticating workspace...</p>
+					<div className="h-8 w-8 animate-spin rounded-full border-2 border-teal-500 border-t-transparent" />
+					<p className="text-xs font-medium">
+						{loading ? "Connecting to DayPulse..." : "Authenticating workspace..."}
+					</p>
 				</div>
 			</div>
 		);
 	}
 
 	return (
-		<div className="min-h-[calc(100vh-var(--titlebar-height,0px))] flex flex-row bg-background text-foreground">
-			<AppSidebar />
+		<ContextDockProvider>
+			<div className="min-h-[calc(100vh-var(--titlebar-height,0px))] flex flex-row bg-background text-foreground">
+				<AppSidebar />
 
-			<div className="flex-1 flex flex-col min-w-0">
-				<AppNavbar onQuickAdd={handleQuickAdd} />
+				<div className="flex-1 flex flex-col min-w-0">
+					<AppNavbar onQuickAdd={handleQuickAdd} />
 
-				<main className="flex-1 p-4 sm:p-6 lg:p-8 w-full pb-24 md:pb-12">{children}</main>
+					<motion.main
+						key={pathname}
+						initial={{ opacity: 0, y: 8 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{ duration: 0.22, ease: [0.2, 0, 0, 1] }}
+						className="flex-1 p-4 sm:p-6 lg:p-8 w-full max-w-7xl mx-auto pb-36 md:pb-12"
+					>
+						{children}
+					</motion.main>
 
-				<BottomDock />
+					<MobileContextDock onQuickAdd={handleQuickAdd} onRefresh={handleRefresh} />
+					<BottomDock />
+				</div>
+
+				<RoutineFormModal
+					isOpen={routineModalOpen}
+					onClose={() => setRoutineModalOpen(false)}
+					onSuccess={handleRefresh}
+				/>
+				<TaskFormModal
+					isOpen={taskModalOpen}
+					onClose={() => setTaskModalOpen(false)}
+					onSuccess={handleRefresh}
+					defaultType={taskModalType}
+				/>
+				<TransactionFormModal
+					isOpen={transactionModalOpen}
+					onClose={() => setTransactionModalOpen(false)}
+					onSuccess={handleRefresh}
+				/>
+				<TrackerFormModal
+					isOpen={trackerModalOpen}
+					onClose={() => setTrackerModalOpen(false)}
+					onSuccess={handleRefresh}
+				/>
 			</div>
-
-			{/* Global Quick Add Modals */}
-			<RoutineFormModal
-				isOpen={routineModalOpen}
-				onClose={() => setRoutineModalOpen(false)}
-				onSuccess={handleRefresh}
-			/>
-			<TaskFormModal
-				isOpen={taskModalOpen}
-				onClose={() => setTaskModalOpen(false)}
-				onSuccess={handleRefresh}
-				defaultType={taskModalType}
-			/>
-			<TransactionFormModal
-				isOpen={transactionModalOpen}
-				onClose={() => setTransactionModalOpen(false)}
-				onSuccess={handleRefresh}
-			/>
-			<TrackerFormModal
-				isOpen={trackerModalOpen}
-				onClose={() => setTrackerModalOpen(false)}
-				onSuccess={handleRefresh}
-			/>
-		</div>
+		</ContextDockProvider>
 	);
 }

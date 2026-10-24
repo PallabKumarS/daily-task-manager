@@ -331,7 +331,7 @@ export function GoogleRestoreModal({
 							<div className="h-12 w-12 sm:h-14 sm:w-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-2.5 sm:mb-3 shadow-lg shadow-emerald-500/5">
 								<Cloud className="w-6 h-6 sm:w-7 sm:h-7" />
 							</div>
-							<h3 className="text-sm font-semibold text-white">Cloud Account Recovery</h3>
+							<h3 className="text-sm font-semibold text-foreground">Cloud Account Recovery</h3>
 							<p className="text-xs text-slate-400 mt-1 max-w-sm leading-relaxed">
 								DayPulse will securely connect to your Google Drive to locate your backup, verify
 								data integrity, and reconstruct your routines, finances, and tasks.
@@ -339,12 +339,12 @@ export function GoogleRestoreModal({
 						</div>
 
 						{errorMessage && (
-							<div className="rounded-xl border border-red-900/50 bg-red-950/20 p-3 space-y-2.5 text-xs text-red-300">
+							<div className="rounded-xl border border-red-500/30 bg-red-500/10 p-3 space-y-2.5 text-xs text-red-300">
 								<div className="flex items-start gap-2">
 									<AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
 									<span className="leading-relaxed break-words">{errorMessage}</span>
 								</div>
-								<div className="flex flex-wrap items-center gap-2 pt-1 border-t border-red-900/40">
+								<div className="flex flex-wrap items-center gap-2 pt-1 border-t border-red-500/30">
 									{onOpenFileRestore && (
 										<Button
 											type="button"
@@ -365,7 +365,7 @@ export function GoogleRestoreModal({
 										variant="ghost"
 										size="sm"
 										onClick={() => setShowConfigForm(!showConfigForm)}
-										className="gap-1.5 text-xs h-8 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-950/30"
+										className="gap-1.5 text-xs h-8 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10"
 									>
 										<KeyRound className="w-3.5 h-3.5" />
 										<span>{showConfigForm ? "Hide Credentials" : "Enter Credentials"}</span>
@@ -375,7 +375,7 @@ export function GoogleRestoreModal({
 						)}
 
 						{isConfigured === false && !errorMessage && !isCapacitorNative() && (
-							<div className="rounded-xl border border-amber-900/40 bg-amber-950/15 p-3 space-y-2 text-xs text-amber-200/90">
+							<div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 space-y-2 text-xs text-amber-200/90">
 								<div className="flex items-start gap-2">
 									<AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
 									<p className="leading-relaxed break-words">
@@ -383,7 +383,7 @@ export function GoogleRestoreModal({
 										from a local backup file, or configure your Google Client ID below.
 									</p>
 								</div>
-								<div className="flex flex-wrap items-center gap-2 pt-1 border-t border-amber-900/30">
+								<div className="flex flex-wrap items-center gap-2 pt-1 border-t border-amber-500/30">
 									{onOpenFileRestore && (
 										<Button
 											type="button"
@@ -404,7 +404,7 @@ export function GoogleRestoreModal({
 										variant="ghost"
 										size="sm"
 										onClick={() => setShowConfigForm(!showConfigForm)}
-										className="gap-1.5 text-xs h-8 text-amber-300 hover:text-amber-200 hover:bg-amber-950/30"
+										className="gap-1.5 text-xs h-8 text-amber-300 hover:text-amber-200 hover:bg-amber-500/10"
 									>
 										<KeyRound className="w-3.5 h-3.5" />
 										<span>{showConfigForm ? "Hide Form" : "Set Google Credentials"}</span>
@@ -487,7 +487,7 @@ export function GoogleRestoreModal({
 											handleModalClose();
 											onOpenFileRestore();
 										}}
-										className="gap-1.5 text-xs h-8 text-slate-300 hover:text-white"
+										className="gap-1.5 text-xs h-8 text-slate-300 hover:text-foreground"
 									>
 										<FileArchive className="w-3.5 h-3.5 text-emerald-400" />
 										<span>File Backup</span>

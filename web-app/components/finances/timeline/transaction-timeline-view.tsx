@@ -94,7 +94,7 @@ export function TransactionTimelineView({
 			{/* View Toggle Bar (Timeline vs Itemized List) */}
 			<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl border border-zinc-800 bg-zinc-900/60 backdrop-blur-xl">
 				<div>
-					<h3 className="text-sm font-bold text-white">
+					<h3 className="text-sm font-bold text-foreground">
 						{viewMode === "TIMELINE"
 							? period === "week"
 								? "Weekly Column Timeline (Day by Day)"
@@ -116,7 +116,7 @@ export function TransactionTimelineView({
 							variant="outline"
 							size="sm"
 							onClick={handleClearAll}
-							className="h-8 gap-1.5 border-rose-900/40 text-rose-400 hover:bg-rose-950/30 hover:text-rose-300 hover:border-rose-800 text-xs px-2.5"
+							className="h-8 gap-1.5 border-rose-500/30 text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 hover:border-rose-800 text-xs px-2.5"
 						>
 							<Trash2 className="w-3.5 h-3.5" />
 							<span>Clear All</span>
@@ -129,8 +129,8 @@ export function TransactionTimelineView({
 							onClick={() => setViewMode("TIMELINE")}
 							className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
 								viewMode === "TIMELINE"
-									? "bg-zinc-800 text-white shadow-sm"
-									: "text-zinc-400 hover:text-white"
+									? "bg-zinc-800 text-foreground shadow-sm"
+									: "text-zinc-400 hover:text-foreground"
 							}`}
 						>
 							<Kanban className="w-3.5 h-3.5 text-emerald-400" />
@@ -141,8 +141,8 @@ export function TransactionTimelineView({
 							onClick={() => setViewMode("LIST")}
 							className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
 								viewMode === "LIST"
-									? "bg-zinc-800 text-white shadow-sm"
-									: "text-zinc-400 hover:text-white"
+									? "bg-zinc-800 text-foreground shadow-sm"
+									: "text-zinc-400 hover:text-foreground"
 							}`}
 						>
 							<List className="w-3.5 h-3.5 text-zinc-400" />

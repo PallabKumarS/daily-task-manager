@@ -211,7 +211,7 @@ export function TrackerCard({
 								<span className="text-[11px] font-medium text-slate-500">Daily Habit</span>
 							)}
 						</div>
-						<h3 className="mt-1.5 text-lg font-bold text-white tracking-tight truncate">
+						<h3 className="mt-1.5 text-lg font-bold text-foreground tracking-tight truncate">
 							{tracker.name}
 						</h3>
 						{tracker.description && (
@@ -237,7 +237,7 @@ export function TrackerCard({
 										setMenuOpen(false);
 										onOpenDetails(tracker);
 									}}
-									className="flex items-center gap-2 w-full text-left px-3 py-2 text-xs text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition cursor-pointer"
+									className="flex items-center gap-2 w-full text-left px-3 py-2 text-xs text-slate-300 hover:text-foreground hover:bg-slate-800 rounded-lg transition cursor-pointer"
 								>
 									<Calendar className="w-3.5 h-3.5 text-slate-400" />
 									<span>Month History</span>
@@ -261,7 +261,7 @@ export function TrackerCard({
 										setMenuOpen(false);
 										onOpenEdit(tracker);
 									}}
-									className="flex items-center gap-2 w-full text-left px-3 py-2 text-xs text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition cursor-pointer"
+									className="flex items-center gap-2 w-full text-left px-3 py-2 text-xs text-slate-300 hover:text-foreground hover:bg-slate-800 rounded-lg transition cursor-pointer"
 								>
 									<Pencil className="w-3.5 h-3.5 text-slate-400" />
 									<span>Edit Tracker</span>
@@ -305,14 +305,14 @@ export function TrackerCard({
 							type="button"
 							disabled={isUpdating || currentValue <= 0}
 							onClick={() => handleUpdateCount(currentValue - 1, "LOGGED")}
-							className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-900 border border-slate-700/80 text-slate-200 hover:bg-slate-800 hover:text-white transition active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+							className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-900 border border-slate-700/80 text-slate-200 hover:bg-slate-800 hover:text-foreground transition active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
 							title="Decrease by 1"
 						>
 							<Minus className="w-5 h-5" />
 						</button>
 
 						<div className="flex flex-col items-center">
-							<span className="text-3xl font-extrabold text-white tracking-tight">
+							<span className="text-3xl font-extrabold text-foreground tracking-tight">
 								{currentValue}
 							</span>
 							<span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
@@ -340,7 +340,7 @@ export function TrackerCard({
 								"py-1.5 px-2 rounded-lg text-[11px] font-semibold transition cursor-pointer border text-center",
 								status === "CANCELLED"
 									? "bg-rose-500/20 text-rose-300 border-rose-500/40"
-									: "bg-slate-900 text-slate-300 hover:text-white hover:bg-slate-800 border-slate-800",
+									: "bg-slate-900 text-slate-300 hover:text-foreground hover:bg-slate-800 border-slate-800",
 							)}
 						>
 							0 (Cancel)
@@ -352,7 +352,7 @@ export function TrackerCard({
 								"py-1.5 px-2 rounded-lg text-[11px] font-semibold transition cursor-pointer border text-center",
 								currentValue === 1 && status !== "CANCELLED"
 									? "bg-teal-500/20 text-teal-300 border-teal-500/40"
-									: "bg-slate-900 text-slate-300 hover:text-white hover:bg-slate-800 border-slate-800",
+									: "bg-slate-900 text-slate-300 hover:text-foreground hover:bg-slate-800 border-slate-800",
 							)}
 						>
 							1 {tracker.unitName.slice(0, 4)}
@@ -364,7 +364,7 @@ export function TrackerCard({
 								"py-1.5 px-2 rounded-lg text-[11px] font-semibold transition cursor-pointer border text-center",
 								currentValue === tracker.defaultTarget && status !== "CANCELLED"
 									? "bg-teal-500/20 text-teal-300 border-teal-500/40"
-									: "bg-slate-900 text-slate-300 hover:text-white hover:bg-slate-800 border-slate-800",
+									: "bg-slate-900 text-slate-300 hover:text-foreground hover:bg-slate-800 border-slate-800",
 							)}
 						>
 							{tracker.defaultTarget} (Normal)
@@ -452,7 +452,7 @@ export function TrackerCard({
 					<button
 						type="button"
 						onClick={() => onOpenDetails(tracker)}
-						className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-slate-800/70 hover:bg-slate-800 text-xs font-semibold text-slate-200 hover:text-white transition cursor-pointer border border-slate-700/60"
+						className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-slate-800/70 hover:bg-slate-800 text-xs font-semibold text-slate-200 hover:text-foreground transition cursor-pointer border border-slate-700/60"
 					>
 						<Calendar className="w-3.5 h-3.5 text-slate-400" />
 						<span>Full Month</span>

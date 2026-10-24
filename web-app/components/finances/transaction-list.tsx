@@ -4,6 +4,7 @@ import { ArrowDownRight, ArrowUpRight, CalendarPlus, Edit2, Repeat, Trash2 } fro
 import * as React from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { CardDeck } from "@/components/ui/card-deck";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { api } from "@/lib/api-client";
 import { formatCurrency } from "@/lib/currency-symbols";
@@ -114,33 +115,35 @@ export function TransactionList({
 	});
 
 	return (
-		<div className="rounded-2xl border border-slate-800/80 bg-slate-900/60 p-5 backdrop-blur-xl">
-			<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-800">
+		<div className="rounded-2xl border border-border bg-surface p-5 shadow-card space-y-4">
+			<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-border">
 				<div>
-					<h4 className="text-sm font-bold text-slate-100">Transaction History</h4>
-					<p className="text-xs text-slate-400">
+					<h4 className="text-sm font-bold text-foreground">Transaction History</h4>
+					<p className="text-xs text-foreground-muted">
 						Itemized entries for this period ({filtered.length} total)
 					</p>
 				</div>
 
-				<div className="flex items-center gap-2 self-start sm:self-center">
+				<div className="flex items-center gap-2 self-start sm:self-center flex-wrap">
 					{transactions.length > 0 && (
 						<Button
 							variant="outline"
 							size="sm"
 							onClick={handleClearAll}
-							className="h-8 gap-1.5 border-rose-900/40 text-rose-400 hover:bg-rose-950/30 hover:text-rose-300 hover:border-rose-800 text-xs px-2.5"
+							className="h-8 gap-1.5 border-rose-500/30 text-rose-400 hover:bg-rose-500/10 text-xs px-2.5"
 						>
 							<Trash2 className="w-3.5 h-3.5" />
 							<span>Clear All</span>
 						</Button>
 					)}
-					<div className="flex items-center gap-1 rounded-xl bg-slate-950 p-1 border border-slate-800">
+					<div className="flex items-center gap-1 rounded-xl bg-surface-sunken p-1 border border-border">
 						<button
 							type="button"
 							onClick={() => setFilterType("ALL")}
 							className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
-								filterType === "ALL" ? "bg-slate-800 text-white" : "text-slate-400 hover:text-white"
+								filterType === "ALL"
+									? "bg-surface text-foreground shadow-sm border border-border"
+									: "text-foreground-muted hover:text-foreground"
 							}`}
 						>
 							All
@@ -150,8 +153,8 @@ export function TransactionList({
 							onClick={() => setFilterType("EXPENSE")}
 							className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
 								filterType === "EXPENSE"
-									? "bg-red-500/20 text-red-400"
-									: "text-slate-400 hover:text-white"
+									? "bg-rose-500/20 text-rose-400"
+									: "text-foreground-muted hover:text-foreground"
 							}`}
 						>
 							Expenses
@@ -162,7 +165,7 @@ export function TransactionList({
 							className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
 								filterType === "INCOME"
 									? "bg-emerald-500/20 text-emerald-400"
-									: "text-slate-400 hover:text-white"
+									: "text-foreground-muted hover:text-foreground"
 							}`}
 						>
 							Income
@@ -171,127 +174,137 @@ export function TransactionList({
 				</div>
 			</div>
 
-			<div className="mt-4 divide-y divide-slate-800/60 max-h-[460px] overflow-y-auto pr-1">
-				{filtered.length === 0 ? (
-					<div className="py-12 text-center text-xs text-slate-500">
+			<CardDeck
+				items={filtered}
+				getKey={(item) => item.id}
+				getTitle={(item) => {
+					const cleanDesc = item.description
+						? item.description.replace(/\[Recurring:\s*[^\]]+\]/i, "").trim()
+						: "";
+					return `${cleanDesc || item.category} (${formatCurrency(item.amount, currency)})`;
+				}}
+				storageKey="finance_ledger_tx"
+				defaultMode="all"
+				desktopColumns={1}
+				sectionLabel="Transactions"
+				emptyState={
+					<div className="py-12 text-center text-xs text-foreground-muted">
 						No transactions found for this period. Log an expense or earning to track data.
 					</div>
-				) : (
-					filtered.map((item) => {
-						const isIncome = item.type === "INCOME";
-						const dateStr = new Date(item.date).toLocaleDateString("en-US", {
-							month: "short",
-							day: "numeric",
-							year: "numeric",
-						});
+				}
+				renderCard={(item) => {
+					const isIncome = item.type === "INCOME";
+					const dateStr = new Date(item.date).toLocaleDateString("en-US", {
+						month: "short",
+						day: "numeric",
+						year: "numeric",
+					});
 
-						const recurringMatch = item.description?.match(/\[Recurring:\s*([^\]]+)\]/i);
-						const cleanDesc = item.description
-							? item.description.replace(/\[Recurring:\s*[^\]]+\]/i, "").trim()
-							: "";
+					const recurringMatch = item.description?.match(/\[Recurring:\s*([^\]]+)\]/i);
+					const cleanDesc = item.description
+						? item.description.replace(/\[Recurring:\s*[^\]]+\]/i, "").trim()
+						: "";
 
-						const isJustAdded = activeAdditionId === item.id;
+					const isJustAdded = activeAdditionId === item.id;
 
-						return (
-							<div
-								key={item.id}
-								className={`flex items-center justify-between py-3.5 px-3 rounded-xl transition-all duration-300 ${
-									isJustAdded
-										? "ring-2 ring-emerald-500/70 bg-emerald-500/10 shadow-lg shadow-emerald-500/10"
-										: "hover:bg-slate-800/30"
-								}`}
-							>
-								<div className="flex items-center gap-3 min-w-0">
-									<div
-										className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
-											isIncome
-												? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-												: "bg-red-500/10 text-red-400 border border-red-500/20"
-										}`}
-									>
-										{isIncome ? (
-											<ArrowUpRight className="w-4 h-4" />
-										) : (
-											<ArrowDownRight className="w-4 h-4" />
+					return (
+						<div
+							className={`flex items-center justify-between p-3.5 rounded-2xl border transition-all duration-300 ${
+								isJustAdded
+									? "ring-2 ring-emerald-500/70 bg-emerald-500/10 border-emerald-500/40 shadow-lg shadow-emerald-500/10"
+									: "border-border bg-surface-2/50 hover:bg-surface-2"
+							}`}
+						>
+							<div className="flex items-center gap-3 min-w-0">
+								<div
+									className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
+										isIncome
+											? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+											: "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+									}`}
+								>
+									{isIncome ? (
+										<ArrowUpRight className="w-4 h-4" />
+									) : (
+										<ArrowDownRight className="w-4 h-4" />
+									)}
+								</div>
+								<div className="min-w-0">
+									<div className="flex items-center gap-2 flex-wrap">
+										{isJustAdded && (
+											<span className="rounded-md bg-emerald-500/20 px-1.5 py-0.5 text-xs font-bold text-emerald-400 border border-emerald-500/40 animate-pulse">
+												Just Added
+											</span>
+										)}
+										<p className="text-xs font-semibold text-foreground truncate">
+											{cleanDesc || item.category}
+										</p>
+										<span
+											className={`rounded-md px-1.5 py-0.5 text-xs border ${
+												item.category === "Debt / Borrowed" || item.category === "Debt Repayment"
+													? "bg-amber-500/15 text-amber-400 border-amber-500/30"
+													: item.category === "Loan Given" || item.category === "Loan Return"
+														? "bg-cyan-500/15 text-cyan-400 border-cyan-500/30"
+														: "bg-surface text-foreground-muted border-border"
+											}`}
+										>
+											{item.category}
+										</span>
+										{recurringMatch && (
+											<span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-1.5 py-0.5 text-xs text-emerald-400 border border-emerald-500/25">
+												<Repeat className="w-2.5 h-2.5" />
+												<span>{recurringMatch[1]}</span>
+											</span>
 										)}
 									</div>
-									<div className="min-w-0">
-										<div className="flex items-center gap-2 flex-wrap">
-											{isJustAdded && (
-												<span className="rounded-md bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-bold text-emerald-300 border border-emerald-500/40 animate-pulse">
-													Just Added
-												</span>
-											)}
-											<p className="text-xs font-semibold text-slate-100 truncate">
-												{cleanDesc || item.category}
-											</p>
-											<span
-												className={`rounded-md px-1.5 py-0.5 text-[10px] border ${
-													item.category === "Debt / Borrowed" || item.category === "Debt Repayment"
-														? "bg-amber-500/15 text-amber-300 border-amber-500/30"
-														: item.category === "Loan Given" || item.category === "Loan Return"
-															? "bg-cyan-500/15 text-cyan-300 border-cyan-500/30"
-															: "bg-slate-800 text-slate-400 border-slate-700/60"
-												}`}
-											>
-												{item.category}
-											</span>
-											{recurringMatch && (
-												<span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-1.5 py-0.5 text-[10px] text-emerald-400 border border-emerald-500/25">
-													<Repeat className="w-2.5 h-2.5" />
-													<span>{recurringMatch[1]}</span>
-												</span>
-											)}
-										</div>
-										<p className="text-[11px] text-slate-400 mt-0.5">
-											{dateStr} • {item.paymentMethod}
-										</p>
-									</div>
-								</div>
-
-								<div className="flex items-center gap-3 shrink-0 pl-2">
-									<span
-										className={`text-sm font-bold ${
-											isIncome ? "text-emerald-400" : "text-red-400"
-										}`}
-									>
-										{isIncome ? "+" : "-"}
-										{formatCurrency(item.amount, currency)}
-									</span>
-
-									<div className="flex items-center gap-1">
-										<button
-											type="button"
-											onClick={() => handleDuplicateToToday(item)}
-											disabled={duplicatingId === item.id}
-											className="p-1 rounded-lg text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 transition cursor-pointer disabled:opacity-40"
-											title="Add previous day card today (Repeat to today)"
-										>
-											<CalendarPlus className="w-3.5 h-3.5" />
-										</button>
-										<button
-											type="button"
-											onClick={() => onEdit(item)}
-											className="p-1 rounded-lg text-slate-500 hover:text-slate-200 hover:bg-slate-800 transition cursor-pointer"
-											title="Edit"
-										>
-											<Edit2 className="w-3.5 h-3.5" />
-										</button>
-										<button
-											type="button"
-											onClick={() => handleDelete(item.id)}
-											className="p-1 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition cursor-pointer"
-											title="Delete"
-										>
-											<Trash2 className="w-3.5 h-3.5" />
-										</button>
-									</div>
+									<p className="text-xs text-foreground-muted mt-0.5">
+										{dateStr} • {item.paymentMethod}
+									</p>
 								</div>
 							</div>
-						);
-					})
-				)}
-			</div>
+
+							<div className="flex items-center gap-3 shrink-0 pl-2">
+								<span
+									className={`text-sm font-bold tabular-nums ${
+										isIncome ? "text-emerald-400" : "text-rose-400"
+									}`}
+								>
+									{isIncome ? "+" : "-"}
+									{formatCurrency(item.amount, currency)}
+								</span>
+
+								<div className="flex items-center gap-1">
+									<button
+										type="button"
+										onClick={() => handleDuplicateToToday(item)}
+										disabled={duplicatingId === item.id}
+										className="p-1.5 rounded-lg text-foreground-muted hover:text-emerald-400 hover:bg-emerald-500/10 transition cursor-pointer disabled:opacity-40"
+										title="Add previous day card today (Repeat to today)"
+									>
+										<CalendarPlus className="w-3.5 h-3.5" />
+									</button>
+									<button
+										type="button"
+										onClick={() => onEdit(item)}
+										className="p-1.5 rounded-lg text-foreground-muted hover:text-foreground hover:bg-surface transition cursor-pointer"
+										title="Edit"
+									>
+										<Edit2 className="w-3.5 h-3.5" />
+									</button>
+									<button
+										type="button"
+										onClick={() => handleDelete(item.id)}
+										className="p-1.5 rounded-lg text-foreground-muted hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer"
+										title="Delete"
+									>
+										<Trash2 className="w-3.5 h-3.5" />
+									</button>
+								</div>
+							</div>
+						</div>
+					);
+				}}
+			/>
 		</div>
 	);
 }

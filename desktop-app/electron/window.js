@@ -1,4 +1,4 @@
-const { BrowserWindow, shell } = require("electron");
+const { BrowserWindow, shell, nativeTheme } = require("electron");
 const path = require("path");
 const fs = require("fs");
 
@@ -16,7 +16,7 @@ function createWindow() {
 		minHeight: 640,
 		show: true,
 		title: "DayPulse — Client UI",
-		backgroundColor: "#090d16",
+		backgroundColor: nativeTheme.shouldUseDarkColors ? "#0b0f17" : "#f5f7fb",
 		frame: false,
 		icon: fs.existsSync(iconPath) ? iconPath : undefined,
 		webPreferences: {
@@ -26,6 +26,12 @@ function createWindow() {
 			backgroundThrottling: true,
 			preload: fs.existsSync(preloadPath) ? preloadPath : undefined,
 		},
+	});
+
+	nativeTheme.on("updated", () => {
+		if (mainWindow && !mainWindow.isDestroyed()) {
+			mainWindow.setBackgroundColor(nativeTheme.shouldUseDarkColors ? "#0b0f17" : "#f5f7fb");
+		}
 	});
 
 	mainWindow.webContents.setWindowOpenHandler(({ url }) => {

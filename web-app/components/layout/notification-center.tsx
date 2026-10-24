@@ -49,7 +49,7 @@ export function NotificationCenter() {
 			<button
 				type="button"
 				onClick={() => setIsOpen(!isOpen)}
-				className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-slate-800 bg-slate-900/90 text-slate-300 hover:border-slate-700 hover:text-white transition"
+				className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-slate-800 bg-slate-900/90 text-slate-300 hover:border-slate-700 hover:text-foreground transition"
 				aria-label="View notifications"
 			>
 				<Bell className="w-5 h-5" />
@@ -88,7 +88,7 @@ export function NotificationCenter() {
 							<button
 								type="button"
 								onClick={() => setIsOpen(false)}
-								className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+								className="p-1.5 rounded-lg text-slate-400 hover:text-foreground hover:bg-slate-800"
 							>
 								<X className="w-4 h-4" />
 							</button>
@@ -96,7 +96,7 @@ export function NotificationCenter() {
 					</div>
 
 					{permission !== "granted" && (
-						<div className="my-2.5 rounded-xl border border-emerald-500/20 bg-emerald-950/20 p-2.5 flex items-center justify-between">
+						<div className="my-2.5 rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-2.5 flex items-center justify-between">
 							<div className="flex items-center gap-2">
 								<Smartphone className="w-4 h-4 text-emerald-400 shrink-0" />
 								<span className="text-xs text-slate-300">Enable OS system alerts</span>

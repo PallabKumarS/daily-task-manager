@@ -593,7 +593,7 @@ export function TaskFormModal({
 							</div>
 							<div>
 								<div className="flex items-center gap-2">
-									<span className="text-xs font-bold text-white">
+									<span className="text-xs font-bold text-foreground">
 										Repeat this {selectedType === "EVENT" ? "Event" : "Task"}
 									</span>
 									{isRecurring && (
@@ -640,7 +640,7 @@ export function TaskFormModal({
 											className={`py-2 rounded-lg text-xs font-bold transition cursor-pointer ${
 												repeatFrequency === freq
 													? "bg-teal-500/20 text-teal-300 border border-teal-500/40"
-													: "text-slate-400 hover:text-white"
+													: "text-slate-400 hover:text-foreground"
 											}`}
 										>
 											{freq === "DAILY"
@@ -818,7 +818,7 @@ export function TaskFormModal({
 													className={`flex-1 h-9 rounded-xl text-xs font-semibold transition cursor-pointer ${
 														isSelected
 															? "bg-teal-500 text-slate-950 shadow-sm"
-															: "bg-slate-800 text-slate-400 hover:text-white"
+															: "bg-slate-800 text-slate-400 hover:text-foreground"
 													}`}
 													title={d.name}
 												>
@@ -892,7 +892,7 @@ export function TaskFormModal({
 										className={`py-2 rounded-xl text-xs font-semibold transition cursor-pointer border ${
 											repeatEndType === "NEVER"
 												? "bg-teal-500/20 text-teal-300 border-teal-500/40"
-												: "bg-slate-950 text-slate-400 border-slate-800 hover:text-white"
+												: "bg-slate-950 text-slate-400 border-slate-800 hover:text-foreground"
 										}`}
 									>
 										Never Ends
@@ -903,7 +903,7 @@ export function TaskFormModal({
 										className={`py-2 rounded-xl text-xs font-semibold transition cursor-pointer border ${
 											repeatEndType === "COUNT"
 												? "bg-teal-500/20 text-teal-300 border-teal-500/40"
-												: "bg-slate-950 text-slate-400 border-slate-800 hover:text-white"
+												: "bg-slate-950 text-slate-400 border-slate-800 hover:text-foreground"
 										}`}
 									>
 										After N Times
@@ -914,7 +914,7 @@ export function TaskFormModal({
 										className={`py-2 rounded-xl text-xs font-semibold transition cursor-pointer border ${
 											repeatEndType === "UNTIL_DATE"
 												? "bg-teal-500/20 text-teal-300 border-teal-500/40"
-												: "bg-slate-950 text-slate-400 border-slate-800 hover:text-white"
+												: "bg-slate-950 text-slate-400 border-slate-800 hover:text-foreground"
 										}`}
 									>
 										On Date
@@ -957,7 +957,7 @@ export function TaskFormModal({
 
 				{/* Sound & Notification Settings (Progressive Disclosure) */}
 				<details className="group rounded-2xl border border-slate-800 bg-slate-900/40 transition">
-					<summary className="flex items-center justify-between px-3.5 py-3 cursor-pointer select-none text-xs font-semibold text-slate-300 hover:text-white">
+					<summary className="flex items-center justify-between px-3.5 py-3 cursor-pointer select-none text-xs font-semibold text-slate-300 hover:text-foreground">
 						<span className="flex items-center gap-2">
 							<BellRing className="w-3.5 h-3.5 text-teal-400" />
 							<span>Alert Sound & Notification Details</span>

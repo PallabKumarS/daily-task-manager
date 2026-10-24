@@ -82,7 +82,7 @@ export function YearTimelineView({
 			{/* Year Header Banner */}
 			<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-zinc-800 bg-zinc-900/60 backdrop-blur-xl">
 				<div>
-					<h3 className="text-sm font-bold text-white flex items-center gap-2">
+					<h3 className="text-sm font-bold text-foreground flex items-center gap-2">
 						<TrendingUp className="w-4 h-4 text-emerald-400" />
 						<span>Annual 12-Month Performance Overview ({currentYear})</span>
 					</h3>
@@ -142,7 +142,7 @@ export function YearTimelineView({
 								<div className="flex items-start justify-between pb-3 border-b border-zinc-800/80">
 									<div>
 										<div className="flex items-center gap-2">
-											<h4 className="text-base font-extrabold text-white">{m.name}</h4>
+											<h4 className="text-base font-extrabold text-foreground">{m.name}</h4>
 											<span className="rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] font-bold text-zinc-400">
 												{m.quarter}
 											</span>

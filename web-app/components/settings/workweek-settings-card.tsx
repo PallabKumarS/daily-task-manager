@@ -73,7 +73,7 @@ export function WorkweekSettingsCard() {
 						<Calendar className="w-5 h-5" />
 					</div>
 					<div>
-						<h2 className="text-sm font-bold text-white">Workweek & Schedule Preferences</h2>
+						<h2 className="text-sm font-bold text-foreground">Workweek & Schedule Preferences</h2>
 						<p className="text-[11px] text-slate-400">
 							Define your start day of the week, weekends, and automatic background sync
 						</p>
@@ -172,7 +172,7 @@ export function WorkweekSettingsCard() {
 						className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer border ${
 							autoSync
 								? "bg-teal-500/15 text-teal-300 border-teal-500/30"
-								: "bg-slate-800 text-slate-400 border-slate-700 hover:text-white"
+								: "bg-slate-800 text-slate-400 border-slate-700 hover:text-foreground"
 						}`}
 					>
 						{autoSync ? "Auto-Sync Enabled" : "Auto-Sync Disabled"}

@@ -214,7 +214,7 @@ export function DebtLoanModal({
 						id="personName"
 						placeholder="e.g. John Doe, Sarah, Bank, Mom"
 						{...register("personName")}
-						className="bg-slate-900 border-slate-800 text-white placeholder:text-slate-500 text-xs"
+						className="bg-slate-900 border-slate-800 text-foreground placeholder:text-slate-500 text-xs"
 					/>
 					{errors.personName && (
 						<p className="text-[11px] text-destructive">{errors.personName.message}</p>
@@ -234,7 +234,7 @@ export function DebtLoanModal({
 							placeholder="0.00"
 							disabled={isEditing}
 							{...register("amount", { valueAsNumber: true })}
-							className="bg-slate-900 border-slate-800 text-white placeholder:text-slate-500 text-xs disabled:opacity-60"
+							className="bg-slate-900 border-slate-800 text-foreground placeholder:text-slate-500 text-xs disabled:opacity-60"
 						/>
 						{errors.amount && (
 							<p className="text-[11px] text-destructive">{errors.amount.message}</p>
@@ -249,7 +249,7 @@ export function DebtLoanModal({
 							id="date"
 							type="date"
 							{...register("date")}
-							className="bg-slate-900 border-slate-800 text-white text-xs"
+							className="bg-slate-900 border-slate-800 text-foreground text-xs"
 						/>
 						{errors.date && <p className="text-[11px] text-destructive">{errors.date.message}</p>}
 					</div>
@@ -265,7 +265,7 @@ export function DebtLoanModal({
 							id="dueDate"
 							type="date"
 							{...register("dueDate")}
-							className="bg-slate-900 border-slate-800 text-white text-xs"
+							className="bg-slate-900 border-slate-800 text-foreground text-xs"
 						/>
 					</div>
 
@@ -290,7 +290,7 @@ export function DebtLoanModal({
 						id="description"
 						placeholder="e.g. Car repair loan, dinner bill split, emergency cash"
 						{...register("description")}
-						className="bg-slate-900 border-slate-800 text-white placeholder:text-slate-500 text-xs"
+						className="bg-slate-900 border-slate-800 text-foreground placeholder:text-slate-500 text-xs"
 					/>
 				</div>
 

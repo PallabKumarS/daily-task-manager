@@ -45,7 +45,7 @@ export function FeaturesGrid() {
 					<h2 className="text-xs font-bold uppercase tracking-widest text-emerald-400">
 						Engineered For High Performers
 					</h2>
-					<p className="mt-2 text-3xl sm:text-4xl font-black text-white tracking-tight">
+					<p className="mt-2 text-3xl sm:text-4xl font-black text-foreground tracking-tight">
 						Everything your daily life demands. Nothing superfluous.
 					</p>
 					<p className="mt-3 text-sm text-slate-400 leading-relaxed">
@@ -71,7 +71,7 @@ export function FeaturesGrid() {
 									</span>
 								</div>
 
-								<h3 className="mt-5 text-xl font-bold text-white tracking-tight">{f.title}</h3>
+								<h3 className="mt-5 text-xl font-bold text-foreground tracking-tight">{f.title}</h3>
 								<p className="mt-2 text-sm text-slate-400 leading-relaxed">{f.description}</p>
 							</div>
 						);

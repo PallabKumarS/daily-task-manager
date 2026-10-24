@@ -172,12 +172,12 @@ export function TrackerDetailModal({
 					<button
 						type="button"
 						onClick={handlePrevMonth}
-						className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+						className="p-1.5 rounded-lg text-slate-400 hover:text-foreground hover:bg-slate-800 transition cursor-pointer"
 					>
 						<ChevronLeft className="w-5 h-5" />
 					</button>
 					<div className="text-center">
-						<span className="text-base font-bold text-white tracking-wide">
+						<span className="text-base font-bold text-foreground tracking-wide">
 							{MONTH_NAMES[selectedMonth - 1]} {selectedYear}
 						</span>
 						<p className="text-[11px] text-slate-400">
@@ -189,7 +189,7 @@ export function TrackerDetailModal({
 					<button
 						type="button"
 						onClick={handleNextMonth}
-						className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+						className="p-1.5 rounded-lg text-slate-400 hover:text-foreground hover:bg-slate-800 transition cursor-pointer"
 					>
 						<ChevronRight className="w-5 h-5" />
 					</button>
@@ -200,7 +200,7 @@ export function TrackerDetailModal({
 					<div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
 						<div className="rounded-xl border border-slate-800 bg-slate-950/60 p-3 text-center">
 							<span className="text-[11px] font-medium text-slate-400">Total Consumed</span>
-							<p className="mt-1 text-xl font-extrabold text-white">
+							<p className="mt-1 text-xl font-extrabold text-foreground">
 								{stats.totalUnits}{" "}
 								<span className="text-xs font-normal text-slate-400">{tracker.unitName}</span>
 							</p>
@@ -235,7 +235,7 @@ export function TrackerDetailModal({
 								<Receipt className="w-5 h-5" />
 							</div>
 							<div>
-								<p className="text-sm font-bold text-white">
+								<p className="text-sm font-bold text-foreground">
 									Unsettled Balance: {formatCurrency(stats.unsettledCost, tracker.currency)}
 								</p>
 								<p className="text-xs text-slate-300">
@@ -286,7 +286,7 @@ export function TrackerDetailModal({
 									>
 										{/* Date */}
 										<div className="col-span-3 sm:col-span-2">
-											<span className="font-semibold text-white">
+											<span className="font-semibold text-foreground">
 												{String(day.dayNumber).padStart(2, "0")} {weekdayName}
 											</span>
 										</div>
@@ -297,17 +297,17 @@ export function TrackerDetailModal({
 												type="button"
 												onClick={() => handleDayValueChange(day, -1)}
 												disabled={day.value <= 0}
-												className="h-6 w-6 rounded bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-30 cursor-pointer"
+												className="h-6 w-6 rounded bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 hover:text-foreground hover:bg-slate-800 disabled:opacity-30 cursor-pointer"
 											>
 												<Minus className="w-3 h-3" />
 											</button>
-											<span className="w-6 text-center font-bold text-white text-sm">
+											<span className="w-6 text-center font-bold text-foreground text-sm">
 												{day.value}
 											</span>
 											<button
 												type="button"
 												onClick={() => handleDayValueChange(day, 1)}
-												className="h-6 w-6 rounded bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer"
+												className="h-6 w-6 rounded bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 hover:text-foreground hover:bg-slate-800 cursor-pointer"
 											>
 												<Plus className="w-3 h-3" />
 											</button>
@@ -370,7 +370,7 @@ export function TrackerDetailModal({
 														type="text"
 														value={editingDayNote}
 														onChange={(e) => setEditingDayNote(e.target.value)}
-														className="w-full bg-slate-900 border border-slate-700 px-2 py-0.5 rounded text-[11px] text-white focus:outline-none"
+														className="w-full bg-slate-900 border border-slate-700 px-2 py-0.5 rounded text-[11px] text-foreground focus:outline-none"
 														onKeyDown={(e) => {
 															if (e.key === "Enter") handleSaveDayNote(day);
 															if (e.key === "Escape") setEditingDayDate(null);

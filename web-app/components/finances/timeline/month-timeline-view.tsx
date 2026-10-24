@@ -133,7 +133,7 @@ export function MonthTimelineView({
 			{/* Timeline Header & Scroll Controls */}
 			<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl border border-zinc-800 bg-zinc-900/60 backdrop-blur-xl">
 				<div>
-					<h3 className="text-sm font-bold text-white flex items-center gap-2">
+					<h3 className="text-sm font-bold text-foreground flex items-center gap-2">
 						<Calendar className="w-4 h-4 text-emerald-400" />
 						<span>30-Day Daily Financial Timeline</span>
 					</h3>
@@ -147,7 +147,7 @@ export function MonthTimelineView({
 					<button
 						type="button"
 						onClick={handleScrollLeft}
-						className="flex h-8 w-8 items-center justify-center rounded-xl border border-zinc-800 bg-zinc-950 text-zinc-400 hover:text-white hover:bg-zinc-800 transition cursor-pointer"
+						className="flex h-8 w-8 items-center justify-center rounded-xl border border-zinc-800 bg-zinc-950 text-zinc-400 hover:text-foreground hover:bg-zinc-800 transition cursor-pointer"
 						title="Scroll Left"
 					>
 						<ChevronLeft className="w-4 h-4" />
@@ -155,7 +155,7 @@ export function MonthTimelineView({
 					<button
 						type="button"
 						onClick={handleScrollRight}
-						className="flex h-8 w-8 items-center justify-center rounded-xl border border-zinc-800 bg-zinc-950 text-zinc-400 hover:text-white hover:bg-zinc-800 transition cursor-pointer"
+						className="flex h-8 w-8 items-center justify-center rounded-xl border border-zinc-800 bg-zinc-950 text-zinc-400 hover:text-foreground hover:bg-zinc-800 transition cursor-pointer"
 						title="Scroll Right"
 					>
 						<ChevronRight className="w-4 h-4" />
@@ -199,7 +199,7 @@ export function MonthTimelineView({
 								{/* Day Header */}
 								<div className="flex items-start justify-between">
 									<div>
-										<span className="text-2xl font-black tracking-tight text-white block">
+										<span className="text-2xl font-black tracking-tight text-foreground block">
 											{day.dayNumber}
 										</span>
 										<span className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">
@@ -266,7 +266,7 @@ export function MonthTimelineView({
 				<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-zinc-800">
 					<div>
 						<div className="flex items-center gap-2">
-							<h4 className="text-sm font-extrabold text-white">
+							<h4 className="text-sm font-extrabold text-foreground">
 								Transactions for Day {selectedDayData?.dayNumber} (
 								{selectedDayData?.date.toLocaleDateString("en-US", {
 									month: "short",
@@ -375,7 +375,7 @@ export function MonthTimelineView({
 														Just Added
 													</span>
 												)}
-												<p className="text-xs font-semibold text-white truncate">
+												<p className="text-xs font-semibold text-foreground truncate">
 													{cleanDesc || item.category}
 												</p>
 												<span className="rounded-md bg-zinc-800 px-1.5 py-0.5 text-[10px] text-zinc-300 border border-zinc-700/60">
@@ -408,7 +408,7 @@ export function MonthTimelineView({
 											<button
 												type="button"
 												onClick={() => onEdit(item)}
-												className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition cursor-pointer"
+												className="p-1.5 rounded-lg text-zinc-400 hover:text-foreground hover:bg-zinc-800 transition cursor-pointer"
 												title="Edit"
 											>
 												<Edit2 className="w-3.5 h-3.5" />
@@ -418,7 +418,7 @@ export function MonthTimelineView({
 												onClick={() =>
 													onDelete(item.id, cleanDesc || `${item.category} transaction`)
 												}
-												className="p-1.5 rounded-lg text-zinc-400 hover:text-rose-400 hover:bg-rose-950/30 transition cursor-pointer"
+												className="p-1.5 rounded-lg text-zinc-400 hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer"
 												title="Delete"
 											>
 												<Trash2 className="w-3.5 h-3.5" />

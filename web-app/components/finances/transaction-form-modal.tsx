@@ -350,7 +350,7 @@ export function TransactionFormModal({
 						className={`py-2 rounded-lg text-xs font-semibold transition cursor-pointer ${
 							currentType === "EXPENSE"
 								? "bg-rose-500/15 text-rose-300 border border-rose-500/30 shadow-sm"
-								: "text-slate-400 hover:text-white"
+								: "text-slate-400 hover:text-foreground"
 						}`}
 					>
 						Expense
@@ -361,7 +361,7 @@ export function TransactionFormModal({
 						className={`py-2 rounded-lg text-xs font-semibold transition cursor-pointer ${
 							currentType === "INCOME"
 								? "bg-teal-500/15 text-teal-300 border border-teal-500/30 shadow-sm"
-								: "text-slate-400 hover:text-white"
+								: "text-slate-400 hover:text-foreground"
 						}`}
 					>
 						Income

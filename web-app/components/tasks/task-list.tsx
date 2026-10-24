@@ -17,6 +17,7 @@ import * as React from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CardDeck } from "@/components/ui/card-deck";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { formatTriggeredTime, parseAlarmConfig } from "@/lib/alarm-settings";
 import { api } from "@/lib/api-client";
@@ -268,7 +269,9 @@ export function TaskList({ tasks, onToggleStatus, onEdit, onRefresh, onAddNew }:
 							type="button"
 							onClick={() => setFilterType("ALL")}
 							className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
-								filterType === "ALL" ? "bg-slate-800 text-white" : "text-slate-400 hover:text-white"
+								filterType === "ALL"
+									? "bg-slate-800 text-foreground"
+									: "text-slate-400 hover:text-foreground"
 							}`}
 						>
 							All Items
@@ -279,7 +282,7 @@ export function TaskList({ tasks, onToggleStatus, onEdit, onRefresh, onAddNew }:
 							className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
 								filterType === "TASK"
 									? "bg-teal-500/20 text-teal-300 border border-teal-500/40"
-									: "text-slate-400 hover:text-white"
+									: "text-slate-400 hover:text-foreground"
 							}`}
 						>
 							Tasks
@@ -290,7 +293,7 @@ export function TaskList({ tasks, onToggleStatus, onEdit, onRefresh, onAddNew }:
 							className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
 								filterType === "EVENT"
 									? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
-									: "text-slate-400 hover:text-white"
+									: "text-slate-400 hover:text-foreground"
 							}`}
 						>
 							Events
@@ -301,7 +304,7 @@ export function TaskList({ tasks, onToggleStatus, onEdit, onRefresh, onAddNew }:
 							className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer flex items-center gap-1 ${
 								filterType === "RECURRING"
 									? "bg-teal-500/20 text-teal-300 border border-teal-500/40"
-									: "text-slate-400 hover:text-white"
+									: "text-slate-400 hover:text-foreground"
 							}`}
 						>
 							<Repeat className="w-3 h-3" />
@@ -316,8 +319,8 @@ export function TaskList({ tasks, onToggleStatus, onEdit, onRefresh, onAddNew }:
 							onClick={() => setFilterStatus("ALL")}
 							className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
 								filterStatus === "ALL"
-									? "bg-slate-800 text-white"
-									: "text-slate-400 hover:text-white"
+									? "bg-slate-800 text-foreground"
+									: "text-slate-400 hover:text-foreground"
 							}`}
 						>
 							All Status
@@ -328,7 +331,7 @@ export function TaskList({ tasks, onToggleStatus, onEdit, onRefresh, onAddNew }:
 							className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
 								filterStatus === "PENDING"
 									? "bg-teal-500/20 text-teal-300 border border-teal-500/40"
-									: "text-slate-400 hover:text-white"
+									: "text-slate-400 hover:text-foreground"
 							}`}
 						>
 							Pending
@@ -338,8 +341,8 @@ export function TaskList({ tasks, onToggleStatus, onEdit, onRefresh, onAddNew }:
 							onClick={() => setFilterStatus("COMPLETED")}
 							className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
 								filterStatus === "COMPLETED"
-									? "bg-slate-800 text-white"
-									: "text-slate-400 hover:text-white"
+									? "bg-slate-800 text-foreground"
+									: "text-slate-400 hover:text-foreground"
 							}`}
 						>
 							Completed
@@ -353,7 +356,7 @@ export function TaskList({ tasks, onToggleStatus, onEdit, onRefresh, onAddNew }:
 							variant="outline"
 							size="sm"
 							onClick={handleClearAll}
-							className="gap-1.5 border-rose-900/40 text-rose-400 hover:bg-rose-950/30 hover:text-rose-300 hover:border-rose-800"
+							className="gap-1.5 border-rose-500/30 text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 hover:border-rose-800"
 						>
 							<Trash2 className="w-4 h-4" />
 							<span>Clear All</span>
@@ -369,10 +372,10 @@ export function TaskList({ tasks, onToggleStatus, onEdit, onRefresh, onAddNew }:
 			{/* Task List */}
 			<div className="space-y-2.5">
 				{filtered.length === 0 ? (
-					<div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-12 text-center">
-						<Calendar className="w-10 h-10 text-slate-600 mx-auto mb-3" />
-						<h4 className="text-sm font-bold text-slate-200">No scheduled tasks or events</h4>
-						<p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+					<div className="rounded-2xl border border-dashed border-border-strong bg-surface/60 p-12 text-center">
+						<Calendar className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+						<h4 className="text-sm font-bold text-foreground">No scheduled tasks or events</h4>
+						<p className="text-xs sm:text-sm text-muted-foreground mt-1 max-w-sm mx-auto">
 							Plan your day with precision. Add due dates to receive audio chimes and native system
 							reminders.
 						</p>
@@ -382,185 +385,316 @@ export function TaskList({ tasks, onToggleStatus, onEdit, onRefresh, onAddNew }:
 						</Button>
 					</div>
 				) : (
-					filtered.map((item) => {
-						const isCompleted = item.isRecurring
-							? item.lastCompletedDate === todayStr
-							: item.status === "COMPLETED";
-						const dueInfo = formatDue(item.dueDate);
-						const isJustAdded = activeAdditionId === item.id;
-						const { config: alarmConfig, userNotes } = parseAlarmConfig(item.description);
+					<CardDeck
+						items={filtered}
+						keyExtractor={(item) => item.id}
+						storageKey="tasks"
+						defaultMode="deck"
+						desktopColumns={2}
+						title="Tasks & Alarms Cards"
+						subtitle="Step through items with Previous / Next buttons or switch to All"
+						renderCard={(item) => {
+							const isCompleted = item.isRecurring
+								? item.lastCompletedDate === todayStr
+								: item.status === "COMPLETED";
+							const dueInfo = formatDue(item.dueDate);
+							const isJustAdded = activeAdditionId === item.id;
+							const { config: alarmConfig, userNotes } = parseAlarmConfig(item.description);
 
-						return (
-							<div
-								key={item.id}
-								className={`flex items-start justify-between p-4 rounded-2xl border transition-all duration-300 ${
-									isJustAdded
-										? "ring-2 ring-sky-500/80 border-sky-500/50 bg-sky-500/10 shadow-lg shadow-sky-500/10"
-										: isCompleted
-											? "border-slate-800/40 bg-slate-900/30 opacity-70"
-											: "border-slate-800 bg-slate-900/70 hover:border-slate-700 shadow-sm"
-								}`}
-							>
-								<div className="flex items-start gap-3 min-w-0 flex-1">
-									<button
-										type="button"
-										onClick={() => handleToggle(item)}
-										className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border transition cursor-pointer ${
-											isCompleted
-												? "bg-teal-500 border-teal-400 text-slate-950"
-												: "border-slate-700 bg-slate-950 hover:border-teal-500 text-transparent"
-										}`}
-									>
-										<Check className="w-4 h-4 stroke-[3]" />
-									</button>
+							return (
+								<div
+									key={item.id}
+									className={`flex items-start justify-between p-4 sm:p-5 rounded-2xl border transition-all duration-300 shadow-[var(--shadow-card)] ${
+										isJustAdded
+											? "ring-2 ring-sky-500/80 border-sky-500/50 bg-sky-500/10"
+											: isCompleted
+												? "border-border bg-surface/60 opacity-75"
+												: "border-border bg-surface hover:border-border-strong"
+									}`}
+								>
+									<div className="flex items-start gap-3 min-w-0 flex-1">
+										<button
+											type="button"
+											onClick={() => handleToggle(item)}
+											className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border transition cursor-pointer ${
+												isCompleted
+													? "bg-teal-600 dark:bg-teal-500 border-teal-500 text-white dark:text-slate-950"
+													: "border-border-strong bg-surface-2 hover:border-teal-500 text-transparent"
+											}`}
+										>
+											<Check className="w-4 h-4 stroke-[3]" />
+										</button>
 
-									<div className="min-w-0 flex-1">
-										<div className="flex flex-wrap items-center gap-2">
-											{isJustAdded && (
-												<span className="rounded-md bg-sky-500/20 px-1.5 py-0.5 text-[10px] font-bold text-sky-300 border border-sky-500/40 animate-pulse">
-													Just Added
-												</span>
-											)}
-											<h4
-												className={`text-sm font-semibold truncate ${
-													isCompleted && !item.isRecurring
-														? "text-slate-400 line-through"
-														: "text-slate-100"
-												}`}
-											>
-												{item.title}
-											</h4>
-											<span className="rounded-md bg-slate-800 px-2 py-0.5 text-[10px] text-slate-400 border border-slate-700/60 font-medium">
-												{item.category}
-											</span>
-											{getPriorityBadge(item.priority)}
-											{item.type === "EVENT" && (
-												<span className="rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 text-[10px] font-semibold">
-													Event / Alarm
-												</span>
-											)}
-											{item.isRecurring && (
-												<span
-													className={`rounded-md px-2 py-0.5 text-[10px] font-semibold flex items-center gap-1 border ${
-														isCompleted
-															? "bg-teal-500/15 text-teal-300 border-teal-500/30"
-															: "bg-teal-500/15 text-teal-300 border-teal-500/30"
+										<div className="min-w-0 flex-1">
+											<div className="flex flex-wrap items-center gap-2">
+												{isJustAdded && (
+													<span className="rounded-md bg-sky-500/20 px-2 py-0.5 text-xs font-bold text-sky-300 border border-sky-500/40 animate-pulse">
+														Just Added
+													</span>
+												)}
+												<h4
+													className={`text-sm sm:text-base font-bold truncate ${
+														isCompleted && !item.isRecurring
+															? "text-muted-foreground line-through"
+															: "text-foreground"
 													}`}
 												>
-													{isCompleted ? (
-														<>
-															<Check className="w-3 h-3 text-teal-400" />
-															<span>Done for Today • Next alarm tomorrow</span>
-														</>
-													) : (
-														<>
-															<Repeat className="w-3 h-3 text-teal-400" />
-															<span>{formatRecurrenceSchedule(item)}</span>
-														</>
-													)}
+													{item.title}
+												</h4>
+												<span className="rounded-md bg-surface-2 px-2 py-0.5 text-xs text-muted-foreground border border-border font-medium">
+													{item.category}
 												</span>
-											)}
-										</div>
-
-										{userNotes && (
-											<p className="text-xs text-slate-400 mt-1 line-clamp-2">{userNotes}</p>
-										)}
-
-										<div className="flex flex-wrap items-center gap-2.5 mt-2.5 text-[11px] text-slate-400">
-											{/* Last Triggered Badge */}
-											{item.lastTriggeredDate && (
-												<div className="flex items-center gap-1.5 text-teal-300 bg-teal-500/15 border border-teal-500/30 rounded-md px-2 py-0.5 text-[11px] font-semibold">
-													<BellRing className="w-3 h-3 text-teal-400" />
-													<span>Ran: {formatTriggeredTime(item.lastTriggeredDate)}</span>
-												</div>
-											)}
-
-											{dueInfo && !item.isRecurring && (
-												<div
-													className={`flex items-center gap-1 rounded-md px-2 py-0.5 font-medium ${
-														!isCompleted && dueInfo.isOverdue
-															? "bg-rose-500/10 text-rose-400 border border-rose-500/20"
-															: "bg-slate-800 text-slate-300"
-													}`}
-												>
-													<Clock className="w-3 h-3" />
-													<span>
-														{dueInfo.text} {!isCompleted && dueInfo.isOverdue && "(Overdue)"}
+												{getPriorityBadge(item.priority)}
+												{item.type === "EVENT" && (
+													<span className="rounded-md bg-alarm-soft text-alarm-fg border border-amber-500/25 px-2 py-0.5 text-xs font-semibold">
+														Event / Alarm
 													</span>
-												</div>
-											)}
-
-											{item.isRecurring && item.repeatTime && (
-												<div className="flex items-center gap-1 text-teal-300 bg-teal-500/10 border border-teal-500/20 rounded-md px-2 py-0.5 font-medium">
-													<Clock className="w-3 h-3 text-teal-400" />
-													<span>
-														{isCompleted
-															? `Alert times: ${item.repeatTime} (Resets tomorrow)`
-															: `Alert times: ${item.repeatTime}`}
+												)}
+												{item.isRecurring && (
+													<span className="rounded-md px-2 py-0.5 text-xs font-semibold flex items-center gap-1 border bg-primary-soft text-routine-fg border-teal-500/30">
+														{isCompleted ? (
+															<>
+																<Check className="w-3 h-3" />
+																<span>Done for Today • Next alarm tomorrow</span>
+															</>
+														) : (
+															<>
+																<Repeat className="w-3 h-3" />
+																<span>{formatRecurrenceSchedule(item)}</span>
+															</>
+														)}
 													</span>
-												</div>
+												)}
+											</div>
+
+											{userNotes && (
+												<p className="text-xs sm:text-sm text-muted-foreground mt-1 line-clamp-2">
+													{userNotes}
+												</p>
 											)}
 
-											{/* Multi-ring configuration details */}
-											{(item.type === "EVENT" || item.category === "Alarm") && (
-												<div className="flex items-center gap-1 text-slate-300 bg-slate-800/80 border border-slate-700/60 rounded-md px-2 py-0.5 font-medium">
-													<Volume2 className="w-3 h-3 text-teal-400" />
-													<span>
-														{alarmConfig.ringCount === 0
-															? "Continuous Ring"
-															: `${alarmConfig.ringCount}x rings`}{" "}
-														(every {alarmConfig.ringIntervalSeconds}s)
-													</span>
-												</div>
-											)}
+											<div className="flex flex-wrap items-center gap-2.5 mt-2.5 text-xs text-muted-foreground">
+												{item.lastTriggeredDate && (
+													<div className="flex items-center gap-1.5 text-routine-fg bg-primary-soft border border-teal-500/30 rounded-md px-2 py-0.5 text-xs font-semibold">
+														<BellRing className="w-3 h-3" />
+														<span>Ran: {formatTriggeredTime(item.lastTriggeredDate)}</span>
+													</div>
+												)}
 
-											{item.remindBeforeMinutes > 0 ? (
-												<div className="flex items-center gap-1 text-slate-400">
-													<Bell className="w-3 h-3 text-teal-400" />
-													<span>{item.remindBeforeMinutes}m advance notice</span>
-												</div>
-											) : (
-												<div className="flex items-center gap-1 text-slate-400">
-													<Bell className="w-3 h-3 text-teal-400" />
-													<span>Exact time chime</span>
-												</div>
-											)}
+												{dueInfo && !item.isRecurring && (
+													<div
+														className={`flex items-center gap-1 rounded-md px-2 py-0.5 font-medium ${
+															!isCompleted && dueInfo.isOverdue
+																? "bg-expense-soft text-expense-fg border border-rose-500/25"
+																: "bg-surface-2 text-foreground border border-border"
+														}`}
+													>
+														<Clock className="w-3 h-3" />
+														<span>
+															{dueInfo.text} {!isCompleted && dueInfo.isOverdue && "(Overdue)"}
+														</span>
+													</div>
+												)}
+
+												{item.isRecurring && item.repeatTime && (
+													<div className="flex items-center gap-1 text-routine-fg bg-primary-soft border border-teal-500/25 rounded-md px-2 py-0.5 font-medium">
+														<Clock className="w-3 h-3" />
+														<span>
+															{isCompleted
+																? `Alert times: ${item.repeatTime} (Resets tomorrow)`
+																: `Alert times: ${item.repeatTime}`}
+														</span>
+													</div>
+												)}
+
+												{(item.type === "EVENT" || item.category === "Alarm") && (
+													<div className="flex items-center gap-1 text-foreground bg-surface-2 border border-border rounded-md px-2 py-0.5 font-medium">
+														<Volume2 className="w-3 h-3 text-teal-600 dark:text-teal-400" />
+														<span>
+															{alarmConfig.ringCount === 0
+																? "Continuous Ring"
+																: `${alarmConfig.ringCount}x rings`}{" "}
+															(every {alarmConfig.ringIntervalSeconds}s)
+														</span>
+													</div>
+												)}
+
+												{item.remindBeforeMinutes > 0 ? (
+													<div className="flex items-center gap-1 text-muted-foreground">
+														<Bell className="w-3 h-3 text-teal-600 dark:text-teal-400" />
+														<span>{item.remindBeforeMinutes}m advance notice</span>
+													</div>
+												) : (
+													<div className="flex items-center gap-1 text-muted-foreground">
+														<Bell className="w-3 h-3 text-teal-600 dark:text-teal-400" />
+														<span>Exact time chime</span>
+													</div>
+												)}
+											</div>
 										</div>
 									</div>
-								</div>
 
-								<div className="flex items-center gap-2 ml-3 shrink-0">
-									{/* Test Alarm Button */}
-									<button
-										type="button"
-										onClick={() => handleTestAlarm(item)}
-										className="flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 transition cursor-pointer active:scale-95"
-										title="Test Alarm Audio & Log Execution"
-									>
-										<BellRing className="w-3.5 h-3.5 text-amber-400" />
-										<span className="hidden sm:inline">Test Alarm</span>
-									</button>
+									<div className="flex items-center gap-1.5 ml-3 shrink-0">
+										<button
+											type="button"
+											onClick={() => handleTestAlarm(item)}
+											className="flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-alarm-fg bg-alarm-soft hover:opacity-90 border border-amber-500/30 transition cursor-pointer"
+											title="Test Alarm Audio & Log Execution"
+										>
+											<BellRing className="w-3.5 h-3.5" />
+											<span className="hidden sm:inline">Test Alarm</span>
+										</button>
 
-									<button
-										type="button"
-										onClick={() => onEdit(item)}
-										className="p-1.5 rounded-lg text-slate-500 hover:text-slate-200 hover:bg-slate-800 transition cursor-pointer"
-										title="Edit"
-									>
-										<Edit2 className="w-3.5 h-3.5" />
-									</button>
-									<button
-										type="button"
-										onClick={() => handleDelete(item.id)}
-										className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer"
-										title="Delete"
-									>
-										<Trash2 className="w-3.5 h-3.5" />
-									</button>
+										<button
+											type="button"
+											onClick={() => onEdit(item)}
+											className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-surface-2 transition cursor-pointer"
+											title="Edit"
+										>
+											<Edit2 className="w-4 h-4" />
+										</button>
+										<button
+											type="button"
+											onClick={() => handleDelete(item.id)}
+											className="p-2 rounded-xl text-muted-foreground hover:text-expense-fg hover:bg-expense-soft transition cursor-pointer"
+											title="Delete"
+										>
+											<Trash2 className="w-4 h-4" />
+										</button>
+									</div>
 								</div>
+							);
+						}}
+						renderGrid={(allItems) => (
+							<div className="space-y-2.5">
+								{allItems.map((item) => {
+									const isCompleted = item.isRecurring
+										? item.lastCompletedDate === todayStr
+										: item.status === "COMPLETED";
+									const dueInfo = formatDue(item.dueDate);
+									const isJustAdded = activeAdditionId === item.id;
+									const { config: alarmConfig, userNotes } = parseAlarmConfig(item.description);
+
+									return (
+										<div
+											key={item.id}
+											className={`flex items-start justify-between p-4 rounded-2xl border transition-all duration-300 shadow-[var(--shadow-card)] ${
+												isJustAdded
+													? "ring-2 ring-sky-500/80 border-sky-500/50 bg-sky-500/10"
+													: isCompleted
+														? "border-border bg-surface/60 opacity-75"
+														: "border-border bg-surface hover:border-border-strong"
+											}`}
+										>
+											<div className="flex items-start gap-3 min-w-0 flex-1">
+												<button
+													type="button"
+													onClick={() => handleToggle(item)}
+													className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border transition cursor-pointer ${
+														isCompleted
+															? "bg-teal-600 dark:bg-teal-500 border-teal-500 text-white dark:text-slate-950"
+															: "border-border-strong bg-surface-2 hover:border-teal-500 text-transparent"
+													}`}
+												>
+													<Check className="w-4 h-4 stroke-[3]" />
+												</button>
+
+												<div className="min-w-0 flex-1">
+													<div className="flex flex-wrap items-center gap-2">
+														<h4
+															className={`text-sm font-bold truncate ${
+																isCompleted && !item.isRecurring
+																	? "text-muted-foreground line-through"
+																	: "text-foreground"
+															}`}
+														>
+															{item.title}
+														</h4>
+														<span className="rounded-md bg-surface-2 px-2 py-0.5 text-xs text-muted-foreground border border-border font-medium">
+															{item.category}
+														</span>
+														{getPriorityBadge(item.priority)}
+														{item.type === "EVENT" && (
+															<span className="rounded-md bg-alarm-soft text-alarm-fg border border-amber-500/25 px-2 py-0.5 text-xs font-semibold">
+																Event / Alarm
+															</span>
+														)}
+														{item.isRecurring && (
+															<span className="rounded-md px-2 py-0.5 text-xs font-semibold flex items-center gap-1 border bg-primary-soft text-routine-fg border-teal-500/30">
+																<Repeat className="w-3 h-3" />
+																<span>{formatRecurrenceSchedule(item)}</span>
+															</span>
+														)}
+													</div>
+
+													{userNotes && (
+														<p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+															{userNotes}
+														</p>
+													)}
+
+													<div className="flex flex-wrap items-center gap-2.5 mt-2 text-xs text-muted-foreground">
+														{dueInfo && !item.isRecurring && (
+															<div
+																className={`flex items-center gap-1 rounded-md px-2 py-0.5 font-medium ${
+																	!isCompleted && dueInfo.isOverdue
+																		? "bg-expense-soft text-expense-fg border border-rose-500/25"
+																		: "bg-surface-2 text-foreground border border-border"
+																}`}
+															>
+																<Clock className="w-3 h-3" />
+																<span>
+																	{dueInfo.text} {!isCompleted && dueInfo.isOverdue && "(Overdue)"}
+																</span>
+															</div>
+														)}
+														{(item.type === "EVENT" || item.category === "Alarm") && (
+															<div className="flex items-center gap-1 text-foreground bg-surface-2 border border-border rounded-md px-2 py-0.5 font-medium">
+																<Volume2 className="w-3 h-3 text-teal-600 dark:text-teal-400" />
+																<span>
+																	{alarmConfig.ringCount === 0
+																		? "Continuous Ring"
+																		: `${alarmConfig.ringCount}x rings`}
+																</span>
+															</div>
+														)}
+													</div>
+												</div>
+											</div>
+
+											<div className="flex items-center gap-1.5 ml-3 shrink-0">
+												<button
+													type="button"
+													onClick={() => handleTestAlarm(item)}
+													className="flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-alarm-fg bg-alarm-soft hover:opacity-90 border border-amber-500/30 transition cursor-pointer"
+													title="Test Alarm Audio & Log Execution"
+												>
+													<BellRing className="w-3.5 h-3.5" />
+													<span className="hidden sm:inline">Test Alarm</span>
+												</button>
+												<button
+													type="button"
+													onClick={() => onEdit(item)}
+													className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-surface-2 transition cursor-pointer"
+													title="Edit"
+												>
+													<Edit2 className="w-4 h-4" />
+												</button>
+												<button
+													type="button"
+													onClick={() => handleDelete(item.id)}
+													className="p-2 rounded-xl text-muted-foreground hover:text-expense-fg hover:bg-expense-soft transition cursor-pointer"
+													title="Delete"
+												>
+													<Trash2 className="w-4 h-4" />
+												</button>
+											</div>
+										</div>
+									);
+								})}
 							</div>
-						);
-					})
+						)}
+					/>
 				)}
 			</div>
 		</div>

@@ -1,6 +1,6 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { BrowserWindow, shell } from "electron";
+import { BrowserWindow, nativeTheme, shell } from "electron";
 import { getAssetPath, getWindowIcon, getWindowIconPath } from "./windows-branding.js";
 
 export function createMainWindow(onCloseHide: () => void): BrowserWindow {
@@ -16,7 +16,7 @@ export function createMainWindow(onCloseHide: () => void): BrowserWindow {
 		show: true,
 		title: "DayPulse — Client UI",
 		icon: !windowIcon.isEmpty() ? windowIcon : iconPath || undefined,
-		backgroundColor: "#09090b",
+		backgroundColor: nativeTheme.shouldUseDarkColors ? "#0b0f17" : "#f5f7fb",
 		autoHideMenuBar: true,
 		frame: false,
 		titleBarStyle: "hidden",
@@ -26,6 +26,12 @@ export function createMainWindow(onCloseHide: () => void): BrowserWindow {
 			nodeIntegration: false,
 			sandbox: false,
 		},
+	});
+
+	nativeTheme.on("updated", () => {
+		if (!win.isDestroyed()) {
+			win.setBackgroundColor(nativeTheme.shouldUseDarkColors ? "#0b0f17" : "#f5f7fb");
+		}
 	});
 
 	// Ensure all popups, OAuth windows, and links open strictly in user default browser

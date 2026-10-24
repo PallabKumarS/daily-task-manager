@@ -242,7 +242,7 @@ export function RoutineFormModal({
 									className={`flex-1 h-9 rounded-xl text-xs font-semibold transition cursor-pointer ${
 										isSelected
 											? "bg-teal-500 text-slate-950 shadow-sm"
-											: "bg-slate-800 text-slate-400 hover:text-white"
+											: "bg-slate-800 text-slate-400 hover:text-foreground"
 									}`}
 									title={d.name}
 								>

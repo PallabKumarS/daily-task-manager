@@ -26,7 +26,7 @@ export default function PrivacyPage() {
 				</div>
 
 				<header className="space-y-3">
-					<h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
+					<h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground">
 						Privacy Policy
 					</h1>
 					<p className="text-sm text-slate-400">
@@ -35,7 +35,7 @@ export default function PrivacyPage() {
 				</header>
 
 				<section className="space-y-4 text-sm text-slate-300 leading-relaxed border-t border-slate-900 pt-6">
-					<h2 className="text-lg font-bold text-white">1. Local-First Architecture</h2>
+					<h2 className="text-lg font-bold text-foreground">1. Local-First Architecture</h2>
 					<p>
 						DayPulse is built as a local-first application. All daily routines, tasks, events, and
 						financial ledger entries are stored in an embedded SQLite database on your device. We do
@@ -44,18 +44,22 @@ export default function PrivacyPage() {
 				</section>
 
 				<section className="space-y-4 text-sm text-slate-300 leading-relaxed border-t border-slate-900 pt-6">
-					<h2 className="text-lg font-bold text-white">2. Google Drive Cloud Synchronization</h2>
+					<h2 className="text-lg font-bold text-foreground">
+						2. Google Drive Cloud Synchronization
+					</h2>
 					<p>
 						DayPulse provides optional cloud backup capabilities via Google Drive. When enabled,
 						DayPulse requests the following OAuth 2.0 scopes:
 					</p>
 					<ul className="list-disc pl-5 space-y-2 text-slate-300">
 						<li>
-							<strong className="text-white">userinfo.email & userinfo.profile:</strong> Used solely
-							to identify and display your connected Google account in application settings.
+							<strong className="text-foreground">userinfo.email & userinfo.profile:</strong> Used
+							solely to identify and display your connected Google account in application settings.
 						</li>
 						<li>
-							<strong className="text-white">https://www.googleapis.com/auth/drive.file:</strong>{" "}
+							<strong className="text-foreground">
+								https://www.googleapis.com/auth/drive.file:
+							</strong>{" "}
 							Allows DayPulse to create, read, and overwrite only the single encrypted backup
 							archive file (<code className="text-emerald-400">DayPulse_Backup.json</code>) that the
 							application creates in your Google Drive.
@@ -69,7 +73,7 @@ export default function PrivacyPage() {
 				</section>
 
 				<section className="space-y-4 text-sm text-slate-300 leading-relaxed border-t border-slate-900 pt-6">
-					<h2 className="text-lg font-bold text-white">3. Token Security & Storage</h2>
+					<h2 className="text-lg font-bold text-foreground">3. Token Security & Storage</h2>
 					<p>
 						Google OAuth access and refresh tokens stored on desktop and self-hosted installations
 						are encrypted at rest using AES-256-GCM. On Android, token exchange is managed directly
@@ -78,7 +82,7 @@ export default function PrivacyPage() {
 				</section>
 
 				<section className="space-y-4 text-sm text-slate-300 leading-relaxed border-t border-slate-900 pt-6">
-					<h2 className="text-lg font-bold text-white">4. Data Deletion & Revocation</h2>
+					<h2 className="text-lg font-bold text-foreground">4. Data Deletion & Revocation</h2>
 					<p>
 						You may disconnect Google Drive at any time from DayPulse Settings. You can also revoke
 						DayPulse's access at any time via your{" "}
@@ -95,7 +99,7 @@ export default function PrivacyPage() {
 				</section>
 
 				<section className="space-y-4 text-sm text-slate-300 leading-relaxed border-t border-slate-900 pt-6">
-					<h2 className="text-lg font-bold text-white">5. Open-Source Transparency</h2>
+					<h2 className="text-lg font-bold text-foreground">5. Open-Source Transparency</h2>
 					<p>
 						DayPulse is an open-source project. You can inspect the entire codebase, including OAuth
 						exchange handlers and backup dispatchers, at:

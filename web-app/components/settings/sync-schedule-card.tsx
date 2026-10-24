@@ -131,7 +131,7 @@ export function SyncScheduleCard() {
 						<Clock className="w-5 h-5" />
 					</div>
 					<div>
-						<h2 className="text-sm font-bold text-white">Automated Sync Schedule</h2>
+						<h2 className="text-sm font-bold text-foreground">Automated Sync Schedule</h2>
 						<p className="text-xs text-slate-400 mt-0.5">
 							Automated background cloud &amp; snapshot sync engine
 						</p>
@@ -175,7 +175,7 @@ export function SyncScheduleCard() {
 							className={`px-3 py-2 text-xs font-semibold rounded-xl border transition cursor-pointer text-left ${
 								config.scheduleMode === "daily"
 									? "border-teal-500/40 bg-teal-500/10 text-teal-300"
-									: "border-slate-800 bg-slate-900 text-slate-400 hover:text-white"
+									: "border-slate-800 bg-slate-900 text-slate-400 hover:text-foreground"
 							}`}
 						>
 							Daily Fixed Time
@@ -190,7 +190,7 @@ export function SyncScheduleCard() {
 							className={`px-3 py-2 text-xs font-semibold rounded-xl border transition cursor-pointer text-left ${
 								config.scheduleMode === "interval"
 									? "border-teal-500/40 bg-teal-500/10 text-teal-300"
-									: "border-slate-800 bg-slate-900 text-slate-400 hover:text-white"
+									: "border-slate-800 bg-slate-900 text-slate-400 hover:text-foreground"
 							}`}
 						>
 							Periodic Interval
@@ -239,7 +239,7 @@ export function SyncScheduleCard() {
 						<Clock className="w-3.5 h-3.5 text-blue-400" />
 						<span className="font-semibold uppercase text-[10px] tracking-wider">Next Trigger</span>
 					</div>
-					<div className="text-xs font-bold text-white">{nextSyncText}</div>
+					<div className="text-xs font-bold text-foreground">{nextSyncText}</div>
 				</div>
 
 				<div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-3.5 space-y-1">

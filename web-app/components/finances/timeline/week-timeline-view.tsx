@@ -105,18 +105,18 @@ export function WeekTimelineView({
 						<button
 							type="button"
 							onClick={onPrevWeek}
-							className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition cursor-pointer"
+							className="p-1.5 rounded-lg text-zinc-400 hover:text-foreground hover:bg-zinc-800 transition cursor-pointer"
 							title="Previous Week"
 						>
 							<ChevronLeft className="w-4 h-4" />
 						</button>
-						<span className="text-xs font-extrabold text-white px-3 min-w-[170px] text-center">
+						<span className="text-xs font-extrabold text-foreground px-3 min-w-[170px] text-center">
 							{weekRangeLabel}
 						</span>
 						<button
 							type="button"
 							onClick={onNextWeek}
-							className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition cursor-pointer"
+							className="p-1.5 rounded-lg text-zinc-400 hover:text-foreground hover:bg-zinc-800 transition cursor-pointer"
 							title="Next Week"
 						>
 							<ChevronRight className="w-4 h-4" />
@@ -165,7 +165,7 @@ export function WeekTimelineView({
 								<div className="flex items-center justify-between pb-2.5 border-b border-zinc-800/80">
 									<div className="min-w-0">
 										<div className="flex items-center gap-1.5">
-											<span className="text-xs font-bold uppercase tracking-wider text-white">
+											<span className="text-xs font-bold uppercase tracking-wider text-foreground">
 												{day.dayName}
 											</span>
 											{day.isToday && (
@@ -180,7 +180,7 @@ export function WeekTimelineView({
 									<button
 										type="button"
 										onClick={() => onAddNew(day.dateStr)}
-										className="flex h-7 w-7 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-800 text-zinc-300 hover:text-white hover:bg-emerald-600 hover:border-emerald-500 transition cursor-pointer"
+										className="flex h-7 w-7 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-800 text-zinc-300 hover:text-foreground hover:bg-emerald-600 hover:border-emerald-500 transition cursor-pointer"
 										title={`Add transaction on ${day.formattedLabel}`}
 									>
 										<Plus className="w-3.5 h-3.5" />
@@ -255,7 +255,7 @@ export function WeekTimelineView({
 																	</span>
 																)}
 															</div>
-															<p className="mt-1 text-xs font-semibold text-white truncate">
+															<p className="mt-1 text-xs font-semibold text-foreground truncate">
 																{cleanDesc || tx.category}
 															</p>
 															<p className="text-[10px] text-zinc-400">{tx.paymentMethod}</p>
@@ -276,7 +276,7 @@ export function WeekTimelineView({
 																<button
 																	type="button"
 																	onClick={() => onEdit(tx)}
-																	className="p-1 rounded text-zinc-400 hover:text-white hover:bg-zinc-800 transition cursor-pointer"
+																	className="p-1 rounded text-zinc-400 hover:text-foreground hover:bg-zinc-800 transition cursor-pointer"
 																	title="Edit"
 																>
 																	<Edit2 className="w-2.5 h-2.5" />
@@ -286,7 +286,7 @@ export function WeekTimelineView({
 																	onClick={() =>
 																		onDelete(tx.id, cleanDesc || `${tx.category} transaction`)
 																	}
-																	className="p-1 rounded text-zinc-400 hover:text-rose-400 hover:bg-rose-950/30 transition cursor-pointer"
+																	className="p-1 rounded text-zinc-400 hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer"
 																	title="Delete"
 																>
 																	<Trash2 className="w-2.5 h-2.5" />

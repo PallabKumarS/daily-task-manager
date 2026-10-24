@@ -15,7 +15,7 @@ export function LandingNavbar() {
 					<div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 text-slate-950 shadow-md shadow-emerald-500/20">
 						<Activity className="w-5 h-5 stroke-[2.5]" />
 					</div>
-					<span className="text-lg font-black tracking-tight text-white">DayPulse</span>
+					<span className="text-lg font-black tracking-tight text-foreground">DayPulse</span>
 				</Link>
 
 				<div className="flex items-center gap-3">
@@ -29,7 +29,7 @@ export function LandingNavbar() {
 					) : (
 						<>
 							<Link href="/login">
-								<Button size="sm" variant="ghost" className="text-slate-300 hover:text-white">
+								<Button size="sm" variant="ghost" className="text-slate-300 hover:text-foreground">
 									Sign In
 								</Button>
 							</Link>

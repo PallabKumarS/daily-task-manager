@@ -1,9 +1,13 @@
 package com.daypulse.tracker;
 
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
+import android.view.Window;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
@@ -16,18 +20,42 @@ public class MainActivity extends BridgeActivity {
         setTheme(R.style.AppTheme_NoActionBar);
         registerPlugin(NativeGoogleAuthPlugin.class);
         super.onCreate(savedInstanceState);
-        getWindow().setBackgroundDrawableResource(R.color.backgroundDark);
-        View decorView = getWindow().getDecorView();
-        if (decorView != null) {
-            decorView.setBackgroundColor(Color.parseColor("#0B0F17"));
+        applySystemThemeColors(getResources().getConfiguration());
+        setupKeyboardResizeListener();
+        setupAlarmNotificationChannel();
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        applySystemThemeColors(newConfig);
+    }
+
+    private void applySystemThemeColors(Configuration config) {
+        boolean isNightMode =
+            (config.uiMode & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
+        int bgColor = Color.parseColor(isNightMode ? "#0B0F17" : "#F5F7FB");
+        int navColor = Color.parseColor(isNightMode ? "#0B0F17" : "#FFFFFF");
+
+        Window window = getWindow();
+        if (window != null) {
+            window.setStatusBarColor(bgColor);
+            window.setNavigationBarColor(navColor);
+            View decorView = window.getDecorView();
+            if (decorView != null) {
+                decorView.setBackgroundColor(bgColor);
+                WindowInsetsControllerCompat controller =
+                    WindowCompat.getInsetsController(window, decorView);
+                if (controller != null) {
+                    controller.setAppearanceLightStatusBars(!isNightMode);
+                    controller.setAppearanceLightNavigationBars(!isNightMode);
+                }
+            }
         }
 
         if (getBridge() != null && getBridge().getWebView() != null) {
-            getBridge().getWebView().setBackgroundColor(Color.parseColor("#0B0F17"));
+            getBridge().getWebView().setBackgroundColor(bgColor);
         }
-
-        setupKeyboardResizeListener();
-        setupAlarmNotificationChannel();
     }
 
     private void setupKeyboardResizeListener() {
@@ -60,14 +88,12 @@ public class MainActivity extends BridgeActivity {
         int heightDifference = screenHeight - usableHeightNow;
 
         if (heightDifference > (screenHeight / 5)) {
-            // Keyboard is visible: fit content container cleanly above keyboard
             if (usableHeightNow != usableHeightPrevious) {
                 frameLayoutParams.height = usableHeightNow;
                 mChildOfContent.requestLayout();
                 usableHeightPrevious = usableHeightNow;
             }
         } else {
-            // Keyboard is hidden: restore full layout
             if (usableHeightPrevious != -1) {
                 frameLayoutParams.height = android.widget.FrameLayout.LayoutParams.MATCH_PARENT;
                 mChildOfContent.requestLayout();

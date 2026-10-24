@@ -36,7 +36,7 @@ export function FinanceSummaryCards({
 					</div>
 				</div>
 				<div className="mt-3.5">
-					<div className="text-2xl sm:text-3xl font-black tracking-tight text-white">
+					<div className="text-2xl sm:text-3xl font-black tracking-tight text-foreground">
 						+{formatCurrency(totalIncome, currency)}
 					</div>
 					<div className="mt-1 flex items-center gap-1.5 text-[11px] text-teal-400 font-semibold">
@@ -55,7 +55,7 @@ export function FinanceSummaryCards({
 					</div>
 				</div>
 				<div className="mt-3.5">
-					<div className="text-2xl sm:text-3xl font-black tracking-tight text-white">
+					<div className="text-2xl sm:text-3xl font-black tracking-tight text-foreground">
 						-{formatCurrency(totalExpense, currency)}
 					</div>
 					<div className="mt-1 flex items-center gap-1.5 text-[11px] text-rose-400 font-semibold">
@@ -103,7 +103,7 @@ export function FinanceSummaryCards({
 					</div>
 				</div>
 				<div className="mt-3.5">
-					<div className="text-2xl sm:text-3xl font-black tracking-tight text-white">
+					<div className="text-2xl sm:text-3xl font-black tracking-tight text-foreground">
 						{savingsRate}%
 					</div>
 					<div className="mt-2 h-1.5 w-full rounded-full bg-slate-800 overflow-hidden">

@@ -133,7 +133,7 @@ export function RepaymentModal({
 				<div className="p-3.5 rounded-xl border border-slate-800 bg-slate-900/80 flex items-center justify-between">
 					<div>
 						<div className="text-[11px] font-semibold text-slate-400">Remaining Balance</div>
-						<div className="text-lg font-bold text-white">
+						<div className="text-lg font-bold text-foreground">
 							{formatCurrency(debtLoan.remainingAmount, currency)}
 						</div>
 					</div>
@@ -169,7 +169,7 @@ export function RepaymentModal({
 						max={debtLoan.remainingAmount}
 						placeholder="0.00"
 						{...register("amount", { valueAsNumber: true })}
-						className="bg-slate-900 border-slate-800 text-white placeholder:text-slate-500 text-xs"
+						className="bg-slate-900 border-slate-800 text-foreground placeholder:text-slate-500 text-xs"
 					/>
 					{errors.amount && <p className="text-[11px] text-destructive">{errors.amount.message}</p>}
 				</div>
@@ -184,7 +184,7 @@ export function RepaymentModal({
 							id="repayDate"
 							type="date"
 							{...register("date")}
-							className="bg-slate-900 border-slate-800 text-white text-xs"
+							className="bg-slate-900 border-slate-800 text-foreground text-xs"
 						/>
 						{errors.date && <p className="text-[11px] text-destructive">{errors.date.message}</p>}
 					</div>
@@ -208,7 +208,7 @@ export function RepaymentModal({
 						id="repayNotes"
 						placeholder="e.g. Bank ref #1234, cash in hand, partial installment"
 						{...register("notes")}
-						className="bg-slate-900 border-slate-800 text-white placeholder:text-slate-500 text-xs"
+						className="bg-slate-900 border-slate-800 text-foreground placeholder:text-slate-500 text-xs"
 					/>
 				</div>
 

@@ -156,7 +156,7 @@ export function RecentlyAddedBanner({
 							</div>
 
 							<div className="mt-1 flex items-baseline gap-2 flex-wrap">
-								<h4 className="text-sm font-bold text-white truncate max-w-md">
+								<h4 className="text-sm font-bold text-foreground truncate max-w-md">
 									{latestAddition.title}
 								</h4>
 								{typeof latestAddition.amount === "number" && (
@@ -206,7 +206,7 @@ export function RecentlyAddedBanner({
 						<button
 							type="button"
 							onClick={dismissLatest}
-							className="flex h-8 w-8 items-center justify-center rounded-xl border border-zinc-800 bg-zinc-950/60 text-zinc-400 hover:text-white hover:bg-zinc-800 transition cursor-pointer"
+							className="flex h-8 w-8 items-center justify-center rounded-xl border border-zinc-800 bg-zinc-950/60 text-zinc-400 hover:text-foreground hover:bg-zinc-800 transition cursor-pointer"
 							title="Dismiss confirmation"
 						>
 							<X className="w-4 h-4" />

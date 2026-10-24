@@ -1,6 +1,8 @@
 "use client";
 
+import { CalendarCheck, Plus } from "lucide-react";
 import * as React from "react";
+import { useContextDock } from "@/components/layout/context-dock";
 import { RoutineFormModal } from "@/components/routines/routine-form-modal";
 import { type RoutineItem, RoutineList } from "@/components/routines/routine-list";
 import { api } from "@/lib/api-client";
@@ -64,14 +66,43 @@ export default function RoutinesPage() {
 		setModalOpen(true);
 	};
 
-	const handleAddNew = () => {
+	const handleAddNew = React.useCallback(() => {
 		setEditingRoutine(null);
 		setModalOpen(true);
-	};
+	}, []);
+
+	const completedCount = React.useMemo(
+		() => routines.filter((r) => r.isCompletedToday).length,
+		[routines],
+	);
+
+	const contextDockNode = React.useMemo(
+		() => (
+			<div className="flex items-center justify-between gap-2 w-full">
+				<div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-surface-2 border border-border text-xs font-bold text-foreground">
+					<CalendarCheck className="w-3.5 h-3.5 text-emerald-400" />
+					<span>
+						{completedCount}/{routines.length} Done Today
+					</span>
+				</div>
+				<button
+					type="button"
+					onClick={handleAddNew}
+					className="px-3 py-1.5 rounded-xl bg-primary text-primary-foreground text-xs font-bold flex items-center gap-1 cursor-pointer shadow-sm"
+				>
+					<Plus className="w-3.5 h-3.5" />
+					<span>New Routine</span>
+				</button>
+			</div>
+		),
+		[completedCount, routines.length, handleAddNew],
+	);
+
+	useContextDock(contextDockNode);
 
 	if (loading) {
 		return (
-			<div className="py-20 text-center text-slate-400 text-xs">
+			<div className="py-20 text-center text-foreground-muted text-xs">
 				Loading daily habit routines...
 			</div>
 		);
@@ -80,8 +111,10 @@ export default function RoutinesPage() {
 	return (
 		<div className="space-y-6">
 			<div>
-				<h1 className="text-2xl font-bold tracking-tight text-white">Daily Routines & Protocols</h1>
-				<p className="text-xs text-slate-400 mt-1">
+				<h1 className="text-2xl font-bold tracking-tight text-foreground">
+					Daily Routines & Protocols
+				</h1>
+				<p className="text-xs text-foreground-muted mt-1">
 					Lock in morning, afternoon, and evening habit loops. Track streaks and get proactive
 					alerts.
 				</p>

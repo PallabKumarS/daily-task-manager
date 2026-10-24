@@ -1,10 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { Toaster } from "sonner";
 import { DesktopTitlebar } from "@/components/layout/desktop-titlebar";
 import { AuthProvider } from "@/components/providers/auth-provider";
 import { NotificationProvider } from "@/components/providers/notification-provider";
+import { ThemeProvider } from "@/components/providers/theme-provider";
 import { ConfirmProvider } from "@/components/ui/confirm-dialog";
+import { THEME_INIT_SCRIPT } from "@/lib/theme-script";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -32,7 +33,10 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-	themeColor: "#0b0f17",
+	themeColor: [
+		{ media: "(prefers-color-scheme: light)", color: "#f5f7fb" },
+		{ media: "(prefers-color-scheme: dark)", color: "#0b0f17" },
+	],
 	width: "device-width",
 	initialScale: 1,
 	maximumScale: 1,
@@ -48,34 +52,24 @@ export default function RootLayout({
 	return (
 		<html
 			lang="en"
-			className={`${geistSans.variable} ${geistMono.variable} h-full dark antialiased`}
+			suppressHydrationWarning
+			className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
 		>
 			<head>
-				<script>
-					{
-						'try{if(typeof window!=="undefined"&&window.electronAPI&&window.electronAPI.isElectron){document.documentElement.classList.add("is-electron");document.documentElement.style.setProperty("--titlebar-height","36px");}}catch(e){}'
-					}
-				</script>
+				<script
+					// biome-ignore lint/security/noDangerouslySetInnerHtml: Inline theme script prevents initial paint flash
+					dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }}
+				/>
 			</head>
-			<body className="min-h-full flex flex-col bg-background text-foreground selection:bg-teal-500/30 selection:text-teal-200">
-				<DesktopTitlebar />
-				<AuthProvider>
-					<NotificationProvider>
-						<ConfirmProvider>
-							{children}
-							<Toaster
-								theme="dark"
-								position="top-right"
-								richColors
-								closeButton
-								toastOptions={{
-									className:
-										"rounded-xl border border-slate-800/90 bg-slate-900/95 text-slate-100 shadow-xl",
-								}}
-							/>
-						</ConfirmProvider>
-					</NotificationProvider>
-				</AuthProvider>
+			<body className="min-h-full flex flex-col bg-background text-foreground selection:bg-primary/25 selection:text-foreground">
+				<ThemeProvider>
+					<DesktopTitlebar />
+					<AuthProvider>
+						<NotificationProvider>
+							<ConfirmProvider>{children}</ConfirmProvider>
+						</NotificationProvider>
+					</AuthProvider>
+				</ThemeProvider>
 			</body>
 		</html>
 	);

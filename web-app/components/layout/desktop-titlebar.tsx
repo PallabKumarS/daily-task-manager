@@ -29,7 +29,7 @@ export function DesktopTitlebar() {
 						setIsFullScreen(Boolean(fs));
 					}
 				} catch {
-					// ignore
+					// Ignore IPC errors when initializing window state
 				}
 			};
 
@@ -87,9 +87,8 @@ export function DesktopTitlebar() {
 	return (
 		<div
 			style={dragStyle}
-			className="h-9 w-full bg-slate-950 border-b border-slate-800 flex items-center justify-between select-none z-50 shrink-0 sticky top-0"
+			className="h-9 w-full bg-surface border-b border-border flex items-center justify-between select-none z-50 shrink-0 sticky top-0"
 		>
-			{/* Left: App Branding */}
 			<div className="flex items-center gap-2 px-3 min-w-0" style={noDragStyle}>
 				<div className="w-4 h-4 relative shrink-0">
 					<Image
@@ -100,19 +99,16 @@ export function DesktopTitlebar() {
 						className="rounded object-contain"
 					/>
 				</div>
-				<span className="text-xs font-bold text-slate-200 tracking-tight">DayPulse</span>
+				<span className="text-xs font-bold text-foreground tracking-tight">DayPulse</span>
 			</div>
 
-			{/* Center: Draggable Space */}
 			<div className="flex-1 h-full" style={dragStyle} />
 
-			{/* Right: Window Controls */}
 			<div className="flex items-center h-full" style={noDragStyle}>
-				{/* Fullscreen Toggle */}
 				<button
 					type="button"
 					onClick={handleToggleFullScreen}
-					className="h-full px-3 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors flex items-center justify-center cursor-pointer"
+					className="h-full px-3 text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors flex items-center justify-center cursor-pointer"
 					title={isFullScreen ? "Exit Fullscreen" : "Fullscreen"}
 				>
 					{isFullScreen ? (
@@ -122,31 +118,28 @@ export function DesktopTitlebar() {
 					)}
 				</button>
 
-				{/* Minimize Button */}
 				<button
 					type="button"
 					onClick={handleMinimize}
-					className="h-full px-3 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors flex items-center justify-center cursor-pointer"
+					className="h-full px-3 text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors flex items-center justify-center cursor-pointer"
 					title="Minimize"
 				>
 					<Minus className="w-3.5 h-3.5" />
 				</button>
 
-				{/* Maximize / Restore Button */}
 				<button
 					type="button"
 					onClick={handleMaximize}
-					className="h-full px-3 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors flex items-center justify-center cursor-pointer"
+					className="h-full px-3 text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors flex items-center justify-center cursor-pointer"
 					title={isMaximized ? "Restore" : "Maximize"}
 				>
 					{isMaximized ? <Copy className="w-3 h-3 rotate-180" /> : <Square className="w-3 h-3" />}
 				</button>
 
-				{/* Close Button (Minimizes to tray) */}
 				<button
 					type="button"
 					onClick={handleClose}
-					className="h-full px-3.5 text-slate-400 hover:text-white hover:bg-rose-600 transition-colors flex items-center justify-center cursor-pointer"
+					className="h-full px-3.5 text-muted-foreground hover:text-foreground hover:bg-rose-600 transition-colors flex items-center justify-center cursor-pointer"
 					title="Minimize to Tray"
 				>
 					<X className="w-4 h-4" />

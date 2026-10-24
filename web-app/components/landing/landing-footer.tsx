@@ -12,7 +12,7 @@ export function LandingFooter() {
 						<Activity className="w-4 h-4 stroke-[2.5]" />
 					</div>
 					<div>
-						<span className="text-sm font-bold text-white">DayPulse</span>
+						<span className="text-sm font-bold text-foreground">DayPulse</span>
 						<p className="text-[11px] text-slate-500">Daily Activity Flow & Wealth Mastery</p>
 					</div>
 				</div>

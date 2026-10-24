@@ -21,7 +21,7 @@ export function CumulativeChart({ timeline, currency }: CumulativeChartProps) {
 
 	if (!timeline || timeline.length === 0) {
 		return (
-			<div className="flex h-64 items-center justify-center rounded-2xl border border-slate-800 bg-slate-900/40 text-xs text-slate-500">
+			<div className="flex h-64 items-center justify-center rounded-2xl border border-border bg-surface p-6 text-xs text-muted-foreground shadow-[var(--shadow-card)]">
 				No transaction activity recorded for this period yet.
 			</div>
 		);
@@ -57,26 +57,28 @@ export function CumulativeChart({ timeline, currency }: CumulativeChartProps) {
 			: "";
 
 	return (
-		<div className="relative w-full overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-900/60 p-4 backdrop-blur-xl">
+		<div className="relative w-full overflow-hidden rounded-2xl border border-border bg-surface p-5 shadow-[var(--shadow-card)]">
 			<div className="flex flex-wrap items-center justify-between gap-2 mb-4">
 				<div>
-					<h4 className="text-sm font-bold text-slate-100">
+					<h4 className="text-sm font-bold text-foreground">
 						Cumulative Wealth & Cashflow Trajectory
 					</h4>
-					<p className="text-xs text-slate-400">Progression of running net balance over time</p>
+					<p className="text-xs text-muted-foreground">
+						Progression of running net balance over time
+					</p>
 				</div>
 				<div className="flex items-center gap-4 text-xs">
 					<div className="flex items-center gap-1.5">
-						<span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
-						<span className="text-slate-300">Cumulative Balance</span>
+						<span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+						<span className="text-foreground font-medium">Cumulative Balance</span>
 					</div>
 					<div className="flex items-center gap-1.5">
-						<span className="h-2 w-2 rounded-full bg-emerald-500/40" />
-						<span className="text-slate-400">Income</span>
+						<span className="h-2 w-2 rounded-full bg-emerald-500/50" />
+						<span className="text-muted-foreground">Income</span>
 					</div>
 					<div className="flex items-center gap-1.5">
-						<span className="h-2 w-2 rounded-full bg-red-500/40" />
-						<span className="text-slate-400">Expense</span>
+						<span className="h-2 w-2 rounded-full bg-rose-500/50" />
+						<span className="text-muted-foreground">Expense</span>
 					</div>
 				</div>
 			</div>
@@ -88,26 +90,23 @@ export function CumulativeChart({ timeline, currency }: CumulativeChartProps) {
 				>
 					<defs>
 						<linearGradient id="balanceGradient" x1="0" y1="0" x2="0" y2="1">
-							<stop offset="0%" stopColor="#10b981" stopOpacity="0.35" />
-							<stop offset="100%" stopColor="#10b981" stopOpacity="0.0" />
+							<stop offset="0%" stopColor="var(--income)" stopOpacity="0.32" />
+							<stop offset="100%" stopColor="var(--income)" stopOpacity="0.0" />
 						</linearGradient>
 					</defs>
 
-					{/* Zero baseline */}
 					<line
 						x1={paddingX}
 						y1={zeroY}
 						x2={width - paddingX}
 						y2={zeroY}
-						stroke="#334155"
+						stroke="var(--border-strong)"
 						strokeDasharray="4 4"
 						strokeWidth="1"
 					/>
 
-					{/* Area fill */}
 					{areaD && <path d={areaD} fill="url(#balanceGradient)" />}
 
-					{/* Bar indicators for income & expense */}
 					{points.map((p, idx) => {
 						const barWidth = Math.max(3, (width - 2 * paddingX) / timeline.length / 3);
 						const maxBarVal = Math.max(...timeline.map((t) => Math.max(t.income, t.expense, 10)));
@@ -122,8 +121,8 @@ export function CumulativeChart({ timeline, currency }: CumulativeChartProps) {
 										y={zeroY - incomeH}
 										width={barWidth}
 										height={incomeH}
-										fill="#10b981"
-										opacity="0.4"
+										fill="var(--income)"
+										opacity="0.45"
 										rx="1"
 									/>
 								)}
@@ -133,8 +132,8 @@ export function CumulativeChart({ timeline, currency }: CumulativeChartProps) {
 										y={zeroY}
 										width={barWidth}
 										height={expenseH}
-										fill="#ef4444"
-										opacity="0.4"
+										fill="var(--expense)"
+										opacity="0.45"
 										rx="1"
 									/>
 								)}
@@ -142,19 +141,17 @@ export function CumulativeChart({ timeline, currency }: CumulativeChartProps) {
 						);
 					})}
 
-					{/* Cumulative line */}
 					{pathD && (
 						<path
 							d={pathD}
 							fill="none"
-							stroke="#10b981"
+							stroke="var(--income)"
 							strokeWidth="2.5"
 							strokeLinecap="round"
 							strokeLinejoin="round"
 						/>
 					)}
 
-					{/* Data point dots and interactive hover zones */}
 					{points.map((p, idx) => (
 						<g
 							key={`pt_${idx}`}
@@ -166,9 +163,8 @@ export function CumulativeChart({ timeline, currency }: CumulativeChartProps) {
 								cx={p.x}
 								cy={p.y}
 								r={hoveredIndex === idx ? 6 : 3.5}
-								className={
-									hoveredIndex === idx ? "fill-emerald-300 stroke-slate-900" : "fill-emerald-400"
-								}
+								fill="var(--income)"
+								stroke="var(--surface)"
 								strokeWidth={hoveredIndex === idx ? 2 : 1}
 							/>
 							<rect x={p.x - 12} y={0} width={24} height={height} fill="transparent" />
@@ -176,25 +172,24 @@ export function CumulativeChart({ timeline, currency }: CumulativeChartProps) {
 					))}
 				</svg>
 
-				{/* Hover Tooltip */}
 				{hoveredIndex !== null && points[hoveredIndex] && (
 					<div
-						className="absolute pointer-events-none rounded-xl border border-slate-700 bg-slate-950/95 p-2.5 shadow-xl text-xs z-20 backdrop-blur-md"
+						className="absolute pointer-events-none rounded-xl border border-border-strong bg-surface p-3 shadow-[var(--shadow-pop)] text-xs z-20"
 						style={{
 							left: `${(points[hoveredIndex].x / width) * 100}%`,
 							top: `${Math.max(10, points[hoveredIndex].y - 80)}px`,
 							transform: "translateX(-50%)",
 						}}
 					>
-						<p className="font-bold text-slate-200">{points[hoveredIndex].point.label}</p>
-						<div className="mt-1 space-y-0.5">
-							<p className="text-emerald-400">
+						<p className="font-bold text-foreground">{points[hoveredIndex].point.label}</p>
+						<div className="mt-1 space-y-0.5 tabular-nums">
+							<p className="text-income-fg font-semibold">
 								+ Income: {formatCurrency(points[hoveredIndex].point.income, currency)}
 							</p>
-							<p className="text-red-400">
+							<p className="text-expense-fg font-semibold">
 								- Expense: {formatCurrency(points[hoveredIndex].point.expense, currency)}
 							</p>
-							<p className="font-semibold text-slate-100 pt-1 border-t border-slate-800">
+							<p className="font-bold text-foreground pt-1 border-t border-border">
 								Cumulative: {formatCurrency(points[hoveredIndex].point.cumulativeBalance, currency)}
 							</p>
 						</div>
@@ -202,8 +197,7 @@ export function CumulativeChart({ timeline, currency }: CumulativeChartProps) {
 				)}
 			</div>
 
-			{/* X-axis labels */}
-			<div className="flex justify-between items-center text-[10px] text-slate-500 pt-2 px-2">
+			<div className="flex justify-between items-center text-xs text-muted-foreground pt-2 px-2">
 				{timeline.length <= 12
 					? timeline.map((t, i) => <span key={i}>{t.label}</span>)
 					: timeline

@@ -26,7 +26,7 @@ export default function TermsPage() {
 				</div>
 
 				<header className="space-y-3">
-					<h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
+					<h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground">
 						Terms of Service
 					</h1>
 					<p className="text-sm text-slate-400">
@@ -35,7 +35,7 @@ export default function TermsPage() {
 				</header>
 
 				<section className="space-y-4 text-sm text-slate-300 leading-relaxed border-t border-slate-900 pt-6">
-					<h2 className="text-lg font-bold text-white">1. Acceptance of Terms</h2>
+					<h2 className="text-lg font-bold text-foreground">1. Acceptance of Terms</h2>
 					<p>
 						By downloading, installing, or using DayPulse, you agree to these Terms of Service.
 						DayPulse is an open-source productivity, routine tracking, and personal finance software
@@ -44,7 +44,9 @@ export default function TermsPage() {
 				</section>
 
 				<section className="space-y-4 text-sm text-slate-300 leading-relaxed border-t border-slate-900 pt-6">
-					<h2 className="text-lg font-bold text-white">2. User Responsibilities & Data Control</h2>
+					<h2 className="text-lg font-bold text-foreground">
+						2. User Responsibilities & Data Control
+					</h2>
 					<p>
 						DayPulse stores your data locally on your device. You are responsible for maintaining
 						the security of your device, managing your backups, and keeping your Google Cloud
@@ -53,7 +55,7 @@ export default function TermsPage() {
 				</section>
 
 				<section className="space-y-4 text-sm text-slate-300 leading-relaxed border-t border-slate-900 pt-6">
-					<h2 className="text-lg font-bold text-white">3. Third-Party Integrations</h2>
+					<h2 className="text-lg font-bold text-foreground">3. Third-Party Integrations</h2>
 					<p>
 						Google Drive integration is provided to facilitate file synchronization. Your use of
 						Google services is subject to Google's respective Terms of Service and Privacy Policy.
@@ -61,7 +63,7 @@ export default function TermsPage() {
 				</section>
 
 				<section className="space-y-4 text-sm text-slate-300 leading-relaxed border-t border-slate-900 pt-6">
-					<h2 className="text-lg font-bold text-white">4. Disclaimer of Warranty</h2>
+					<h2 className="text-lg font-bold text-foreground">4. Disclaimer of Warranty</h2>
 					<p>
 						DayPulse is provided "as is", without warranty of any kind, express or implied. In no
 						event shall the authors or copyright holders be liable for any claim, damages, or other

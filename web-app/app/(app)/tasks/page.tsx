@@ -1,8 +1,9 @@
 "use client";
 
-import { BellRing, Plus } from "lucide-react";
+import { BellRing, CheckSquare, Plus } from "lucide-react";
 import * as React from "react";
 import { RecentlyAddedBanner } from "@/components/dashboard/recently-added-banner";
+import { useContextDock } from "@/components/layout/context-dock";
 import { TaskFormModal } from "@/components/tasks/task-form-modal";
 import { type TaskItem, TaskList } from "@/components/tasks/task-list";
 import { Button } from "@/components/ui/button";
@@ -92,21 +93,61 @@ export default function TasksPage() {
 		setModalOpen(true);
 	};
 
-	const handleAddNewAlarm = () => {
+	const handleAddNewAlarm = React.useCallback(() => {
 		setEditingTask(null);
 		setModalDefaultType("EVENT");
 		setModalOpen(true);
-	};
+	}, []);
 
-	const handleAddNewTask = () => {
+	const handleAddNewTask = React.useCallback(() => {
 		setEditingTask(null);
 		setModalDefaultType("TASK");
 		setModalOpen(true);
-	};
+	}, []);
+
+	const pendingCount = React.useMemo(
+		() =>
+			tasks.filter((t) =>
+				t.isRecurring ? t.lastCompletedDate !== todayStr : t.status !== "COMPLETED",
+			).length,
+		[tasks, todayStr],
+	);
+
+	const contextDockNode = React.useMemo(
+		() => (
+			<div className="flex items-center justify-between gap-2 w-full">
+				<div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-surface-2 border border-border text-xs font-bold text-foreground">
+					<CheckSquare className="w-3.5 h-3.5 text-indigo-400" />
+					<span>{pendingCount} Pending</span>
+				</div>
+				<div className="flex items-center gap-1.5">
+					<button
+						type="button"
+						onClick={handleAddNewAlarm}
+						className="px-2.5 py-1.5 rounded-xl bg-amber-500/15 text-amber-400 border border-amber-500/30 text-xs font-bold flex items-center gap-1 cursor-pointer"
+					>
+						<BellRing className="w-3.5 h-3.5" />
+						<span>Set Alarm</span>
+					</button>
+					<button
+						type="button"
+						onClick={handleAddNewTask}
+						className="px-2.5 py-1.5 rounded-xl bg-primary text-primary-foreground text-xs font-bold flex items-center gap-1 cursor-pointer shadow-sm"
+					>
+						<Plus className="w-3.5 h-3.5" />
+						<span>New Task</span>
+					</button>
+				</div>
+			</div>
+		),
+		[pendingCount, handleAddNewAlarm, handleAddNewTask],
+	);
+
+	useContextDock(contextDockNode);
 
 	if (loading) {
 		return (
-			<div className="py-20 text-center text-slate-400 text-xs">
+			<div className="py-20 text-center text-foreground-muted text-xs">
 				Loading scheduled alarms & tasks...
 			</div>
 		);
@@ -118,27 +159,20 @@ export default function TasksPage() {
 
 			<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
 				<div>
-					<h1 className="text-2xl font-bold tracking-tight text-white">Alarms & Scheduled Tasks</h1>
-					<p className="text-xs text-slate-400 mt-1">
+					<h1 className="text-2xl font-bold tracking-tight text-foreground">
+						Alarms & Scheduled Tasks
+					</h1>
+					<p className="text-xs text-foreground-muted mt-1">
 						Configure daily or one-time alarms with multi-ring chimes, frequency intervals, and
 						advance notifications.
 					</p>
 				</div>
 				<div className="flex items-center gap-2 self-start sm:self-center">
-					<Button
-						size="sm"
-						onClick={handleAddNewAlarm}
-						className="gap-1.5 shadow-sm shadow-teal-950/40"
-					>
+					<Button size="sm" onClick={handleAddNewAlarm} className="gap-1.5 shadow-sm">
 						<BellRing className="w-4 h-4" />
 						<span>Set Alarm</span>
 					</Button>
-					<Button
-						variant="outline"
-						size="sm"
-						onClick={handleAddNewTask}
-						className="gap-1.5 border-slate-700 bg-slate-900/60 hover:bg-slate-800 text-slate-200"
-					>
+					<Button variant="outline" size="sm" onClick={handleAddNewTask} className="gap-1.5">
 						<Plus className="w-4 h-4" />
 						<span>New Task</span>
 					</Button>

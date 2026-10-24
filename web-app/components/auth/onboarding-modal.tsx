@@ -122,9 +122,9 @@ export function OnboardingModal({ isOpen, initialView = "CHOICE" }: OnboardingMo
 								<div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-tr from-teal-600 to-cyan-400 text-slate-950 shadow-md shadow-teal-500/20">
 									<Activity className="w-6 h-6 stroke-[2.5]" />
 								</div>
-								<span className="text-2xl font-black text-white">DayPulse</span>
+								<span className="text-2xl font-black text-foreground">DayPulse</span>
 							</div>
-							<h2 className="text-xl font-bold tracking-tight text-white pt-1">
+							<h2 className="text-xl font-bold tracking-tight text-foreground pt-1">
 								Welcome to Your Personal Workspace
 							</h2>
 							<p className="text-xs text-slate-400 max-w-sm mx-auto leading-relaxed">
@@ -137,14 +137,14 @@ export function OnboardingModal({ isOpen, initialView = "CHOICE" }: OnboardingMo
 							<button
 								type="button"
 								onClick={() => setActiveView("REGISTER")}
-								className="group flex items-start gap-4 p-4 rounded-2xl border border-teal-500/30 bg-teal-950/20 hover:bg-teal-950/40 hover:border-teal-500/50 transition-all text-left cursor-pointer shadow-lg shadow-teal-500/5"
+								className="group flex items-start gap-4 p-4 rounded-2xl border border-teal-500/30 bg-teal-500/10 hover:bg-teal-500/10 hover:border-teal-500/50 transition-all text-left cursor-pointer shadow-lg shadow-teal-500/5"
 							>
 								<div className="h-10 w-10 rounded-xl bg-teal-500/20 border border-teal-500/30 flex items-center justify-center text-teal-400 shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
 									<UserPlus className="w-5 h-5" />
 								</div>
 								<div className="flex-1 min-w-0">
 									<div className="flex items-center justify-between">
-										<p className="text-sm font-semibold text-white group-hover:text-teal-300 transition-colors">
+										<p className="text-sm font-semibold text-foreground group-hover:text-teal-300 transition-colors">
 											Create New Account
 										</p>
 										<Sparkles className="w-3.5 h-3.5 text-teal-400" />
@@ -165,7 +165,7 @@ export function OnboardingModal({ isOpen, initialView = "CHOICE" }: OnboardingMo
 								</div>
 								<div className="flex-1 min-w-0">
 									<div className="flex items-center justify-between">
-										<p className="text-sm font-semibold text-white group-hover:text-slate-200 transition-colors">
+										<p className="text-sm font-semibold text-foreground group-hover:text-slate-200 transition-colors">
 											Sign In to Existing Account
 										</p>
 										<ArrowRight className="w-3.5 h-3.5 text-slate-400" />
@@ -185,7 +185,7 @@ export function OnboardingModal({ isOpen, initialView = "CHOICE" }: OnboardingMo
 									<div className="h-9 w-9 rounded-xl bg-teal-500/10 border border-teal-500/20 flex items-center justify-center text-teal-400 mb-2.5 group-hover:scale-105 transition-transform">
 										<FileArchive className="w-4 h-4" />
 									</div>
-									<p className="text-xs font-semibold text-white group-hover:text-teal-300 transition-colors">
+									<p className="text-xs font-semibold text-foreground group-hover:text-teal-300 transition-colors">
 										Restore from File Backup
 									</p>
 									<p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
@@ -201,7 +201,7 @@ export function OnboardingModal({ isOpen, initialView = "CHOICE" }: OnboardingMo
 									<div className="h-9 w-9 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400 mb-2.5 group-hover:scale-105 transition-transform">
 										<Cloud className="w-4 h-4" />
 									</div>
-									<p className="text-xs font-semibold text-white group-hover:text-sky-300 transition-colors">
+									<p className="text-xs font-semibold text-foreground group-hover:text-sky-300 transition-colors">
 										Sync with Google Drive
 									</p>
 									<p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
@@ -230,7 +230,7 @@ export function OnboardingModal({ isOpen, initialView = "CHOICE" }: OnboardingMo
 							<button
 								type="button"
 								onClick={() => setActiveView("CHOICE")}
-								className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition cursor-pointer"
+								className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-foreground transition cursor-pointer"
 							>
 								<ArrowLeft className="w-4 h-4" />
 								<span>Back to Options</span>
@@ -239,7 +239,7 @@ export function OnboardingModal({ isOpen, initialView = "CHOICE" }: OnboardingMo
 						</div>
 
 						<div className="space-y-1">
-							<h3 className="text-lg font-bold text-white">Sign In to Your Account</h3>
+							<h3 className="text-lg font-bold text-foreground">Sign In to Your Account</h3>
 							<p className="text-xs text-slate-400">
 								Access your synchronized routines, tasks, and financial ledger.
 							</p>
@@ -313,7 +313,7 @@ export function OnboardingModal({ isOpen, initialView = "CHOICE" }: OnboardingMo
 							<button
 								type="button"
 								onClick={() => setActiveView("CHOICE")}
-								className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition cursor-pointer"
+								className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-foreground transition cursor-pointer"
 							>
 								<ArrowLeft className="w-4 h-4" />
 								<span>Back to Options</span>
@@ -322,7 +322,7 @@ export function OnboardingModal({ isOpen, initialView = "CHOICE" }: OnboardingMo
 						</div>
 
 						<div className="space-y-1">
-							<h3 className="text-lg font-bold text-white">Create New Workspace</h3>
+							<h3 className="text-lg font-bold text-foreground">Create New Workspace</h3>
 							<p className="text-xs text-slate-400">
 								Set up your personal DayPulse profile on this device.
 							</p>

@@ -192,7 +192,7 @@ export function CategoryManagerModal({
 						className={`py-1.5 rounded-lg transition cursor-pointer ${
 							activeGroup === "EXPENSE"
 								? "bg-red-500/20 text-red-400 border border-red-500/30"
-								: "text-slate-400 hover:text-white"
+								: "text-slate-400 hover:text-foreground"
 						}`}
 					>
 						Expenses
@@ -206,7 +206,7 @@ export function CategoryManagerModal({
 						className={`py-1.5 rounded-lg transition cursor-pointer ${
 							activeGroup === "INCOME"
 								? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-								: "text-slate-400 hover:text-white"
+								: "text-slate-400 hover:text-foreground"
 						}`}
 					>
 						Income
@@ -220,7 +220,7 @@ export function CategoryManagerModal({
 						className={`py-1.5 rounded-lg transition cursor-pointer ${
 							activeGroup === "PAYMENT_METHOD"
 								? "bg-sky-500/20 text-sky-400 border border-sky-500/30"
-								: "text-slate-400 hover:text-white"
+								: "text-slate-400 hover:text-foreground"
 						}`}
 					>
 						Methods
@@ -248,7 +248,7 @@ export function CategoryManagerModal({
 
 					{/* Inline Add Box */}
 					{isAdding && (
-						<div className="p-2.5 rounded-xl border border-emerald-500/40 bg-emerald-950/20 space-y-2 animate-in fade-in duration-150">
+						<div className="p-2.5 rounded-xl border border-emerald-500/40 bg-emerald-500/10 space-y-2 animate-in fade-in duration-150">
 							<div className="flex items-center gap-2">
 								<input
 									type="text"
@@ -347,7 +347,7 @@ export function CategoryManagerModal({
 													<button
 														type="button"
 														onClick={handleCancelEdit}
-														className="p-1 text-slate-400 hover:text-white"
+														className="p-1 text-slate-400 hover:text-foreground"
 													>
 														<X className="w-3.5 h-3.5" />
 													</button>
