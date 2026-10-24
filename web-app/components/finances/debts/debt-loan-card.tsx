@@ -89,10 +89,10 @@ export function DebtLoanCard({
 				isSettled
 					? "border-slate-800 bg-slate-900/40 opacity-80 hover:opacity-100"
 					: isOverdue
-						? "border-rose-500/40 bg-gradient-to-br from-slate-900/90 to-rose-950/20 shadow-md shadow-rose-950/20"
+						? "border-rose-500/40 bg-gradient-to-br from-slate-900/90 to-rose-500/10 shadow-md shadow-rose-500/10"
 						: isDebt
-							? "border-amber-500/30 bg-gradient-to-br from-slate-900/90 to-amber-950/20"
-							: "border-emerald-500/30 bg-gradient-to-br from-slate-900/90 to-emerald-950/20"
+							? "border-amber-500/30 bg-gradient-to-br from-slate-900/90 to-amber-500/10"
+							: "border-emerald-500/30 bg-gradient-to-br from-slate-900/90 to-emerald-500/10"
 			}`}
 		>
 			<div className="space-y-3.5">

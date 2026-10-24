@@ -1,6 +1,6 @@
 "use client";
 
-import { Kanban, List, Trash2 } from "lucide-react";
+import { CreditCard, Kanban, Trash2 } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
 import { MonthTimelineView } from "@/components/finances/timeline/month-timeline-view";
@@ -42,7 +42,7 @@ export function TransactionTimelineView({
 	onRefresh,
 }: TransactionTimelineViewProps) {
 	const confirm = useConfirm();
-	const [viewMode, setViewMode] = React.useState<"TIMELINE" | "LIST">("TIMELINE");
+	const [viewMode, setViewMode] = React.useState<"TIMELINE" | "LIST">("LIST");
 
 	const handleDelete = async (id: string, desc: string) => {
 		const ok = await confirm({
@@ -92,7 +92,7 @@ export function TransactionTimelineView({
 	return (
 		<div className="space-y-4">
 			{/* View Toggle Bar (Timeline vs Itemized List) */}
-			<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl border border-zinc-800 bg-zinc-900/60 backdrop-blur-xl">
+			<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl border border-border bg-surface backdrop-blur-xl">
 				<div>
 					<h3 className="text-sm font-bold text-foreground">
 						{viewMode === "TIMELINE"
@@ -103,7 +103,7 @@ export function TransactionTimelineView({
 									: "Annual 12-Month Performance"
 							: "Itemized Transaction Ledger"}
 					</h3>
-					<p className="text-xs text-zinc-400 mt-0.5">
+					<p className="text-xs text-muted-foreground mt-0.5">
 						{viewMode === "TIMELINE"
 							? "Structured temporal flow with daily and monthly totals"
 							: `Flat itemized ledger entries (${transactions.length} total)`}
@@ -123,14 +123,14 @@ export function TransactionTimelineView({
 						</Button>
 					)}
 
-					<div className="flex items-center rounded-xl bg-zinc-950 p-1 border border-zinc-800">
+					<div className="flex items-center rounded-xl bg-surface-sunken p-1 border border-border">
 						<button
 							type="button"
 							onClick={() => setViewMode("TIMELINE")}
 							className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
 								viewMode === "TIMELINE"
-									? "bg-zinc-800 text-foreground shadow-sm"
-									: "text-zinc-400 hover:text-foreground"
+									? "bg-surface-2 text-foreground shadow-sm"
+									: "text-muted-foreground hover:text-foreground"
 							}`}
 						>
 							<Kanban className="w-3.5 h-3.5 text-emerald-400" />
@@ -141,12 +141,12 @@ export function TransactionTimelineView({
 							onClick={() => setViewMode("LIST")}
 							className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
 								viewMode === "LIST"
-									? "bg-zinc-800 text-foreground shadow-sm"
-									: "text-zinc-400 hover:text-foreground"
+									? "bg-surface-2 text-foreground shadow-sm"
+									: "text-muted-foreground hover:text-foreground"
 							}`}
 						>
-							<List className="w-3.5 h-3.5 text-zinc-400" />
-							<span>Itemized List</span>
+							<CreditCard className="w-3.5 h-3.5 text-emerald-400" />
+							<span>Card History</span>
 						</button>
 					</div>
 				</div>

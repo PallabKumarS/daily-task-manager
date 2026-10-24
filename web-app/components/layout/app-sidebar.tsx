@@ -149,6 +149,13 @@ export function AppSidebar() {
 						</button>
 					</div>
 				)}
+
+				<div className="flex items-center justify-between text-[11px] text-subtle px-1 pt-0.5 font-mono">
+					<span>DayPulse</span>
+					<span className="rounded-md bg-surface-2 px-1.5 py-0.5 border border-border text-[10px] font-semibold text-muted-foreground">
+						v1.1.0
+					</span>
+				</div>
 			</div>
 		</aside>
 	);

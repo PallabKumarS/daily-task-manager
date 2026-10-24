@@ -94,7 +94,7 @@ export function AppNavbar({ onQuickAdd }: AppNavbarProps) {
 						<button
 							type="button"
 							onClick={() => setIsQuickLogOpen((prev) => !prev)}
-							className="flex items-center gap-1.5 rounded-xl bg-teal-600 hover:bg-teal-500 px-3.5 py-2 text-xs font-semibold text-white shadow-sm shadow-teal-950/20 transition cursor-pointer"
+							className="flex items-center gap-1.5 rounded-xl bg-teal-600 hover:bg-teal-500 px-3.5 py-2 text-xs font-semibold text-white shadow-sm shadow-teal-500/10 transition cursor-pointer"
 						>
 							<Plus className="w-4 h-4" />
 							<span className="hidden sm:inline">Quick Log</span>

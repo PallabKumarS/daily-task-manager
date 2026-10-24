@@ -13,13 +13,13 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
 		const variantStyles = {
 			default:
-				"bg-teal-600 text-white hover:bg-teal-500 shadow-sm shadow-teal-950/20 hover:shadow-md hover:shadow-teal-600/20",
+				"bg-teal-600 text-white hover:bg-teal-500 shadow-sm shadow-teal-500/10 hover:shadow-md hover:shadow-teal-600/20",
 			emerald:
 				"bg-teal-600 dark:bg-teal-500 text-white dark:text-slate-950 font-semibold hover:bg-teal-500 dark:hover:bg-teal-400 shadow-sm shadow-teal-500/20",
 			secondary: "bg-surface-2 text-foreground hover:bg-border/60 border border-border-strong/70",
 			outline: "border border-border-strong bg-surface/70 text-foreground hover:bg-surface-2",
 			ghost: "text-muted-foreground hover:bg-surface-2 hover:text-foreground",
-			destructive: "bg-rose-600 text-white hover:bg-rose-500 shadow-sm shadow-rose-950/20",
+			destructive: "bg-rose-600 text-white hover:bg-rose-500 shadow-sm shadow-rose-500/10",
 		};
 
 		const sizeStyles = {

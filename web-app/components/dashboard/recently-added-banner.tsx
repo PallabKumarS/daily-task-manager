@@ -100,16 +100,16 @@ export function RecentlyAddedBanner({
 	const getBorderAndBg = (type: RecentAdditionItem["type"]) => {
 		switch (type) {
 			case "EXPENSE":
-				return "border-rose-500/40 bg-gradient-to-r from-rose-950/40 via-slate-900/90 to-slate-900/80 shadow-rose-950/20";
+				return "border-rose-500/40 bg-gradient-to-r from-rose-500/10 via-slate-900/90 to-slate-900/80 shadow-rose-500/10";
 			case "INCOME":
-				return "border-emerald-500/40 bg-gradient-to-r from-emerald-950/40 via-slate-900/90 to-slate-900/80 shadow-emerald-950/20";
+				return "border-emerald-500/40 bg-gradient-to-r from-emerald-500/10 via-slate-900/90 to-slate-900/80 shadow-emerald-500/10";
 			case "EVENT":
 			case "TASK":
-				return "border-indigo-500/40 bg-gradient-to-r from-indigo-950/40 via-slate-900/90 to-slate-900/80 shadow-indigo-950/20";
+				return "border-indigo-500/40 bg-gradient-to-r from-indigo-500/10 via-slate-900/90 to-slate-900/80 shadow-indigo-500/10";
 			case "ROUTINE":
-				return "border-teal-500/40 bg-gradient-to-r from-teal-950/40 via-slate-900/90 to-slate-900/80 shadow-teal-950/20";
+				return "border-teal-500/40 bg-gradient-to-r from-teal-500/10 via-slate-900/90 to-slate-900/80 shadow-teal-500/10";
 			case "TRACKER":
-				return "border-purple-500/40 bg-gradient-to-r from-purple-950/40 via-slate-900/90 to-slate-900/80 shadow-purple-950/20";
+				return "border-purple-500/40 bg-gradient-to-r from-purple-500/10 via-slate-900/90 to-slate-900/80 shadow-purple-500/10";
 			default:
 				return "border-slate-800 bg-slate-900/90";
 		}
@@ -170,7 +170,7 @@ export function RecentlyAddedBanner({
 									</span>
 								)}
 								{latestAddition.paymentMethod && (
-									<span className="text-[11px] text-zinc-400">
+									<span className="text-[11px] text-muted-foreground">
 										via {latestAddition.paymentMethod}
 									</span>
 								)}
@@ -181,7 +181,7 @@ export function RecentlyAddedBanner({
 					<div className="flex items-center gap-2 self-end sm:self-center shrink-0">
 						<Link
 							href={getDestinationLink(latestAddition)}
-							className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-700/80 bg-zinc-900/80 hover:bg-zinc-800 px-3 py-1.5 text-xs font-semibold text-zinc-200 transition"
+							className="inline-flex items-center gap-1.5 rounded-xl border border-border-strong bg-surface hover:bg-surface-2 px-3 py-1.5 text-xs font-semibold text-foreground transition"
 						>
 							<span>
 								View in{" "}
@@ -196,7 +196,7 @@ export function RecentlyAddedBanner({
 							<button
 								type="button"
 								onClick={() => setExpandedHistory((prev) => !prev)}
-								className="rounded-xl border border-zinc-700/80 bg-zinc-900/80 hover:bg-zinc-800 px-2.5 py-1.5 text-xs font-semibold text-zinc-300 transition cursor-pointer"
+								className="rounded-xl border border-border-strong bg-surface hover:bg-surface-2 px-2.5 py-1.5 text-xs font-semibold text-foreground transition cursor-pointer"
 								title="Toggle recent additions history"
 							>
 								{recentList.length} items
@@ -206,7 +206,7 @@ export function RecentlyAddedBanner({
 						<button
 							type="button"
 							onClick={dismissLatest}
-							className="flex h-8 w-8 items-center justify-center rounded-xl border border-zinc-800 bg-zinc-950/60 text-zinc-400 hover:text-foreground hover:bg-zinc-800 transition cursor-pointer"
+							className="flex h-8 w-8 items-center justify-center rounded-xl border border-border bg-surface-sunken text-muted-foreground hover:text-foreground hover:bg-surface-2 transition cursor-pointer"
 							title="Dismiss confirmation"
 						>
 							<X className="w-4 h-4" />
@@ -216,21 +216,23 @@ export function RecentlyAddedBanner({
 
 				{/* Expanded history drawer if user clicked items button */}
 				{expandedHistory && recentList.length > 1 && (
-					<div className="mt-3 pt-3 border-t border-zinc-800/80 space-y-2">
-						<p className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
+					<div className="mt-3 pt-3 border-t border-border space-y-2">
+						<p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
 							Other Recently Added Items
 						</p>
 						<div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
 							{recentList.slice(1, 7).map((item) => (
 								<div
 									key={item.id}
-									className="flex items-center justify-between rounded-xl bg-zinc-950/60 border border-zinc-800/60 p-2.5 text-xs"
+									className="flex items-center justify-between rounded-xl bg-surface-sunken border border-border p-2.5 text-xs"
 								>
 									<div className="flex items-center gap-2 min-w-0">
 										{renderIcon(item.type)}
 										<div className="min-w-0">
-											<p className="font-semibold text-zinc-200 truncate">{item.title}</p>
-											<p className="text-[10px] text-zinc-400">{item.category || item.type}</p>
+											<p className="font-semibold text-foreground truncate">{item.title}</p>
+											<p className="text-[10px] text-muted-foreground">
+												{item.category || item.type}
+											</p>
 										</div>
 									</div>
 									{typeof item.amount === "number" && (

@@ -244,6 +244,17 @@
 	--color-expense: var(--expense);
 	--color-expense-fg: var(--expense-fg);
 	--color-expense-soft: var(--expense-soft);
+
+	--color-foreground-muted: var(--muted-foreground);
+	--color-foreground-subtle: var(--subtle);
+}
+
+@utility shadow-card {
+	box-shadow: var(--shadow-card);
+}
+
+@utility shadow-pop {
+	box-shadow: var(--shadow-pop);
 }
 
 * {

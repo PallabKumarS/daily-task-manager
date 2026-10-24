@@ -1,8 +1,9 @@
 "use client";
 
-import { ArrowDownRight, ArrowUpRight, CalendarPlus, Edit2, Repeat, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
+import { getTransactionTitle, TransactionCard } from "@/components/finances/transaction-card";
 import { Button } from "@/components/ui/button";
 import { CardDeck } from "@/components/ui/card-deck";
 import { useConfirm } from "@/components/ui/confirm-dialog";
@@ -177,133 +178,29 @@ export function TransactionList({
 			<CardDeck
 				items={filtered}
 				getKey={(item) => item.id}
-				getTitle={(item) => {
-					const cleanDesc = item.description
-						? item.description.replace(/\[Recurring:\s*[^\]]+\]/i, "").trim()
-						: "";
-					return `${cleanDesc || item.category} (${formatCurrency(item.amount, currency)})`;
-				}}
-				storageKey="finance_ledger_tx"
-				defaultMode="all"
-				desktopColumns={1}
-				sectionLabel="Transactions"
+				getTitle={(item) =>
+					`${getTransactionTitle(item)} (${formatCurrency(item.amount, currency)})`
+				}
+				storageKey="finance_tx_cards"
+				defaultMode="deck"
+				desktopColumns={3}
+				sectionLabel="Transaction Cards"
 				emptyState={
 					<div className="py-12 text-center text-xs text-foreground-muted">
 						No transactions found for this period. Log an expense or earning to track data.
 					</div>
 				}
-				renderCard={(item) => {
-					const isIncome = item.type === "INCOME";
-					const dateStr = new Date(item.date).toLocaleDateString("en-US", {
-						month: "short",
-						day: "numeric",
-						year: "numeric",
-					});
-
-					const recurringMatch = item.description?.match(/\[Recurring:\s*([^\]]+)\]/i);
-					const cleanDesc = item.description
-						? item.description.replace(/\[Recurring:\s*[^\]]+\]/i, "").trim()
-						: "";
-
-					const isJustAdded = activeAdditionId === item.id;
-
-					return (
-						<div
-							className={`flex items-center justify-between p-3.5 rounded-2xl border transition-all duration-300 ${
-								isJustAdded
-									? "ring-2 ring-emerald-500/70 bg-emerald-500/10 border-emerald-500/40 shadow-lg shadow-emerald-500/10"
-									: "border-border bg-surface-2/50 hover:bg-surface-2"
-							}`}
-						>
-							<div className="flex items-center gap-3 min-w-0">
-								<div
-									className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
-										isIncome
-											? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-											: "bg-rose-500/10 text-rose-400 border border-rose-500/20"
-									}`}
-								>
-									{isIncome ? (
-										<ArrowUpRight className="w-4 h-4" />
-									) : (
-										<ArrowDownRight className="w-4 h-4" />
-									)}
-								</div>
-								<div className="min-w-0">
-									<div className="flex items-center gap-2 flex-wrap">
-										{isJustAdded && (
-											<span className="rounded-md bg-emerald-500/20 px-1.5 py-0.5 text-xs font-bold text-emerald-400 border border-emerald-500/40 animate-pulse">
-												Just Added
-											</span>
-										)}
-										<p className="text-xs font-semibold text-foreground truncate">
-											{cleanDesc || item.category}
-										</p>
-										<span
-											className={`rounded-md px-1.5 py-0.5 text-xs border ${
-												item.category === "Debt / Borrowed" || item.category === "Debt Repayment"
-													? "bg-amber-500/15 text-amber-400 border-amber-500/30"
-													: item.category === "Loan Given" || item.category === "Loan Return"
-														? "bg-cyan-500/15 text-cyan-400 border-cyan-500/30"
-														: "bg-surface text-foreground-muted border-border"
-											}`}
-										>
-											{item.category}
-										</span>
-										{recurringMatch && (
-											<span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-1.5 py-0.5 text-xs text-emerald-400 border border-emerald-500/25">
-												<Repeat className="w-2.5 h-2.5" />
-												<span>{recurringMatch[1]}</span>
-											</span>
-										)}
-									</div>
-									<p className="text-xs text-foreground-muted mt-0.5">
-										{dateStr} • {item.paymentMethod}
-									</p>
-								</div>
-							</div>
-
-							<div className="flex items-center gap-3 shrink-0 pl-2">
-								<span
-									className={`text-sm font-bold tabular-nums ${
-										isIncome ? "text-emerald-400" : "text-rose-400"
-									}`}
-								>
-									{isIncome ? "+" : "-"}
-									{formatCurrency(item.amount, currency)}
-								</span>
-
-								<div className="flex items-center gap-1">
-									<button
-										type="button"
-										onClick={() => handleDuplicateToToday(item)}
-										disabled={duplicatingId === item.id}
-										className="p-1.5 rounded-lg text-foreground-muted hover:text-emerald-400 hover:bg-emerald-500/10 transition cursor-pointer disabled:opacity-40"
-										title="Add previous day card today (Repeat to today)"
-									>
-										<CalendarPlus className="w-3.5 h-3.5" />
-									</button>
-									<button
-										type="button"
-										onClick={() => onEdit(item)}
-										className="p-1.5 rounded-lg text-foreground-muted hover:text-foreground hover:bg-surface transition cursor-pointer"
-										title="Edit"
-									>
-										<Edit2 className="w-3.5 h-3.5" />
-									</button>
-									<button
-										type="button"
-										onClick={() => handleDelete(item.id)}
-										className="p-1.5 rounded-lg text-foreground-muted hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer"
-										title="Delete"
-									>
-										<Trash2 className="w-3.5 h-3.5" />
-									</button>
-								</div>
-							</div>
-						</div>
-					);
-				}}
+				renderCard={(item) => (
+					<TransactionCard
+						item={item}
+						currency={currency}
+						isJustAdded={activeAdditionId === item.id}
+						isDuplicating={duplicatingId === item.id}
+						onEdit={onEdit}
+						onDelete={(tx) => handleDelete(tx.id)}
+						onDuplicate={handleDuplicateToToday}
+					/>
+				)}
 			/>
 		</div>
 	);

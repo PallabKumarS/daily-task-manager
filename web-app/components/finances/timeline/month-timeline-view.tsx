@@ -1,19 +1,11 @@
 "use client";
 
-import {
-	ArrowDownRight,
-	ArrowUpRight,
-	Calendar,
-	ChevronLeft,
-	ChevronRight,
-	Edit2,
-	Plus,
-	Repeat,
-	Trash2,
-} from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import * as React from "react";
+import { TransactionCard } from "@/components/finances/transaction-card";
 import type { TransactionItem } from "@/components/finances/transaction-list";
 import { Button } from "@/components/ui/button";
+import { CardDeck } from "@/components/ui/card-deck";
 import { formatCurrency } from "@/lib/currency-symbols";
 import { useRecentAdditions } from "@/lib/recent-activity-store";
 import { DAY_NAMES_SHORT } from "@/lib/workweek-preferences";
@@ -131,13 +123,13 @@ export function MonthTimelineView({
 	return (
 		<div className="space-y-4">
 			{/* Timeline Header & Scroll Controls */}
-			<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl border border-zinc-800 bg-zinc-900/60 backdrop-blur-xl">
+			<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl border border-border bg-surface backdrop-blur-xl">
 				<div>
 					<h3 className="text-sm font-bold text-foreground flex items-center gap-2">
 						<Calendar className="w-4 h-4 text-emerald-400" />
 						<span>30-Day Daily Financial Timeline</span>
 					</h3>
-					<p className="text-xs text-zinc-400 mt-0.5">
+					<p className="text-xs text-muted-foreground mt-0.5">
 						Scroll horizontally to inspect daily totals or click any day to view itemized
 						transactions
 					</p>
@@ -147,7 +139,7 @@ export function MonthTimelineView({
 					<button
 						type="button"
 						onClick={handleScrollLeft}
-						className="flex h-8 w-8 items-center justify-center rounded-xl border border-zinc-800 bg-zinc-950 text-zinc-400 hover:text-foreground hover:bg-zinc-800 transition cursor-pointer"
+						className="flex h-8 w-8 items-center justify-center rounded-xl border border-border bg-surface-sunken text-muted-foreground hover:text-foreground hover:bg-surface-2 transition cursor-pointer"
 						title="Scroll Left"
 					>
 						<ChevronLeft className="w-4 h-4" />
@@ -155,7 +147,7 @@ export function MonthTimelineView({
 					<button
 						type="button"
 						onClick={handleScrollRight}
-						className="flex h-8 w-8 items-center justify-center rounded-xl border border-zinc-800 bg-zinc-950 text-zinc-400 hover:text-foreground hover:bg-zinc-800 transition cursor-pointer"
+						className="flex h-8 w-8 items-center justify-center rounded-xl border border-border bg-surface-sunken text-muted-foreground hover:text-foreground hover:bg-surface-2 transition cursor-pointer"
 						title="Scroll Right"
 					>
 						<ChevronRight className="w-4 h-4" />
@@ -189,10 +181,10 @@ export function MonthTimelineView({
 							onClick={() => setSelectedDateStr(day.dateStr)}
 							className={`shrink-0 w-44 rounded-2xl border p-3 cursor-pointer transition-all snap-start flex flex-col justify-between text-left ${
 								isSelected
-									? "ring-2 ring-emerald-500 border-emerald-500/80 bg-gradient-to-b from-emerald-950/40 via-zinc-900 to-zinc-900 shadow-lg shadow-emerald-950/30"
+									? "ring-2 ring-emerald-500 border-emerald-500/80 bg-gradient-to-b from-emerald-500/10 via-surface to-surface shadow-lg shadow-emerald-500/10"
 									: day.isToday
-										? "border-emerald-500/40 bg-zinc-900/80 hover:border-emerald-500/60"
-										: "border-zinc-800/80 bg-zinc-900/60 hover:border-zinc-700 hover:bg-zinc-900/90"
+										? "border-emerald-500/40 bg-surface hover:border-emerald-500/60"
+										: "border-border bg-surface hover:border-border-strong hover:bg-surface"
 							}`}
 						>
 							<div className="w-full">
@@ -202,7 +194,7 @@ export function MonthTimelineView({
 										<span className="text-2xl font-black tracking-tight text-foreground block">
 											{day.dayNumber}
 										</span>
-										<span className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">
+										<span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
 											{day.dayName}
 										</span>
 									</div>
@@ -214,7 +206,7 @@ export function MonthTimelineView({
 											</span>
 										)}
 										{hasActivity && (
-											<span className="rounded-full bg-zinc-800 px-2 py-0.5 text-[9px] font-semibold text-zinc-300">
+											<span className="rounded-full bg-surface-2 px-2 py-0.5 text-[9px] font-semibold text-foreground">
 												{dayTx.length} items
 											</span>
 										)}
@@ -222,21 +214,19 @@ export function MonthTimelineView({
 								</div>
 
 								{/* Daily Totals */}
-								<div className="mt-3 space-y-1.5 rounded-xl bg-zinc-950/70 p-2.5 text-[11px] border border-zinc-800/60">
+								<div className="mt-3 space-y-1.5 rounded-xl bg-surface-sunken p-2.5 text-[11px] border border-border">
 									<div className="flex items-center justify-between">
-										<span className="text-zinc-500">Inflow:</span>
+										<span className="text-subtle">Inflow:</span>
 										<span
-											className={`font-bold ${
-												dayIncome > 0 ? "text-emerald-400" : "text-zinc-500"
-											}`}
+											className={`font-bold ${dayIncome > 0 ? "text-emerald-400" : "text-subtle"}`}
 										>
 											+{formatCurrency(dayIncome, currency)}
 										</span>
 									</div>
 									<div className="flex items-center justify-between">
-										<span className="text-zinc-500">Outflow:</span>
+										<span className="text-subtle">Outflow:</span>
 										<span
-											className={`font-bold ${dayExpense > 0 ? "text-rose-400" : "text-zinc-500"}`}
+											className={`font-bold ${dayExpense > 0 ? "text-rose-400" : "text-subtle"}`}
 										>
 											-{formatCurrency(dayExpense, currency)}
 										</span>
@@ -245,11 +235,15 @@ export function MonthTimelineView({
 							</div>
 
 							{/* Day Net Card Footer */}
-							<div className="mt-3 pt-2 border-t border-zinc-800/80 flex items-center justify-between text-xs">
-								<span className="text-[10px] text-zinc-500 uppercase font-bold">Net</span>
+							<div className="mt-3 pt-2 border-t border-border flex items-center justify-between text-xs">
+								<span className="text-[10px] text-subtle uppercase font-bold">Net</span>
 								<span
 									className={`font-black ${
-										dayNet > 0 ? "text-emerald-400" : dayNet < 0 ? "text-rose-400" : "text-zinc-400"
+										dayNet > 0
+											? "text-emerald-400"
+											: dayNet < 0
+												? "text-rose-400"
+												: "text-muted-foreground"
 									}`}
 								>
 									{dayNet > 0 ? "+" : ""}
@@ -262,8 +256,8 @@ export function MonthTimelineView({
 			</div>
 
 			{/* Selected Day Itemized Details Panel */}
-			<div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5 backdrop-blur-xl">
-				<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-zinc-800">
+			<div className="rounded-2xl border border-border bg-surface p-5 backdrop-blur-xl">
+				<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border">
 					<div>
 						<div className="flex items-center gap-2">
 							<h4 className="text-sm font-extrabold text-foreground">
@@ -281,7 +275,7 @@ export function MonthTimelineView({
 								</span>
 							)}
 						</div>
-						<p className="text-xs text-zinc-400 mt-0.5">
+						<p className="text-xs text-muted-foreground mt-0.5">
 							{selectedTransactions.length} transaction
 							{selectedTransactions.length === 1 ? "" : "s"} logged on this date
 						</p>
@@ -292,11 +286,11 @@ export function MonthTimelineView({
 							<span className="text-emerald-400 font-bold">
 								+{formatCurrency(selectedDayIncome, currency)}
 							</span>
-							<span className="text-zinc-600">/</span>
+							<span className="text-subtle">/</span>
 							<span className="text-rose-400 font-bold">
 								-{formatCurrency(selectedDayExpense, currency)}
 							</span>
-							<span className="text-zinc-600">•</span>
+							<span className="text-subtle">•</span>
 							<span
 								className={`font-black ${
 									selectedDayNet >= 0 ? "text-emerald-400" : "text-rose-400"
@@ -321,10 +315,10 @@ export function MonthTimelineView({
 					</div>
 				</div>
 
-				{/* Transactions List */}
-				<div className="mt-4 divide-y divide-zinc-800/60 max-h-[380px] overflow-y-auto pr-1">
+				{/* Transactions List / Card Deck */}
+				<div className="mt-4">
 					{selectedTransactions.length === 0 ? (
-						<div className="py-12 text-center text-xs text-zinc-500">
+						<div className="py-12 text-center text-xs text-subtle border border-dashed border-border rounded-2xl">
 							<p>No transactions logged for this day.</p>
 							{selectedDateStr && (
 								<button
@@ -337,97 +331,24 @@ export function MonthTimelineView({
 							)}
 						</div>
 					) : (
-						selectedTransactions.map((item) => {
-							const isIncome = item.type === "INCOME";
-							const isJustAdded = activeAdditionId === item.id;
-							const recurringMatch = item.description?.match(/\[Recurring:\s*([^\]]+)\]/i);
-							const cleanDesc = item.description
-								? item.description.replace(/\[Recurring:\s*[^\]]+\]/i, "").trim()
-								: "";
-
-							return (
-								<div
-									key={item.id}
-									className={`flex items-center justify-between py-3 px-2 rounded-xl transition-all ${
-										isJustAdded
-											? "ring-2 ring-emerald-500/70 bg-emerald-500/10 shadow-lg shadow-emerald-500/10"
-											: "hover:bg-zinc-800/30"
-									}`}
-								>
-									<div className="flex items-center gap-3 min-w-0">
-										<div
-											className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
-												isIncome
-													? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-													: "bg-rose-500/10 text-rose-400 border border-rose-500/20"
-											}`}
-										>
-											{isIncome ? (
-												<ArrowUpRight className="w-4 h-4" />
-											) : (
-												<ArrowDownRight className="w-4 h-4" />
-											)}
-										</div>
-										<div className="min-w-0">
-											<div className="flex items-center gap-2 flex-wrap">
-												{isJustAdded && (
-													<span className="rounded-md bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-bold text-emerald-300 border border-emerald-500/40 animate-pulse">
-														Just Added
-													</span>
-												)}
-												<p className="text-xs font-semibold text-foreground truncate">
-													{cleanDesc || item.category}
-												</p>
-												<span className="rounded-md bg-zinc-800 px-1.5 py-0.5 text-[10px] text-zinc-300 border border-zinc-700/60">
-													{item.category}
-												</span>
-												{recurringMatch && (
-													<span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-1.5 py-0.5 text-[10px] text-emerald-400 border border-emerald-500/25">
-														<Repeat className="w-2.5 h-2.5" />
-														<span>{recurringMatch[1]}</span>
-													</span>
-												)}
-											</div>
-											<p className="text-[11px] text-zinc-400 mt-0.5">
-												Logged via {item.paymentMethod}
-											</p>
-										</div>
-									</div>
-
-									<div className="flex items-center gap-3 shrink-0 pl-2">
-										<span
-											className={`text-sm font-black ${
-												isIncome ? "text-emerald-400" : "text-rose-400"
-											}`}
-										>
-											{isIncome ? "+" : "-"}
-											{formatCurrency(item.amount, currency)}
-										</span>
-
-										<div className="flex items-center gap-1">
-											<button
-												type="button"
-												onClick={() => onEdit(item)}
-												className="p-1.5 rounded-lg text-zinc-400 hover:text-foreground hover:bg-zinc-800 transition cursor-pointer"
-												title="Edit"
-											>
-												<Edit2 className="w-3.5 h-3.5" />
-											</button>
-											<button
-												type="button"
-												onClick={() =>
-													onDelete(item.id, cleanDesc || `${item.category} transaction`)
-												}
-												className="p-1.5 rounded-lg text-zinc-400 hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer"
-												title="Delete"
-											>
-												<Trash2 className="w-3.5 h-3.5" />
-											</button>
-										</div>
-									</div>
-								</div>
-							);
-						})
+						<CardDeck
+							items={selectedTransactions}
+							keyExtractor={(item) => item.id}
+							storageKey="month_day_transactions"
+							defaultMode="deck"
+							desktopColumns={2}
+							title={`Day ${selectedDayData?.dayNumber} Transactions`}
+							subtitle={`${selectedTransactions.length} transaction${selectedTransactions.length === 1 ? "" : "s"} on ${selectedDateStr}`}
+							renderCard={(item) => (
+								<TransactionCard
+									item={item}
+									currency={currency}
+									onEdit={onEdit}
+									onDelete={(tx) => onDelete(tx.id, tx.description || `${tx.category} transaction`)}
+									isJustAdded={activeAdditionId === item.id}
+								/>
+							)}
+						/>
 					)}
 				</div>
 			</div>

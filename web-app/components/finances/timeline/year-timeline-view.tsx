@@ -80,35 +80,35 @@ export function YearTimelineView({
 	return (
 		<div className="space-y-4">
 			{/* Year Header Banner */}
-			<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-zinc-800 bg-zinc-900/60 backdrop-blur-xl">
+			<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-border bg-surface backdrop-blur-xl">
 				<div>
 					<h3 className="text-sm font-bold text-foreground flex items-center gap-2">
 						<TrendingUp className="w-4 h-4 text-emerald-400" />
 						<span>Annual 12-Month Performance Overview ({currentYear})</span>
 					</h3>
-					<p className="text-xs text-zinc-400 mt-0.5">
+					<p className="text-xs text-muted-foreground mt-0.5">
 						Monthly inflow and outflow totals with net savings ratios across the entire calendar
 						year
 					</p>
 				</div>
 
-				<div className="flex items-center gap-3 text-xs bg-zinc-950 px-3 py-1.5 rounded-xl border border-zinc-800 self-start sm:self-auto">
+				<div className="flex items-center gap-3 text-xs bg-surface-sunken px-3 py-1.5 rounded-xl border border-border self-start sm:self-auto">
 					<div>
-						<span className="text-zinc-500">Year Inflow:</span>{" "}
+						<span className="text-subtle">Year Inflow:</span>{" "}
 						<span className="font-bold text-emerald-400">
 							+{formatCurrency(yearTotalIncome, currency)}
 						</span>
 					</div>
-					<span className="text-zinc-700">|</span>
+					<span className="text-subtle">|</span>
 					<div>
-						<span className="text-zinc-500">Year Outflow:</span>{" "}
+						<span className="text-subtle">Year Outflow:</span>{" "}
 						<span className="font-bold text-rose-400">
 							-{formatCurrency(yearTotalExpense, currency)}
 						</span>
 					</div>
-					<span className="text-zinc-700">|</span>
+					<span className="text-subtle">|</span>
 					<div>
-						<span className="text-zinc-500">Net:</span>{" "}
+						<span className="text-subtle">Net:</span>{" "}
 						<span className={`font-black ${yearNet >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
 							{yearNet >= 0 ? "+" : ""}
 							{formatCurrency(yearNet, currency)}
@@ -133,21 +133,21 @@ export function YearTimelineView({
 							key={m.monthIndex}
 							className={`flex flex-col justify-between rounded-2xl border p-4 transition-all ${
 								m.isCurrentMonth
-									? "border-emerald-500/60 bg-gradient-to-b from-emerald-950/20 via-zinc-900 to-zinc-900 shadow-md shadow-emerald-950/20"
-									: "border-zinc-800/80 bg-zinc-900/60 hover:border-zinc-700 hover:bg-zinc-900/90"
+									? "border-emerald-500/60 bg-gradient-to-b from-emerald-500/10 via-surface to-surface shadow-md shadow-emerald-500/10"
+									: "border-border bg-surface hover:border-border-strong hover:bg-surface"
 							}`}
 						>
 							<div>
 								{/* Month Title & Badges */}
-								<div className="flex items-start justify-between pb-3 border-b border-zinc-800/80">
+								<div className="flex items-start justify-between pb-3 border-b border-border">
 									<div>
 										<div className="flex items-center gap-2">
 											<h4 className="text-base font-extrabold text-foreground">{m.name}</h4>
-											<span className="rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] font-bold text-zinc-400">
+											<span className="rounded bg-surface-2 px-1.5 py-0.5 text-[10px] font-bold text-muted-foreground">
 												{m.quarter}
 											</span>
 										</div>
-										<p className="text-[11px] text-zinc-400 mt-0.5">
+										<p className="text-[11px] text-muted-foreground mt-0.5">
 											{m.count} transaction{m.count === 1 ? "" : "s"} logged
 										</p>
 									</div>
@@ -162,13 +162,13 @@ export function YearTimelineView({
 								{/* Inflow & Outflow Numbers */}
 								<div className="mt-3.5 space-y-2">
 									<div className="flex items-center justify-between text-xs">
-										<span className="text-zinc-400 flex items-center gap-1.5">
+										<span className="text-muted-foreground flex items-center gap-1.5">
 											<ArrowUpRight className="w-3.5 h-3.5 text-emerald-400" />
 											<span>Total Earnings</span>
 										</span>
 										<span
 											className={`font-extrabold ${
-												m.income > 0 ? "text-emerald-400" : "text-zinc-500"
+												m.income > 0 ? "text-emerald-400" : "text-subtle"
 											}`}
 										>
 											+{formatCurrency(m.income, currency)}
@@ -176,13 +176,13 @@ export function YearTimelineView({
 									</div>
 
 									<div className="flex items-center justify-between text-xs">
-										<span className="text-zinc-400 flex items-center gap-1.5">
+										<span className="text-muted-foreground flex items-center gap-1.5">
 											<ArrowDownRight className="w-3.5 h-3.5 text-rose-400" />
 											<span>Total Spendings</span>
 										</span>
 										<span
 											className={`font-extrabold ${
-												m.expense > 0 ? "text-rose-400" : "text-zinc-500"
+												m.expense > 0 ? "text-rose-400" : "text-subtle"
 											}`}
 										>
 											-{formatCurrency(m.expense, currency)}
@@ -192,11 +192,11 @@ export function YearTimelineView({
 									{/* Spend vs Income Progress Bar */}
 									{hasActivity && (
 										<div className="pt-1.5">
-											<div className="flex items-center justify-between text-[10px] text-zinc-500 mb-1">
+											<div className="flex items-center justify-between text-[10px] text-subtle mb-1">
 												<span>Spend / Earn Ratio</span>
 												<span>{expenseRatio}%</span>
 											</div>
-											<div className="h-1.5 w-full rounded-full bg-zinc-800 overflow-hidden">
+											<div className="h-1.5 w-full rounded-full bg-surface-2 overflow-hidden">
 												<div
 													className={`h-full rounded-full transition-all duration-500 ${
 														m.net >= 0 ? "bg-emerald-500" : "bg-rose-500"
@@ -210,14 +210,18 @@ export function YearTimelineView({
 							</div>
 
 							{/* Month Footer: Net & Jump button */}
-							<div className="mt-4 pt-3 border-t border-zinc-800/80 flex items-center justify-between">
+							<div className="mt-4 pt-3 border-t border-border flex items-center justify-between">
 								<div>
-									<span className="text-[10px] text-zinc-500 uppercase font-bold block">
+									<span className="text-[10px] text-subtle uppercase font-bold block">
 										Net Savings
 									</span>
 									<span
 										className={`text-sm font-black ${
-											m.net > 0 ? "text-emerald-400" : m.net < 0 ? "text-rose-400" : "text-zinc-400"
+											m.net > 0
+												? "text-emerald-400"
+												: m.net < 0
+													? "text-rose-400"
+													: "text-muted-foreground"
 										}`}
 									>
 										{m.net > 0 ? "+" : ""}
@@ -228,7 +232,7 @@ export function YearTimelineView({
 								<button
 									type="button"
 									onClick={() => onSelectMonth(m.monthIndex)}
-									className="flex items-center gap-1 text-xs font-semibold text-zinc-400 hover:text-emerald-400 transition cursor-pointer px-2 py-1 rounded-lg hover:bg-zinc-800"
+									className="flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-emerald-400 transition cursor-pointer px-2 py-1 rounded-lg hover:bg-surface-2"
 								>
 									<span>View Month</span>
 									<ChevronRight className="w-3.5 h-3.5" />

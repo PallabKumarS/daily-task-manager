@@ -99,13 +99,13 @@ export function WeekTimelineView({
 	return (
 		<div className="space-y-4">
 			{/* Week Navigator Bar */}
-			<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl border border-zinc-800 bg-zinc-900/60 backdrop-blur-xl">
+			<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl border border-border bg-surface backdrop-blur-xl">
 				<div className="flex items-center gap-2">
-					<div className="flex items-center gap-1 bg-zinc-950 p-1 rounded-xl border border-zinc-800">
+					<div className="flex items-center gap-1 bg-surface-sunken p-1 rounded-xl border border-border">
 						<button
 							type="button"
 							onClick={onPrevWeek}
-							className="p-1.5 rounded-lg text-zinc-400 hover:text-foreground hover:bg-zinc-800 transition cursor-pointer"
+							className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-surface-2 transition cursor-pointer"
 							title="Previous Week"
 						>
 							<ChevronLeft className="w-4 h-4" />
@@ -116,7 +116,7 @@ export function WeekTimelineView({
 						<button
 							type="button"
 							onClick={onNextWeek}
-							className="p-1.5 rounded-lg text-zinc-400 hover:text-foreground hover:bg-zinc-800 transition cursor-pointer"
+							className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-surface-2 transition cursor-pointer"
 							title="Next Week"
 						>
 							<ChevronRight className="w-4 h-4" />
@@ -126,15 +126,15 @@ export function WeekTimelineView({
 					<button
 						type="button"
 						onClick={onResetToday}
-						className="text-xs font-semibold text-zinc-400 hover:text-emerald-400 px-3 py-1.5 rounded-xl border border-zinc-800 hover:bg-zinc-800 transition cursor-pointer"
+						className="text-xs font-semibold text-muted-foreground hover:text-emerald-400 px-3 py-1.5 rounded-xl border border-border hover:bg-surface-2 transition cursor-pointer"
 					>
 						This Week
 					</button>
 				</div>
 
-				<div className="flex items-center gap-2 text-xs text-zinc-400">
+				<div className="flex items-center gap-2 text-xs text-muted-foreground">
 					<span>7-Day Financial Flow</span>
-					<span className="text-zinc-600">•</span>
+					<span className="text-subtle">•</span>
 					<span>Click + on any day to log transaction</span>
 				</div>
 			</div>
@@ -156,13 +156,13 @@ export function WeekTimelineView({
 							key={day.dateStr}
 							className={`flex flex-col justify-between rounded-2xl border p-3 min-h-[380px] transition-all ${
 								day.isToday
-									? "border-emerald-500/50 bg-gradient-to-b from-emerald-950/20 via-zinc-900/90 to-zinc-900/80 shadow-md shadow-emerald-950/20"
-									: "border-zinc-800/80 bg-zinc-900/60 hover:border-zinc-700"
+									? "border-emerald-500/50 bg-gradient-to-b from-emerald-500/10 via-surface to-surface shadow-md shadow-emerald-500/10"
+									: "border-border bg-surface hover:border-border-strong"
 							}`}
 						>
 							<div>
 								{/* Day Header */}
-								<div className="flex items-center justify-between pb-2.5 border-b border-zinc-800/80">
+								<div className="flex items-center justify-between pb-2.5 border-b border-border">
 									<div className="min-w-0">
 										<div className="flex items-center gap-1.5">
 											<span className="text-xs font-bold uppercase tracking-wider text-foreground">
@@ -174,13 +174,15 @@ export function WeekTimelineView({
 												</span>
 											)}
 										</div>
-										<p className="text-[11px] text-zinc-400 font-medium">{day.formattedLabel}</p>
+										<p className="text-[11px] text-muted-foreground font-medium">
+											{day.formattedLabel}
+										</p>
 									</div>
 
 									<button
 										type="button"
 										onClick={() => onAddNew(day.dateStr)}
-										className="flex h-7 w-7 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-800 text-zinc-300 hover:text-foreground hover:bg-emerald-600 hover:border-emerald-500 transition cursor-pointer"
+										className="flex h-7 w-7 items-center justify-center rounded-lg border border-border-strong bg-surface-2 text-foreground hover:text-foreground hover:bg-emerald-600 hover:border-emerald-500 transition cursor-pointer"
 										title={`Add transaction on ${day.formattedLabel}`}
 									>
 										<Plus className="w-3.5 h-3.5" />
@@ -188,15 +190,15 @@ export function WeekTimelineView({
 								</div>
 
 								{/* Daily Totals Pill */}
-								<div className="mt-2.5 flex items-center justify-between rounded-xl bg-zinc-950/70 p-2 text-[10px] border border-zinc-800/60">
+								<div className="mt-2.5 flex items-center justify-between rounded-xl bg-surface-sunken p-2 text-[10px] border border-border">
 									<div>
-										<span className="text-zinc-500 block">Inflow</span>
+										<span className="text-subtle block">Inflow</span>
 										<span className="font-bold text-emerald-400">
 											+{formatCurrency(dayIncome, currency)}
 										</span>
 									</div>
 									<div className="text-right">
-										<span className="text-zinc-500 block">Outflow</span>
+										<span className="text-subtle block">Outflow</span>
 										<span className="font-bold text-rose-400">
 											-{formatCurrency(dayExpense, currency)}
 										</span>
@@ -206,7 +208,7 @@ export function WeekTimelineView({
 								{/* Transactions List */}
 								<div className="mt-3 space-y-2 max-h-[300px] overflow-y-auto pr-0.5">
 									{dayTransactions.length === 0 ? (
-										<div className="py-8 text-center text-[11px] text-zinc-500">
+										<div className="py-8 text-center text-[11px] text-subtle">
 											<p>No activity</p>
 											<button
 												type="button"
@@ -230,7 +232,7 @@ export function WeekTimelineView({
 													className={`group rounded-xl border p-2.5 transition-all ${
 														isJustAdded
 															? "ring-2 ring-emerald-500/70 bg-emerald-500/10 border-emerald-500/50"
-															: "bg-zinc-950/70 border-zinc-800/80 hover:border-zinc-700"
+															: "bg-surface-sunken border-border hover:border-border-strong"
 													}`}
 												>
 													<div className="flex items-start justify-between gap-1.5">
@@ -244,7 +246,7 @@ export function WeekTimelineView({
 																			: tx.category === "Loan Given" ||
 																					tx.category === "Loan Return"
 																				? "bg-cyan-500/15 text-cyan-300 border-cyan-500/30"
-																				: "bg-zinc-800 text-zinc-300 border-zinc-700/60"
+																				: "bg-surface-2 text-foreground border-border-strong"
 																	}`}
 																>
 																	{tx.category}
@@ -258,7 +260,9 @@ export function WeekTimelineView({
 															<p className="mt-1 text-xs font-semibold text-foreground truncate">
 																{cleanDesc || tx.category}
 															</p>
-															<p className="text-[10px] text-zinc-400">{tx.paymentMethod}</p>
+															<p className="text-[10px] text-muted-foreground">
+																{tx.paymentMethod}
+															</p>
 														</div>
 
 														<div className="text-right shrink-0">
@@ -276,7 +280,7 @@ export function WeekTimelineView({
 																<button
 																	type="button"
 																	onClick={() => onEdit(tx)}
-																	className="p-1 rounded text-zinc-400 hover:text-foreground hover:bg-zinc-800 transition cursor-pointer"
+																	className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-surface-2 transition cursor-pointer"
 																	title="Edit"
 																>
 																	<Edit2 className="w-2.5 h-2.5" />
@@ -286,7 +290,7 @@ export function WeekTimelineView({
 																	onClick={() =>
 																		onDelete(tx.id, cleanDesc || `${tx.category} transaction`)
 																	}
-																	className="p-1 rounded text-zinc-400 hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer"
+																	className="p-1 rounded text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10 transition cursor-pointer"
 																	title="Delete"
 																>
 																	<Trash2 className="w-2.5 h-2.5" />
@@ -302,8 +306,8 @@ export function WeekTimelineView({
 							</div>
 
 							{/* Day Column Footer */}
-							<div className="mt-3 pt-2.5 border-t border-zinc-800/80 flex items-center justify-between text-[11px]">
-								<span className="text-zinc-500">Day Net</span>
+							<div className="mt-3 pt-2.5 border-t border-border flex items-center justify-between text-[11px]">
+								<span className="text-subtle">Day Net</span>
 								<span
 									className={`font-black ${dayNet >= 0 ? "text-emerald-400" : "text-rose-400"}`}
 								>

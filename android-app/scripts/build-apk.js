@@ -4,19 +4,23 @@ import * as os from "node:os";
 import * as path from "node:path";
 
 function findJava21Home() {
+	let selected;
 	if (process.env.JAVA_HOME?.includes("21")) {
-		return process.env.JAVA_HOME;
-	}
-
-	const jdksDir = path.join(os.homedir(), ".gradle", "jdks");
-	if (fs.existsSync(jdksDir)) {
-		const entries = fs.readdirSync(jdksDir);
-		const java21 = entries.find((entry) => entry.includes("-21-"));
-		if (java21) {
-			return path.join(jdksDir, java21);
+		selected = process.env.JAVA_HOME;
+	} else {
+		const jdksDir = path.join(os.homedir(), ".gradle", "jdks");
+		if (fs.existsSync(jdksDir)) {
+			const entries = fs.readdirSync(jdksDir);
+			const java21 = entries.find((entry) => entry.includes("-21-"));
+			if (java21) {
+				selected = path.join(jdksDir, java21);
+			}
 		}
 	}
-	return process.env.JAVA_HOME;
+	if (!selected) {
+		selected = process.env.JAVA_HOME;
+	}
+	return selected ? selected.replace(/[\\/]+$/, "") : undefined;
 }
 
 const rootDir = process.cwd();
@@ -68,7 +72,7 @@ if (java21) {
 
 console.log("[DayPulse] Assembling Android Release APK...");
 const gradleArgs = java21
-	? `-Dorg.gradle.java.home="${java21}" assembleRelease`
+	? `-Dorg.gradle.java.home="${java21.replace(/[\\/]+$/, "")}" assembleRelease`
 	: "assembleRelease";
 execSync(`${gradlewCmd} ${gradleArgs}`, {
 	cwd: androidDir,

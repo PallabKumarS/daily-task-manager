@@ -247,7 +247,7 @@ export function TrackerDetailModal({
 						<button
 							type="button"
 							onClick={() => onOpenSettle(tracker)}
-							className="w-full sm:w-auto px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-bold text-white shadow-md shadow-emerald-950 transition cursor-pointer"
+							className="w-full sm:w-auto px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-bold text-white shadow-md shadow-emerald-500/10 transition cursor-pointer"
 						>
 							Settle & Record in Finances
 						</button>

@@ -1,7 +1,9 @@
 import { Capacitor } from "@capacitor/core";
 import { type LocalNotificationSchema, LocalNotifications } from "@capacitor/local-notifications";
+import { parseAlarmConfig } from "./alarm-settings";
 import { api } from "./api-client";
-import { ensureAndroidAlarmChannel } from "./cross-platform-alarm";
+import { stopCurrentAlarm } from "./audio-chime";
+import { ensureAndroidAlarmChannel, getChannelForTone } from "./cross-platform-alarm";
 
 interface TaskItem {
 	id: string;
@@ -62,6 +64,10 @@ export async function syncNativeAndroidAlarms(): Promise<number> {
 				const isEvent = task.type === "EVENT";
 				const leadMinutes = task.remindBeforeMinutes || 0;
 				const leadMs = leadMinutes * 60 * 1000;
+				const { config } = parseAlarmConfig(task.description);
+				const toneInfo = getChannelForTone(config.tone);
+				const ringCount = config.ringCount === 0 ? 3 : Math.min(Math.max(config.ringCount, 1), 4);
+				const ringIntervalMs = (config.ringIntervalSeconds || 10) * 1000;
 
 				// Case A: Recurring Task with repeatTime
 				if (task.isRecurring && task.repeatTime) {
@@ -89,19 +95,27 @@ export async function syncNativeAndroidAlarms(): Promise<number> {
 
 							const dateKey = `${occTarget.getFullYear()}_${occTarget.getMonth() + 1}_${occTarget.getDate()}_${tHour}_${tMin}`;
 
-							// Exact on-time alarm
-							if (dueTimeMs > now && dueTimeMs <= now + maxHorizonMs) {
-								notificationsToSchedule.push({
-									id: stringToNumericId(`task_due_${task.id}_${dateKey}`),
-									title: isEvent ? `Event: ${task.title}` : `Task Due: ${task.title}`,
-									body: task.description
-										? task.description.slice(0, 80)
-										: `Scheduled for ${timeStr}`,
-									channelId: "daypulse_alarms_v3",
-									schedule: { at: new Date(dueTimeMs), allowWhileIdle: true },
-									sound: "daypulse_alarm.wav",
-									extra: { taskId: task.id, type: task.type, dateKey },
-								});
+							// Multi-ring alarms at due time
+							for (let r = 0; r < ringCount; r++) {
+								const ringMs = dueTimeMs + r * ringIntervalMs;
+								if (ringMs > now && ringMs <= now + maxHorizonMs) {
+									const title =
+										ringCount > 1 && r > 0
+											? `${isEvent ? "Event" : "Task Due"}: ${task.title} (Alert ${r + 1}/${ringCount})`
+											: `${isEvent ? "Event" : "Task Due"}: ${task.title}`;
+
+									notificationsToSchedule.push({
+										id: stringToNumericId(`task_due_${task.id}_${dateKey}_ring_${r}`),
+										title,
+										body: task.description
+											? task.description.slice(0, 80)
+											: `Scheduled for ${timeStr}`,
+										channelId: toneInfo.channelId,
+										schedule: { at: new Date(ringMs), allowWhileIdle: true },
+										sound: toneInfo.sound,
+										extra: { taskId: task.id, type: task.type, dateKey, ring: r },
+									});
+								}
 							}
 
 							// Advance reminder if requested
@@ -110,9 +124,9 @@ export async function syncNativeAndroidAlarms(): Promise<number> {
 									id: stringToNumericId(`task_adv_${task.id}_${dateKey}`),
 									title: isEvent ? `Upcoming Event: ${task.title}` : `Upcoming Task: ${task.title}`,
 									body: `${task.title} starts in ${leadMinutes}m (at ${timeStr})`,
-									channelId: "daypulse_alarms_v3",
+									channelId: toneInfo.channelId,
 									schedule: { at: new Date(triggerMs), allowWhileIdle: true },
-									sound: "daypulse_alarm.wav",
+									sound: toneInfo.sound,
 									extra: { taskId: task.id, type: task.type, dateKey },
 								});
 							}
@@ -131,29 +145,37 @@ export async function syncNativeAndroidAlarms(): Promise<number> {
 					minute: "2-digit",
 				});
 
-				// 1. Exact due time alarm
-				if (dueMs > now && dueMs <= now + maxHorizonMs) {
-					notificationsToSchedule.push({
-						id: stringToNumericId(`task_due_${task.id}`),
-						title: isEvent ? `Event: ${task.title}` : `Task Due: ${task.title}`,
-						body: task.description ? task.description.slice(0, 80) : `Scheduled for ${timeLabel}`,
-						channelId: "daypulse_alarms_v3",
-						schedule: { at: new Date(dueMs), allowWhileIdle: true },
-						sound: "daypulse_alarm.wav",
-						extra: { taskId: task.id, type: task.type },
-					});
+				// Multi-ring exact due time alarm
+				for (let r = 0; r < ringCount; r++) {
+					const ringMs = dueMs + r * ringIntervalMs;
+					if (ringMs > now && ringMs <= now + maxHorizonMs) {
+						const title =
+							ringCount > 1 && r > 0
+								? `${isEvent ? "Event" : "Task Due"}: ${task.title} (Alert ${r + 1}/${ringCount})`
+								: `${isEvent ? "Event" : "Task Due"}: ${task.title}`;
+
+						notificationsToSchedule.push({
+							id: stringToNumericId(`task_due_${task.id}_ring_${r}`),
+							title,
+							body: task.description ? task.description.slice(0, 80) : `Scheduled for ${timeLabel}`,
+							channelId: toneInfo.channelId,
+							schedule: { at: new Date(ringMs), allowWhileIdle: true },
+							sound: toneInfo.sound,
+							extra: { taskId: task.id, type: task.type, ring: r },
+						});
+					}
 				}
 
-				// 2. Advance alert if lead time configured
+				// Advance alert if lead time configured
 				const advanceMs = dueMs - leadMs;
 				if (leadMs > 0 && advanceMs > now && advanceMs <= now + maxHorizonMs) {
 					notificationsToSchedule.push({
 						id: stringToNumericId(`task_adv_${task.id}`),
 						title: isEvent ? `Upcoming Event: ${task.title}` : `Upcoming Task: ${task.title}`,
 						body: `${task.title} starts in ${leadMinutes}m (at ${timeLabel})`,
-						channelId: "daypulse_alarms_v3",
+						channelId: toneInfo.channelId,
 						schedule: { at: new Date(advanceMs), allowWhileIdle: true },
-						sound: "daypulse_alarm.wav",
+						sound: toneInfo.sound,
 						extra: { taskId: task.id, type: task.type },
 					});
 				}
@@ -162,6 +184,7 @@ export async function syncNativeAndroidAlarms(): Promise<number> {
 
 		// 2. Process Routines for the next 7 days
 		if (routinesRes?.success && Array.isArray(routinesRes.data)) {
+			const routineTone = getChannelForTone("alarm");
 			for (const routine of routinesRes.data) {
 				if (!routine.targetTime) continue;
 
@@ -189,9 +212,9 @@ export async function syncNativeAndroidAlarms(): Promise<number> {
 							id: stringToNumericId(`routine_due_${routine.id}_${dateKey}`),
 							title: `Daily Routine: ${routine.title}`,
 							body: `Time for your routine: "${routine.title}" at ${routine.targetTime}`,
-							channelId: "daypulse_alarms_v3",
+							channelId: routineTone.channelId,
 							schedule: { at: new Date(routineDueMs), allowWhileIdle: true },
-							sound: "daypulse_alarm.wav",
+							sound: routineTone.sound,
 							extra: { routineId: routine.id, type: "routine" },
 						});
 					}
@@ -202,9 +225,9 @@ export async function syncNativeAndroidAlarms(): Promise<number> {
 							id: stringToNumericId(`routine_adv_${routine.id}_${dateKey}`),
 							title: `Upcoming Routine: ${routine.title}`,
 							body: `Routine "${routine.title}" starts in ${leadMinutes}m at ${routine.targetTime}`,
-							channelId: "daypulse_alarms_v3",
+							channelId: routineTone.channelId,
 							schedule: { at: new Date(routineTriggerMs), allowWhileIdle: true },
-							sound: "daypulse_alarm.wav",
+							sound: routineTone.sound,
 							extra: { routineId: routine.id, type: "routine" },
 						});
 					}
@@ -212,14 +235,14 @@ export async function syncNativeAndroidAlarms(): Promise<number> {
 			}
 		}
 
-		// Sort by nearest trigger time and cap to safe limit (top 60)
+		// Sort by nearest trigger time and cap to safe limit (top 80)
 		notificationsToSchedule.sort((a, b) => {
 			const timeA = a.schedule?.at ? new Date(a.schedule.at).getTime() : 0;
 			const timeB = b.schedule?.at ? new Date(b.schedule.at).getTime() : 0;
 			return timeA - timeB;
 		});
 
-		const limitedBatch = notificationsToSchedule.slice(0, 60);
+		const limitedBatch = notificationsToSchedule.slice(0, 80);
 
 		// Clear existing scheduled notifications and register latest batch
 		const pending = await LocalNotifications.getPending();
@@ -255,7 +278,7 @@ export function initNativeAlarmListener(): () => void {
 	};
 
 	const onVisibilityChange = () => {
-		// When app is minimized or backgrounded, immediately sync before JS execution is suspended
+		// Minimizing or backgrounding immediately triggers sync before suspension
 		if (document.hidden) {
 			syncNativeAndroidAlarms();
 		} else {
@@ -265,6 +288,15 @@ export function initNativeAlarmListener(): () => void {
 
 	const onRefresh = () => scheduleCoalesced(false);
 	const onFocus = () => scheduleCoalesced(false);
+
+	// Action performed listener to dismiss ongoing audio ringing
+	try {
+		LocalNotifications.addListener("localNotificationActionPerformed", () => {
+			stopCurrentAlarm();
+		});
+	} catch {
+		// Safe fallback
+	}
 
 	// Initial sync upon startup
 	scheduleCoalesced(true);

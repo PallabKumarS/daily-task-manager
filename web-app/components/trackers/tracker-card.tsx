@@ -324,7 +324,7 @@ export function TrackerCard({
 							type="button"
 							disabled={isUpdating}
 							onClick={() => handleUpdateCount(currentValue + 1, "LOGGED")}
-							className="flex h-11 w-11 items-center justify-center rounded-xl bg-teal-600 border border-teal-500/40 text-white hover:bg-teal-500 transition active:scale-95 disabled:opacity-40 cursor-pointer shadow-md shadow-teal-950/50"
+							className="flex h-11 w-11 items-center justify-center rounded-xl bg-teal-600 border border-teal-500/40 text-white hover:bg-teal-500 transition active:scale-95 disabled:opacity-40 cursor-pointer shadow-md shadow-teal-500/10"
 							title="Increase by 1"
 						>
 							<Plus className="w-5 h-5" />
@@ -463,7 +463,7 @@ export function TrackerCard({
 						<button
 							type="button"
 							onClick={() => onOpenSettle(tracker)}
-							className="py-2 px-3.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-xs font-semibold text-white transition cursor-pointer shadow-sm shadow-teal-950 flex items-center gap-1.5"
+							className="py-2 px-3.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-xs font-semibold text-white transition cursor-pointer shadow-sm shadow-teal-500/10 flex items-center gap-1.5"
 						>
 							<Receipt className="w-3.5 h-3.5" />
 							<span>Settle</span>

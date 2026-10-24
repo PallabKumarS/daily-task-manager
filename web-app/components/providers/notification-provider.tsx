@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { toast } from "sonner";
-import { parseAlarmConfig } from "@/lib/alarm-settings";
+import { type AlarmToneId, parseAlarmConfig } from "@/lib/alarm-settings";
 import { api, getAuthToken } from "@/lib/api-client";
 import { playNotificationChime, stopCurrentAlarm } from "@/lib/audio-chime";
 import {
@@ -40,6 +40,7 @@ interface NotificationContextType {
 		type?: "task" | "event" | "routine" | "system";
 		ringCount?: number;
 		ringIntervalSeconds?: number;
+		tone?: AlarmToneId;
 	}) => void;
 }
 
@@ -97,6 +98,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 			type = "system",
 			ringCount,
 			ringIntervalSeconds,
+			tone,
 		}: {
 			id?: string;
 			title: string;
@@ -104,6 +106,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 			type?: "task" | "event" | "routine" | "system";
 			ringCount?: number;
 			ringIntervalSeconds?: number;
+			tone?: AlarmToneId;
 		}) => {
 			const alertId = id || `alert_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
@@ -120,6 +123,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 					type,
 					ringCount,
 					ringIntervalSeconds,
+					tone,
 				});
 			} else {
 				showSystemNotification(title, {
@@ -311,6 +315,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 									type: isEvent ? "event" : "task",
 									ringCount: config.ringCount,
 									ringIntervalSeconds: config.ringIntervalSeconds,
+									tone: config.tone,
 								});
 
 								api

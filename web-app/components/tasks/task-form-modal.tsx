@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { BellRing, Calendar, CheckSquare, Clock, Plus, Repeat, X } from "lucide-react";
+import { BellRing, Calendar, CheckSquare, Clock, Plus, Repeat, Volume2, X } from "lucide-react";
 import * as React from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -12,12 +12,15 @@ import { Modal } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+	ALARM_TONE_OPTIONS,
+	type AlarmToneId,
 	formatAlarmDescription,
 	parseAlarmConfig,
 	RING_COUNT_OPTIONS,
 	RING_INTERVAL_OPTIONS,
 } from "@/lib/alarm-settings";
 import { api } from "@/lib/api-client";
+import { playNotificationChime } from "@/lib/audio-chime";
 import { TASK_CATEGORIES } from "@/lib/currency-symbols";
 import { syncNativeAndroidAlarms } from "@/lib/native-alarm-scheduler";
 import { recordRecentAddition } from "@/lib/recent-activity-store";
@@ -138,6 +141,7 @@ export function TaskFormModal({
 	);
 	const [ringCount, setRingCount] = React.useState<number>(3);
 	const [ringInterval, setRingInterval] = React.useState<number>(10);
+	const [selectedTone, setSelectedTone] = React.useState<AlarmToneId>("alarm");
 
 	const {
 		register,
@@ -202,6 +206,7 @@ export function TaskFormModal({
 			const { config, userNotes } = parseAlarmConfig(initialData.description);
 			setRingCount(config.ringCount);
 			setRingInterval(config.ringIntervalSeconds);
+			setSelectedTone(config.tone);
 
 			let formattedDue = "";
 			if (initialData.dueDate) {
@@ -264,6 +269,7 @@ export function TaskFormModal({
 			setModalMode(isAlarm ? "ALARM" : "TASK");
 			setRingCount(3);
 			setRingInterval(10);
+			setSelectedTone("alarm");
 
 			const now = new Date();
 			const todayStr = now.toISOString().slice(0, 10);
@@ -341,6 +347,7 @@ export function TaskFormModal({
 				? formatAlarmDescription(data.description || "", {
 						ringCount,
 						ringIntervalSeconds: ringInterval,
+						tone: selectedTone,
 					})
 				: data.description || "";
 
@@ -969,6 +976,34 @@ export function TaskFormModal({
 					<div className="p-3.5 pt-1 space-y-4 border-t border-slate-800/60">
 						{modalMode === "ALARM" ? (
 							<>
+								<div className="space-y-1.5">
+									<div className="flex items-center justify-between">
+										<Label>Alarm Ring Tone</Label>
+										<button
+											type="button"
+											onClick={() => playNotificationChime(selectedTone)}
+											className="text-[11px] text-teal-400 hover:text-teal-300 font-medium flex items-center gap-1.5 cursor-pointer px-2 py-0.5 rounded-md hover:bg-teal-500/10 transition"
+										>
+											<Volume2 className="w-3.5 h-3.5" />
+											<span>Test Sound</span>
+										</button>
+									</div>
+									<CustomSelect
+										label="Select Alarm Sound"
+										value={selectedTone}
+										group="ALARM_TONE"
+										onChange={(val) => {
+											const nextTone = val as AlarmToneId;
+											setSelectedTone(nextTone);
+											playNotificationChime(nextTone);
+										}}
+										options={ALARM_TONE_OPTIONS.map((t) => ({
+											label: `${t.label} - ${t.description}`,
+											value: t.value,
+										}))}
+									/>
+								</div>
+
 								<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 									<CustomSelect
 										label="How Many Times to Ring Alarm"
