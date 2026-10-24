@@ -99,18 +99,23 @@ export const createDebtLoanInDB = async (userId: string, payload: ICreateDebtLoa
 		: `Loan to ${payload.personName}${payload.description ? ` - ${payload.description}` : ""}`;
 	const txDate = payload.date ? new Date(payload.date) : new Date();
 
+	const recordTransaction = payload.recordTransaction !== false;
+
 	const [transaction, debtLoan] = await prisma.$transaction(async (txClient) => {
-		const createdTx = await txClient.transaction.create({
-			data: {
-				userId,
-				type: txType,
-				amount: payload.amount,
-				category: txCategory,
-				description: txDesc,
-				paymentMethod: payload.paymentMethod || "Cash",
-				date: txDate,
-			},
-		});
+		let createdTx = null;
+		if (recordTransaction) {
+			createdTx = await txClient.transaction.create({
+				data: {
+					userId,
+					type: txType,
+					amount: payload.amount,
+					category: txCategory,
+					description: txDesc,
+					paymentMethod: payload.paymentMethod || "Cash",
+					date: txDate,
+				},
+			});
+		}
 
 		const createdDebtLoan = await txClient.debtLoan.create({
 			data: {
@@ -123,7 +128,7 @@ export const createDebtLoanInDB = async (userId: string, payload: ICreateDebtLoa
 				date: txDate,
 				dueDate: payload.dueDate ? new Date(payload.dueDate) : null,
 				description: payload.description || null,
-				initialTransactionId: createdTx.id,
+				initialTransactionId: createdTx?.id ?? null,
 			},
 			include: {
 				repayments: true,
@@ -134,7 +139,9 @@ export const createDebtLoanInDB = async (userId: string, payload: ICreateDebtLoa
 	});
 
 	broadcastSyncUpdate(userId, "debtLoan", "create", debtLoan);
-	broadcastSyncUpdate(userId, "transaction", "create", transaction);
+	if (transaction) {
+		broadcastSyncUpdate(userId, "transaction", "create", transaction);
+	}
 
 	return {
 		...debtLoan,
@@ -169,18 +176,23 @@ export const recordRepaymentInDB = async (
 		: `Loan return from ${debtLoan.personName}${payload.notes ? ` - ${payload.notes}` : ""}`;
 	const repayDate = payload.date ? new Date(payload.date) : new Date();
 
+	const recordTransaction = payload.recordTransaction !== false;
+
 	const [tx, repayment, updated] = await prisma.$transaction(async (txClient) => {
-		const createdTx = await txClient.transaction.create({
-			data: {
-				userId,
-				type: txType,
-				amount: repayAmount,
-				category: txCategory,
-				description: txDesc,
-				paymentMethod: payload.paymentMethod || "Cash",
-				date: repayDate,
-			},
-		});
+		let createdTx = null;
+		if (recordTransaction) {
+			createdTx = await txClient.transaction.create({
+				data: {
+					userId,
+					type: txType,
+					amount: repayAmount,
+					category: txCategory,
+					description: txDesc,
+					paymentMethod: payload.paymentMethod || "Cash",
+					date: repayDate,
+				},
+			});
+		}
 
 		const createdRepayment = await txClient.debtLoanRepayment.create({
 			data: {
@@ -190,7 +202,7 @@ export const recordRepaymentInDB = async (
 				date: repayDate,
 				paymentMethod: payload.paymentMethod || "Cash",
 				notes: payload.notes || null,
-				transactionId: createdTx.id,
+				transactionId: createdTx?.id ?? null,
 			},
 		});
 
@@ -214,7 +226,9 @@ export const recordRepaymentInDB = async (
 	});
 
 	broadcastSyncUpdate(userId, "debtLoan", "update", updated);
-	broadcastSyncUpdate(userId, "transaction", "create", tx);
+	if (tx) {
+		broadcastSyncUpdate(userId, "transaction", "create", tx);
+	}
 
 	return {
 		debtLoan: {

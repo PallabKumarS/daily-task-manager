@@ -28,6 +28,7 @@ const repaymentSchema = z.object({
 	date: z.string().min(1, "Date is required"),
 	paymentMethod: z.string().min(1),
 	notes: z.string().optional(),
+	recordTransaction: z.boolean(),
 });
 
 type FormValues = z.infer<typeof repaymentSchema>;
@@ -73,10 +74,12 @@ export function RepaymentModal({
 			date: todayString,
 			paymentMethod: "Cash",
 			notes: "",
+			recordTransaction: true,
 		},
 	});
 
 	const selectedPaymentMethod = watch("paymentMethod");
+	const recordTransaction = watch("recordTransaction");
 
 	React.useEffect(() => {
 		if (isOpen && debtLoan) {
@@ -85,6 +88,7 @@ export function RepaymentModal({
 				date: todayString,
 				paymentMethod: "Cash",
 				notes: "",
+				recordTransaction: true,
 			});
 		}
 	}, [isOpen, debtLoan, todayString, reset]);
@@ -102,6 +106,7 @@ export function RepaymentModal({
 				date: data.date,
 				paymentMethod: data.paymentMethod,
 				notes: data.notes || null,
+				recordTransaction: data.recordTransaction,
 			});
 
 			if (res.success) {
@@ -123,8 +128,8 @@ export function RepaymentModal({
 			title={isDebt ? "Repay Debt" : "Receive Loan Return"}
 			description={
 				isDebt
-					? `Record money you are paying back to ${debtLoan.personName}. Automatically logs an Expense transaction.`
-					: `Record money ${debtLoan.personName} is paying back to you. Automatically logs an Income transaction.`
+					? `Record money you are paying back to ${debtLoan.personName}.`
+					: `Record money ${debtLoan.personName} is paying back to you.`
 			}
 			maxWidth="md"
 		>
@@ -210,6 +215,35 @@ export function RepaymentModal({
 						{...register("notes")}
 						className="bg-slate-900 border-slate-800 text-foreground placeholder:text-slate-500 text-xs"
 					/>
+				</div>
+
+				{/* Financial Ledger Posting Switch */}
+				<div className="rounded-xl border border-slate-800 bg-slate-900/60 p-3 flex items-center justify-between gap-3">
+					<div className="min-w-0">
+						<span className="text-xs font-semibold text-foreground">
+							Post to Financial Ledger / Transactions
+						</span>
+						<p className="text-[11px] text-slate-400 mt-0.5">
+							{isDebt
+								? "Logs an Expense transaction. Turn off if settling balance without ledger entry."
+								: "Logs an Income transaction. Turn off if settling balance without ledger entry."}
+						</p>
+					</div>
+					<button
+						type="button"
+						role="switch"
+						aria-checked={recordTransaction}
+						onClick={() => setValue("recordTransaction", !recordTransaction)}
+						className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+							recordTransaction ? "bg-teal-500" : "bg-slate-700"
+						}`}
+					>
+						<span
+							className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+								recordTransaction ? "translate-x-5" : "translate-x-0"
+							}`}
+						/>
+					</button>
 				</div>
 
 				{/* Form Actions */}

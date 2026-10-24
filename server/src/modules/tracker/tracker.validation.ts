@@ -43,4 +43,5 @@ export const settleTrackerZodSchema = z.object({
 	paymentMethod: z.string().optional().default("Cash"),
 	category: z.string().optional(),
 	notes: z.string().nullable().optional(),
+	recordTransaction: z.boolean().optional(),
 });

@@ -10,6 +10,7 @@ export const createDebtLoanZodSchema = z.object({
 	dueDate: z.string().nullable().optional(),
 	description: z.string().nullable().optional(),
 	paymentMethod: z.string().optional().default("Cash"),
+	recordTransaction: z.boolean().optional(),
 });
 
 export const updateDebtLoanZodSchema = z.object({
@@ -27,4 +28,5 @@ export const recordRepaymentZodSchema = z.object({
 	date: z.string().optional(),
 	paymentMethod: z.string().optional().default("Cash"),
 	notes: z.string().nullable().optional(),
+	recordTransaction: z.boolean().optional(),
 });

@@ -390,19 +390,35 @@ export const settleTrackerInDB = async (
 		payload.notes ||
 		`Settlement: ${tracker.name} (${totalUnits} ${tracker.unitName}, ${payload.startDate} to ${payload.endDate})`;
 
-	const [transaction] = await prisma.$transaction([
-		prisma.transaction.create({
-			data: {
-				userId,
-				type: "EXPENSE",
-				amount: totalAmount,
-				category: payload.category || tracker.category || "Meals & Food",
-				description: settlementDescription,
-				paymentMethod: payload.paymentMethod || "Cash",
-				date: new Date(),
-			},
-		}),
-		prisma.dailyTrackerLog.updateMany({
+	const recordTransaction = payload.recordTransaction !== false;
+	let transaction = null;
+
+	if (recordTransaction) {
+		const [tx] = await prisma.$transaction([
+			prisma.transaction.create({
+				data: {
+					userId,
+					type: "EXPENSE",
+					amount: totalAmount,
+					category: payload.category || tracker.category || "Meals & Food",
+					description: settlementDescription,
+					paymentMethod: payload.paymentMethod || "Cash",
+					date: new Date(),
+				},
+			}),
+			prisma.dailyTrackerLog.updateMany({
+				where: {
+					id: { in: unsettledLogs.map((l) => l.id) },
+				},
+				data: {
+					isSettled: true,
+					settledAt: new Date(),
+				},
+			}),
+		]);
+		transaction = tx;
+	} else {
+		await prisma.dailyTrackerLog.updateMany({
 			where: {
 				id: { in: unsettledLogs.map((l) => l.id) },
 			},
@@ -410,14 +426,16 @@ export const settleTrackerInDB = async (
 				isSettled: true,
 				settledAt: new Date(),
 			},
-		}),
-	]);
+		});
+	}
 
 	broadcastSyncUpdate(userId, "tracker", "update", {
 		trackerId,
 		settledCount: unsettledLogs.length,
 	});
-	broadcastSyncUpdate(userId, "transaction", "create", transaction);
+	if (transaction) {
+		broadcastSyncUpdate(userId, "transaction", "create", transaction);
+	}
 
 	return {
 		transaction,

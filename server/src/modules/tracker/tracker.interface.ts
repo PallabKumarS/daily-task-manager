@@ -35,4 +35,5 @@ export interface ISettleTracker {
 	paymentMethod?: string;
 	category?: string;
 	notes?: string | null;
+	recordTransaction?: boolean;
 }

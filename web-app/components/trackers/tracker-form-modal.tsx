@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { DollarSign, Hash } from "lucide-react";
 import * as React from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -61,6 +62,9 @@ export function TrackerFormModal({
 	initialData,
 }: TrackerFormModalProps) {
 	const { user } = useAuth();
+	const [isMonetary, setIsMonetary] = React.useState<boolean>(
+		Boolean(initialData?.unitPrice && initialData.unitPrice > 0),
+	);
 
 	const {
 		register,
@@ -89,6 +93,7 @@ export function TrackerFormModal({
 
 	React.useEffect(() => {
 		if (initialData) {
+			setIsMonetary(Boolean(initialData.unitPrice && initialData.unitPrice > 0));
 			reset({
 				name: initialData.name,
 				category: initialData.category,
@@ -100,6 +105,7 @@ export function TrackerFormModal({
 				description: initialData.description || "",
 			});
 		} else {
+			setIsMonetary(false);
 			reset({
 				name: "",
 				category: "Meals & Food",
@@ -125,26 +131,32 @@ export function TrackerFormModal({
 
 	const onSubmit = async (data: FormValues) => {
 		try {
+			const finalUnitPrice = isMonetary ? (data.unitPrice ?? null) : null;
+			const payload = {
+				...data,
+				unitPrice: finalUnitPrice,
+			};
+
 			if (initialData) {
-				await api.patch(`/trackers/${initialData.id}`, data);
+				await api.patch(`/trackers/${initialData.id}`, payload);
 				recordRecentAddition({
 					id: initialData.id,
 					type: "TRACKER",
 					title: data.name,
 					category: data.category,
-					amount: data.unitPrice ?? undefined,
+					amount: finalUnitPrice ?? undefined,
 					date: new Date().toISOString(),
 				});
 				toast.success(`Tracker "${data.name}" updated`);
 			} else {
-				const res = await api.post<DailyTrackerItem>("/trackers", data);
+				const res = await api.post<DailyTrackerItem>("/trackers", payload);
 				const createdId = res.data?.id || String(Date.now());
 				recordRecentAddition({
 					id: createdId,
 					type: "TRACKER",
 					title: data.name,
 					category: data.category,
-					amount: data.unitPrice ?? undefined,
+					amount: finalUnitPrice ?? undefined,
 					date: new Date().toISOString(),
 				});
 				toast.success(`Tracker "${data.name}" created`, {
@@ -201,8 +213,53 @@ export function TrackerFormModal({
 					</div>
 				</div>
 
-				{/* Default Expected Target & Unit Price */}
-				<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+				{/* Counter Mode Selector */}
+				<div className="space-y-1.5">
+					<Label className="text-xs text-slate-300">Counter Classification</Label>
+					<div className="grid grid-cols-2 gap-2">
+						<button
+							type="button"
+							onClick={() => {
+								setIsMonetary(false);
+								setValue("unitPrice", null);
+							}}
+							className={`flex flex-col gap-1 p-3 rounded-xl border text-left transition cursor-pointer ${
+								!isMonetary
+									? "bg-teal-500/10 border-teal-500/40 text-teal-300 shadow-sm"
+									: "bg-slate-900/60 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200"
+							}`}
+						>
+							<div className="flex items-center gap-2 font-bold text-xs">
+								<Hash className="w-4 h-4 text-teal-400" />
+								<span>Simple Counter</span>
+							</div>
+							<p className="text-[11px] text-slate-400">
+								Habits, water glasses, pushups, pages. No money or settlement.
+							</p>
+						</button>
+
+						<button
+							type="button"
+							onClick={() => setIsMonetary(true)}
+							className={`flex flex-col gap-1 p-3 rounded-xl border text-left transition cursor-pointer ${
+								isMonetary
+									? "bg-amber-500/10 border-amber-500/40 text-amber-300 shadow-sm"
+									: "bg-slate-900/60 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200"
+							}`}
+						>
+							<div className="flex items-center gap-2 font-bold text-xs">
+								<DollarSign className="w-4 h-4 text-amber-400" />
+								<span>Metered / Billable</span>
+							</div>
+							<p className="text-[11px] text-slate-400">
+								Paid deliveries, daily meals, milk, billable hours. Has unit price & settlement.
+							</p>
+						</button>
+					</div>
+				</div>
+
+				{/* Target & Conditional Pricing */}
+				<div className={`grid grid-cols-1 ${isMonetary ? "sm:grid-cols-2" : ""} gap-4`}>
 					<div className="space-y-1.5">
 						<Label htmlFor="defaultTarget">Normal Daily Expected Count</Label>
 						<Input
@@ -217,33 +274,37 @@ export function TrackerFormModal({
 						)}
 					</div>
 
-					<div className="space-y-1.5">
-						<Label htmlFor="unitPrice">Unit Price (Optional)</Label>
-						<Input
-							id="unitPrice"
-							type="number"
-							step="any"
-							placeholder="e.g. 80.00 or 4.50 (leave empty if non-monetary)"
-							{...register("unitPrice", {
-								setValueAs: (v) => (v === "" || v === null || Number.isNaN(v) ? null : Number(v)),
-							})}
-						/>
-						<p className="text-[11px] text-slate-500">
-							Set a price per unit to enable automatic bill calculation and ledger reconciliation.
-						</p>
-					</div>
+					{isMonetary && (
+						<div className="space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-150">
+							<Label htmlFor="unitPrice">Unit Price</Label>
+							<Input
+								id="unitPrice"
+								type="number"
+								step="any"
+								placeholder="e.g. 80.00 or 4.50"
+								{...register("unitPrice", {
+									setValueAs: (v) => (v === "" || v === null || Number.isNaN(v) ? null : Number(v)),
+								})}
+							/>
+							<p className="text-[11px] text-slate-500">
+								Price per unit for automatic bill calculation and ledger reconciliation.
+							</p>
+						</div>
+					)}
 				</div>
 
-				{/* Currency & Color Theme */}
-				<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-					<CustomSelect
-						label="Currency"
-						value={selectedCurrency}
-						onChange={(val) => setValue("currency", val)}
-						options={currencyOptions}
-						placeholder="Select Currency"
-						allowManage={false}
-					/>
+				{/* Currency (if monetary) & Color Theme */}
+				<div className={`grid grid-cols-1 ${isMonetary ? "sm:grid-cols-2" : ""} gap-4`}>
+					{isMonetary && (
+						<CustomSelect
+							label="Currency"
+							value={selectedCurrency}
+							onChange={(val) => setValue("currency", val)}
+							options={currencyOptions}
+							placeholder="Select Currency"
+							allowManage={false}
+						/>
+					)}
 
 					<CustomSelect
 						label="Color Accent"

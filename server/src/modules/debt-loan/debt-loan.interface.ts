@@ -9,6 +9,7 @@ export interface ICreateDebtLoan {
 	dueDate?: string | null;
 	description?: string | null;
 	paymentMethod?: string;
+	recordTransaction?: boolean;
 }
 
 export interface IUpdateDebtLoan {
@@ -24,4 +25,5 @@ export interface IRecordRepayment {
 	date?: string;
 	paymentMethod?: string;
 	notes?: string | null;
+	recordTransaction?: boolean;
 }

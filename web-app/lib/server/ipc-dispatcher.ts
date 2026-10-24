@@ -1321,31 +1321,44 @@ export async function handleIpcApiDispatch(req: IpcApiRequest): Promise<IpcApiRe
 					? body.notes
 					: `Settlement: ${tracker.name} (${totalUnits} ${tracker.unitName}, ${startDate} to ${endDate})`;
 
-			const [transaction] = await prisma.$transaction([
-				prisma.transaction.create({
-					data: {
-						userId,
-						type: "EXPENSE",
-						amount: totalAmount,
-						category:
-							typeof body.category === "string"
-								? body.category
-								: tracker.category || "Meals & Food",
-						description: settlementDescription,
-						paymentMethod: typeof body.paymentMethod === "string" ? body.paymentMethod : "Cash",
-						date: new Date(),
-					},
-				}),
-				prisma.dailyTrackerLog.updateMany({
+			const recordTransaction = body.recordTransaction !== false;
+			let transaction = null;
+
+			if (recordTransaction && totalAmount > 0) {
+				const [tx] = await prisma.$transaction([
+					prisma.transaction.create({
+						data: {
+							userId,
+							type: "EXPENSE",
+							amount: totalAmount,
+							category:
+								typeof body.category === "string"
+									? body.category
+									: tracker.category || "Meals & Food",
+							description: settlementDescription,
+							paymentMethod: typeof body.paymentMethod === "string" ? body.paymentMethod : "Cash",
+							date: new Date(),
+						},
+					}),
+					prisma.dailyTrackerLog.updateMany({
+						where: { id: { in: unsettledLogs.map((l) => l.id) } },
+						data: { isSettled: true, settledAt: new Date() },
+					}),
+				]);
+				transaction = tx;
+			} else {
+				await prisma.dailyTrackerLog.updateMany({
 					where: { id: { in: unsettledLogs.map((l) => l.id) } },
 					data: { isSettled: true, settledAt: new Date() },
-				}),
-			]);
+				});
+			}
 
 			return {
 				statusCode: 200,
 				success: true,
-				message: "Tracker settlement recorded in finances.",
+				message: recordTransaction
+					? "Tracker settlement recorded in finances."
+					: "Tracker units settled without financial transaction.",
 				data: {
 					transaction,
 					settledLogsCount: unsettledLogs.length,

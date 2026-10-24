@@ -37,6 +37,7 @@ export function TrackerSettlementModal({
 	const [paymentMethod, setPaymentMethod] = React.useState<string>("Cash");
 	const [category, setCategory] = React.useState<string>("Food & Dining");
 	const [notes, setNotes] = React.useState<string>("");
+	const [recordTransaction, setRecordTransaction] = React.useState<boolean>(true);
 	const [isSubmitting, setIsSubmitting] = React.useState<boolean>(false);
 
 	React.useEffect(() => {
@@ -53,6 +54,7 @@ export function TrackerSettlementModal({
 			setEndDate(end);
 			setCategory(tracker.category || "Food & Dining");
 			setPaymentMethod("Cash");
+			setRecordTransaction(true);
 			setNotes(
 				`Settlement for ${tracker.name} (${tracker.monthStats.unsettledUnits} ${tracker.unitName})`,
 			);
@@ -90,11 +92,14 @@ export function TrackerSettlementModal({
 				paymentMethod,
 				category,
 				notes: notes.trim() || undefined,
+				recordTransaction,
 			});
 
 			if (res.success) {
 				toast.success(
-					`Settlement of ${formatCurrency(res.data.totalAmount, tracker.currency)} recorded to Finances!`,
+					recordTransaction
+						? `Settlement of ${formatCurrency(res.data.totalAmount, tracker.currency)} recorded to Finances!`
+						: `Settled ${res.data.totalUnits} ${tracker.unitName} without creating a ledger transaction.`,
 				);
 				window.dispatchEvent(new CustomEvent("daypulse:refresh"));
 				onSuccess();
@@ -197,6 +202,34 @@ export function TrackerSettlementModal({
 						onChange={(e) => setNotes(e.target.value)}
 						placeholder="e.g. Settlement for October Meals"
 					/>
+				</div>
+
+				{/* Financial Ledger Posting Switch */}
+				<div className="rounded-xl border border-slate-800 bg-slate-900/60 p-3 flex items-center justify-between gap-3">
+					<div className="min-w-0">
+						<span className="text-xs font-semibold text-foreground">
+							Post to Financial Ledger / Transactions
+						</span>
+						<p className="text-[11px] text-slate-400 mt-0.5">
+							Creates an Expense transaction in finances. Turn off if marking as settled without
+							logging an expense.
+						</p>
+					</div>
+					<button
+						type="button"
+						role="switch"
+						aria-checked={recordTransaction}
+						onClick={() => setRecordTransaction(!recordTransaction)}
+						className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+							recordTransaction ? "bg-teal-500" : "bg-slate-700"
+						}`}
+					>
+						<span
+							className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+								recordTransaction ? "translate-x-5" : "translate-x-0"
+							}`}
+						/>
+					</button>
 				</div>
 
 				{/* Actions */}

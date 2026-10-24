@@ -197,7 +197,9 @@ export function TrackerDetailModal({
 
 				{/* KPI Stat Cards */}
 				{stats && (
-					<div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+					<div
+						className={`grid grid-cols-2 ${hasUnitPrice ? "sm:grid-cols-4" : "sm:grid-cols-3"} gap-3`}
+					>
 						<div className="rounded-xl border border-slate-800 bg-slate-950/60 p-3 text-center">
 							<span className="text-[11px] font-medium text-slate-400">Total Consumed</span>
 							<p className="mt-1 text-xl font-extrabold text-foreground">
@@ -205,18 +207,30 @@ export function TrackerDetailModal({
 								<span className="text-xs font-normal text-slate-400">{tracker.unitName}</span>
 							</p>
 						</div>
-						<div className="rounded-xl border border-slate-800 bg-slate-950/60 p-3 text-center">
-							<span className="text-[11px] font-medium text-slate-400">Total Bill</span>
-							<p className="mt-1 text-xl font-extrabold text-slate-200">
-								{hasUnitPrice ? formatCurrency(stats.totalCost, tracker.currency) : "—"}
-							</p>
-						</div>
-						<div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 text-center">
-							<span className="text-[11px] font-medium text-amber-400">Unsettled Due</span>
-							<p className="mt-1 text-xl font-extrabold text-amber-300">
-								{hasUnitPrice ? formatCurrency(stats.unsettledCost, tracker.currency) : "—"}
-							</p>
-						</div>
+						{hasUnitPrice ? (
+							<>
+								<div className="rounded-xl border border-slate-800 bg-slate-950/60 p-3 text-center">
+									<span className="text-[11px] font-medium text-slate-400">Total Bill</span>
+									<p className="mt-1 text-xl font-extrabold text-slate-200">
+										{formatCurrency(stats.totalCost, tracker.currency)}
+									</p>
+								</div>
+								<div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 text-center">
+									<span className="text-[11px] font-medium text-amber-400">Unsettled Due</span>
+									<p className="mt-1 text-xl font-extrabold text-amber-300">
+										{formatCurrency(stats.unsettledCost, tracker.currency)}
+									</p>
+								</div>
+							</>
+						) : (
+							<div className="rounded-xl border border-slate-800 bg-slate-950/60 p-3 text-center">
+								<span className="text-[11px] font-medium text-slate-400">Days Logged</span>
+								<p className="mt-1 text-xl font-extrabold text-teal-400">
+									{stats.loggedDaysCount}{" "}
+									<span className="text-xs font-normal text-slate-400">days</span>
+								</p>
+							</div>
+						)}
 						<div className="rounded-xl border border-slate-800 bg-slate-950/60 p-3 text-center">
 							<span className="text-[11px] font-medium text-slate-400">Cancelled Days</span>
 							<p className="mt-1 text-xl font-extrabold text-rose-400">
@@ -258,9 +272,25 @@ export function TrackerDetailModal({
 				<div className="rounded-xl border border-slate-800 bg-slate-950/80 overflow-hidden">
 					<div className="border-b border-slate-800 bg-slate-900/60 px-4 py-3 text-xs font-bold text-slate-300 grid grid-cols-12 gap-2">
 						<div className="col-span-3 sm:col-span-2">Date</div>
-						<div className="col-span-4 sm:col-span-3 text-center">Count ({tracker.unitName})</div>
-						<div className="col-span-3 sm:col-span-2 text-right">Cost</div>
-						<div className="col-span-2 sm:col-span-2 text-center">Status</div>
+						<div
+							className={
+								hasUnitPrice
+									? "col-span-4 sm:col-span-3 text-center"
+									: "col-span-5 sm:col-span-4 text-center"
+							}
+						>
+							Count ({tracker.unitName})
+						</div>
+						{hasUnitPrice && <div className="col-span-3 sm:col-span-2 text-right">Cost</div>}
+						<div
+							className={
+								hasUnitPrice
+									? "col-span-2 sm:col-span-2 text-center"
+									: "col-span-4 sm:col-span-3 text-center"
+							}
+						>
+							{hasUnitPrice ? "Settlement" : "Status"}
+						</div>
 						<div className="hidden sm:block sm:col-span-3 text-left">Notes</div>
 					</div>
 
@@ -328,34 +358,54 @@ export function TrackerDetailModal({
 											</button>
 										</div>
 
-										{/* Cost */}
-										<div className="col-span-3 sm:col-span-2 text-right font-medium text-slate-200">
-											{hasUnitPrice ? (
-												isCancelled ? (
+										{/* Cost (if metered) */}
+										{hasUnitPrice && (
+											<div className="col-span-3 sm:col-span-2 text-right font-medium text-slate-200">
+												{isCancelled ? (
 													<span className="text-rose-400 line-through">
 														{formatCurrency(day.dayCost, tracker.currency)}
 													</span>
 												) : (
 													formatCurrency(day.dayCost, tracker.currency)
-												)
-											) : (
-												"—"
-											)}
-										</div>
+												)}
+											</div>
+										)}
 
-										{/* Status */}
-										<div className="col-span-2 sm:col-span-2 text-center">
-											{day.isSettled ? (
-												<span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
-													<CheckCircle2 className="w-2.5 h-2.5" /> Paid
-												</span>
+										{/* Status / Settlement */}
+										<div
+											className={
+												hasUnitPrice
+													? "col-span-2 sm:col-span-2 text-center"
+													: "col-span-4 sm:col-span-3 text-center"
+											}
+										>
+											{hasUnitPrice ? (
+												day.isSettled ? (
+													<span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
+														<CheckCircle2 className="w-2.5 h-2.5" /> Paid
+													</span>
+												) : isCancelled ? (
+													<span className="text-[10px] font-semibold text-rose-400 bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/20">
+														Cancelled
+													</span>
+												) : day.value > 0 ? (
+													<span className="text-[10px] font-medium text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">
+														Unpaid
+													</span>
+												) : (
+													<span className="text-[10px] text-slate-600">—</span>
+												)
 											) : isCancelled ? (
 												<span className="text-[10px] font-semibold text-rose-400 bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/20">
 													Cancelled
 												</span>
+											) : day.value >= tracker.defaultTarget && tracker.defaultTarget > 0 ? (
+												<span className="text-[10px] font-semibold text-teal-400 bg-teal-500/10 px-1.5 py-0.5 rounded border border-teal-500/20">
+													Target Met
+												</span>
 											) : day.value > 0 ? (
-												<span className="text-[10px] font-medium text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">
-													Unpaid
+												<span className="text-[10px] font-medium text-slate-300 bg-slate-800 px-1.5 py-0.5 rounded">
+													Logged
 												</span>
 											) : (
 												<span className="text-[10px] text-slate-600">—</span>

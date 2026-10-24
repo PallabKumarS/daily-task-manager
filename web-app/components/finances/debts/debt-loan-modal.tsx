@@ -22,6 +22,7 @@ const debtLoanSchema = z.object({
 	dueDate: z.string().optional(),
 	description: z.string().optional(),
 	paymentMethod: z.string().min(1),
+	recordTransaction: z.boolean(),
 });
 
 type FormValues = z.infer<typeof debtLoanSchema>;
@@ -77,11 +78,13 @@ export function DebtLoanModal({
 			dueDate: "",
 			description: "",
 			paymentMethod: "Cash",
+			recordTransaction: true,
 		},
 	});
 
 	const selectedType = watch("type");
 	const selectedPaymentMethod = watch("paymentMethod");
+	const recordTransaction = watch("recordTransaction");
 
 	React.useEffect(() => {
 		if (isOpen) {
@@ -96,6 +99,7 @@ export function DebtLoanModal({
 					dueDate: duePart,
 					description: initialData.description || "",
 					paymentMethod: "Cash",
+					recordTransaction: true,
 				});
 			} else {
 				reset({
@@ -106,6 +110,7 @@ export function DebtLoanModal({
 					dueDate: "",
 					description: "",
 					paymentMethod: "Cash",
+					recordTransaction: true,
 				});
 			}
 		}
@@ -136,6 +141,7 @@ export function DebtLoanModal({
 					dueDate: data.dueDate || null,
 					description: data.description || null,
 					paymentMethod: data.paymentMethod,
+					recordTransaction: data.recordTransaction,
 				});
 				if (res.success) {
 					toast.success(`${data.type === "DEBT" ? "Debt" : "Loan"} recorded successfully`);
@@ -293,6 +299,37 @@ export function DebtLoanModal({
 						className="bg-slate-900 border-slate-800 text-foreground placeholder:text-slate-500 text-xs"
 					/>
 				</div>
+
+				{/* Financial Ledger Posting Switch */}
+				{!isEditing && (
+					<div className="rounded-xl border border-slate-800 bg-slate-900/60 p-3 flex items-center justify-between gap-3">
+						<div className="min-w-0">
+							<span className="text-xs font-semibold text-foreground">
+								Post to Financial Ledger / Transactions
+							</span>
+							<p className="text-[11px] text-slate-400 mt-0.5">
+								{selectedType === "DEBT"
+									? "Creates an Income transaction. Turn off if tracking only on this debt board."
+									: "Creates an Expense transaction. Turn off if tracking only on this debt board."}
+							</p>
+						</div>
+						<button
+							type="button"
+							role="switch"
+							aria-checked={recordTransaction}
+							onClick={() => setValue("recordTransaction", !recordTransaction)}
+							className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+								recordTransaction ? "bg-teal-500" : "bg-slate-700"
+							}`}
+						>
+							<span
+								className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
+									recordTransaction ? "translate-x-5" : "translate-x-0"
+								}`}
+							/>
+						</button>
+					</div>
+				)}
 
 				{/* Form Actions */}
 				<div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-800/80">
