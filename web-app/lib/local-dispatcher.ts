@@ -706,21 +706,26 @@ export async function handleLocalClientDispatch<T = unknown>(
 				? `Borrowed from ${personName}${description ? ` - ${description}` : ""}`
 				: `Loan to ${personName}${description ? ` - ${description}` : ""}`;
 
-			const txId = generateId("tx");
-			const finances = getList(STORAGE_KEYS.FINANCES);
-			finances.unshift({
-				id: txId,
-				userId: getActiveUserId(),
-				type: txType,
-				amount,
-				category: txCategory,
-				description: txDesc,
-				paymentMethod,
-				date: txDate,
-				createdAt: new Date().toISOString(),
-				updatedAt: new Date().toISOString(),
-			});
-			saveList(STORAGE_KEYS.FINANCES, finances);
+			const recordTransaction = body.recordTransaction !== false;
+			let txId: string | null = null;
+
+			if (recordTransaction) {
+				txId = generateId("tx");
+				const finances = getList(STORAGE_KEYS.FINANCES);
+				finances.unshift({
+					id: txId,
+					userId: getActiveUserId(),
+					type: txType,
+					amount,
+					category: txCategory,
+					description: txDesc,
+					paymentMethod,
+					date: txDate,
+					createdAt: new Date().toISOString(),
+					updatedAt: new Date().toISOString(),
+				});
+				saveList(STORAGE_KEYS.FINANCES, finances);
+			}
 
 			const newItem = {
 				id: generateId("dl"),
@@ -787,21 +792,26 @@ export async function handleLocalClientDispatch<T = unknown>(
 				? `Debt repayment to ${item.personName}${notes ? ` - ${notes}` : ""}`
 				: `Loan return from ${item.personName}${notes ? ` - ${notes}` : ""}`;
 
-			const txId = generateId("tx");
-			const finances = getList(STORAGE_KEYS.FINANCES);
-			finances.unshift({
-				id: txId,
-				userId: getActiveUserId(),
-				type: txType,
-				amount: repayAmount,
-				category: txCategory,
-				description: txDesc,
-				paymentMethod,
-				date: repayDate,
-				createdAt: new Date().toISOString(),
-				updatedAt: new Date().toISOString(),
-			});
-			saveList(STORAGE_KEYS.FINANCES, finances);
+			const recordTransaction = body.recordTransaction !== false;
+			let txId: string | null = null;
+
+			if (recordTransaction) {
+				txId = generateId("tx");
+				const finances = getList(STORAGE_KEYS.FINANCES);
+				finances.unshift({
+					id: txId,
+					userId: getActiveUserId(),
+					type: txType,
+					amount: repayAmount,
+					category: txCategory,
+					description: txDesc,
+					paymentMethod,
+					date: repayDate,
+					createdAt: new Date().toISOString(),
+					updatedAt: new Date().toISOString(),
+				});
+				saveList(STORAGE_KEYS.FINANCES, finances);
+			}
 
 			const repayments = getList<LocalRepaymentRecord>(STORAGE_KEYS.REPAYMENTS);
 			const newRepayment = {
@@ -1159,29 +1169,36 @@ export async function handleLocalClientDispatch<T = unknown>(
 				? body.notes
 				: `Settlement: ${tracker.name} (${totalUnits} ${tracker.unitName}, ${startDate} to ${endDate})`;
 
-		const finances = getList<Record<string, unknown>>(STORAGE_KEYS.FINANCES);
-		const newTx = {
-			id: generateId("tx"),
-			userId: getActiveUserId(),
-			type: "EXPENSE",
-			amount: totalAmount,
-			category:
-				typeof body.category === "string"
-					? body.category
-					: (tracker.category as string) || "Food & Dining",
-			description: settlementDescription,
-			paymentMethod: typeof body.paymentMethod === "string" ? body.paymentMethod : "Cash",
-			date: nowIso,
-			createdAt: nowIso,
-			updatedAt: nowIso,
-		};
-		finances.unshift(newTx);
-		saveList(STORAGE_KEYS.FINANCES, finances);
+		const recordTransaction = body.recordTransaction !== false;
+		let newTx: Record<string, unknown> | null = null;
+
+		if (recordTransaction && totalAmount > 0) {
+			const finances = getList<Record<string, unknown>>(STORAGE_KEYS.FINANCES);
+			newTx = {
+				id: generateId("tx"),
+				userId: getActiveUserId(),
+				type: "EXPENSE",
+				amount: totalAmount,
+				category:
+					typeof body.category === "string"
+						? body.category
+						: (tracker.category as string) || "Food & Dining",
+				description: settlementDescription,
+				paymentMethod: typeof body.paymentMethod === "string" ? body.paymentMethod : "Cash",
+				date: nowIso,
+				createdAt: nowIso,
+				updatedAt: nowIso,
+			};
+			finances.unshift(newTx);
+			saveList(STORAGE_KEYS.FINANCES, finances);
+		}
 
 		return {
 			statusCode: 200,
 			success: true,
-			message: "Tracker settlement recorded in finances.",
+			message: recordTransaction
+				? "Tracker settlement recorded in finances."
+				: "Tracker units settled without financial transaction.",
 			data: {
 				transaction: newTx,
 				settledLogsCount: unsettledLogs.length,

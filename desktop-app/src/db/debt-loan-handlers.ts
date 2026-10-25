@@ -213,17 +213,23 @@ async function handleCreateDebtLoan(
 		? `Borrowed from ${personName}${description ? ` - ${description}` : ""}`
 		: `Loan to ${personName}${description ? ` - ${description}` : ""}`;
 
-	const transaction = await prisma.transaction.create({
-		data: {
-			userId,
-			type: txType,
-			amount,
-			category: txCategory,
-			description: txDesc,
-			paymentMethod,
-			date: txDate,
-		},
-	});
+	const recordTransaction = body.recordTransaction !== false;
+	let initialTransactionId: string | null = null;
+
+	if (recordTransaction) {
+		const transaction = await prisma.transaction.create({
+			data: {
+				userId,
+				type: txType,
+				amount,
+				category: txCategory,
+				description: txDesc,
+				paymentMethod,
+				date: txDate,
+			},
+		});
+		initialTransactionId = transaction.id;
+	}
 
 	const debtLoan = await prisma.debtLoan.create({
 		data: {
@@ -236,7 +242,7 @@ async function handleCreateDebtLoan(
 			date: txDate,
 			dueDate,
 			description,
-			initialTransactionId: transaction.id,
+			initialTransactionId,
 		},
 		include: {
 			repayments: true,
@@ -287,17 +293,23 @@ async function handleRecordRepayment(
 		? `Debt repayment to ${debtLoan.personName}${notes ? ` - ${notes}` : ""}`
 		: `Loan return from ${debtLoan.personName}${notes ? ` - ${notes}` : ""}`;
 
-	const tx = await prisma.transaction.create({
-		data: {
-			userId,
-			type: txType,
-			amount: repayAmount,
-			category: txCategory,
-			description: txDesc,
-			paymentMethod,
-			date: repayDate,
-		},
-	});
+	const recordTransaction = body.recordTransaction !== false;
+	let transactionId: string | null = null;
+
+	if (recordTransaction) {
+		const tx = await prisma.transaction.create({
+			data: {
+				userId,
+				type: txType,
+				amount: repayAmount,
+				category: txCategory,
+				description: txDesc,
+				paymentMethod,
+				date: repayDate,
+			},
+		});
+		transactionId = tx.id;
+	}
 
 	const repayment = await prisma.debtLoanRepayment.create({
 		data: {
@@ -307,7 +319,7 @@ async function handleRecordRepayment(
 			date: repayDate,
 			paymentMethod,
 			notes,
-			transactionId: tx.id,
+			transactionId,
 		},
 	});
 

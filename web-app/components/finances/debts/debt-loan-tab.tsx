@@ -26,9 +26,18 @@ import type { DebtLoanItem, DebtLoanSummary } from "./types";
 interface DebtLoanTabProps {
 	currency: string;
 	onLedgerChanged?: () => void;
+	createModalOpen?: boolean;
+	onCloseCreateModal?: () => void;
+	onOpenCreateModal?: () => void;
 }
 
-export function DebtLoanTab({ currency, onLedgerChanged }: DebtLoanTabProps) {
+export function DebtLoanTab({
+	currency,
+	onLedgerChanged,
+	createModalOpen: externalCreateModalOpen,
+	onCloseCreateModal,
+	onOpenCreateModal,
+}: DebtLoanTabProps) {
 	const confirm = useConfirm();
 
 	const [items, setItems] = React.useState<DebtLoanItem[]>([]);
@@ -48,10 +57,13 @@ export function DebtLoanTab({ currency, onLedgerChanged }: DebtLoanTabProps) {
 	);
 	const [searchQuery, setSearchQuery] = React.useState("");
 
-	const [createModalOpen, setCreateModalOpen] = React.useState(false);
+	const [internalCreateModalOpen, setInternalCreateModalOpen] = React.useState(false);
 	const [editingItem, setEditingItem] = React.useState<DebtLoanItem | null>(null);
 	const [repayingItem, setRepayingItem] = React.useState<DebtLoanItem | null>(null);
 	const [defaultCreateType, setDefaultCreateType] = React.useState<"DEBT" | "LOAN">("DEBT");
+
+	const isCreateOpen =
+		externalCreateModalOpen !== undefined ? externalCreateModalOpen : internalCreateModalOpen;
 
 	const fetchData = React.useCallback(async () => {
 		try {
@@ -135,12 +147,20 @@ export function DebtLoanTab({ currency, onLedgerChanged }: DebtLoanTabProps) {
 	const handleOpenAdd = (type: "DEBT" | "LOAN" = "DEBT") => {
 		setEditingItem(null);
 		setDefaultCreateType(type);
-		setCreateModalOpen(true);
+		setInternalCreateModalOpen(true);
+		onOpenCreateModal?.();
 	};
 
 	const handleEdit = (item: DebtLoanItem) => {
 		setEditingItem(item);
-		setCreateModalOpen(true);
+		setInternalCreateModalOpen(true);
+		onOpenCreateModal?.();
+	};
+
+	const handleCloseCreateModal = () => {
+		setInternalCreateModalOpen(false);
+		setEditingItem(null);
+		onCloseCreateModal?.();
 	};
 
 	const handleRepay = (item: DebtLoanItem) => {
@@ -394,8 +414,8 @@ export function DebtLoanTab({ currency, onLedgerChanged }: DebtLoanTabProps) {
 			)}
 
 			<DebtLoanModal
-				isOpen={createModalOpen}
-				onClose={() => setCreateModalOpen(false)}
+				isOpen={isCreateOpen}
+				onClose={handleCloseCreateModal}
 				onSuccess={handleSuccess}
 				initialData={editingItem}
 				defaultType={defaultCreateType}

@@ -26,6 +26,7 @@ export default function FinancesPage() {
 	const [mainTab, setMainTab] = React.useState<"LEDGER" | "DEBTS_LOANS">("LEDGER");
 	const [period, setPeriod] = React.useState<"week" | "month" | "year">("month");
 	const [currentDate, setCurrentDate] = React.useState(new Date());
+	const [debtModalOpen, setDebtModalOpen] = React.useState(false);
 
 	const [analytics, setAnalytics] = React.useState<{
 		totalIncome: number;
@@ -245,11 +246,21 @@ export default function FinancesPage() {
 
 				<button
 					type="button"
-					onClick={() => handleAddNew()}
-					className="inline-flex items-center gap-1 rounded-xl bg-teal-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm cursor-pointer shrink-0"
+					onClick={() => {
+						if (mainTab === "DEBTS_LOANS") {
+							setDebtModalOpen(true);
+						} else {
+							handleAddNew();
+						}
+					}}
+					className={`inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-semibold text-white shadow-sm cursor-pointer shrink-0 transition-colors ${
+						mainTab === "DEBTS_LOANS"
+							? "bg-amber-600 hover:bg-amber-700 active:bg-amber-800"
+							: "bg-teal-600 hover:bg-teal-700 active:bg-teal-800"
+					}`}
 				>
 					<Plus className="w-3.5 h-3.5" />
-					<span>Entry</span>
+					<span>{mainTab === "DEBTS_LOANS" ? "Debt/Loan" : "Entry"}</span>
 				</button>
 			</div>,
 		);
@@ -300,7 +311,7 @@ export default function FinancesPage() {
 					</p>
 				</div>
 
-				{mainTab === "LEDGER" && (
+				{mainTab === "LEDGER" ? (
 					<div className="flex items-center gap-2 self-start sm:self-center">
 						<Button
 							variant="outline"
@@ -315,6 +326,17 @@ export default function FinancesPage() {
 						<Button size="sm" onClick={() => handleAddNew()} className="gap-1.5">
 							<Plus className="w-4 h-4" />
 							<span>Record Transaction</span>
+						</Button>
+					</div>
+				) : (
+					<div className="flex items-center gap-2 self-start sm:self-center">
+						<Button
+							size="sm"
+							onClick={() => setDebtModalOpen(true)}
+							className="gap-1.5 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white"
+						>
+							<Plus className="w-4 h-4" />
+							<span>Record Debt / Loan</span>
 						</Button>
 					</div>
 				)}
@@ -349,7 +371,13 @@ export default function FinancesPage() {
 			</div>
 
 			{mainTab === "DEBTS_LOANS" ? (
-				<DebtLoanTab currency={user?.currency || "USD"} onLedgerChanged={fetchData} />
+				<DebtLoanTab
+					currency={user?.currency || "USD"}
+					onLedgerChanged={fetchData}
+					createModalOpen={debtModalOpen}
+					onCloseCreateModal={() => setDebtModalOpen(false)}
+					onOpenCreateModal={() => setDebtModalOpen(true)}
+				/>
 			) : (
 				<>
 					<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl border border-border bg-surface shadow-[var(--shadow-card)]">
