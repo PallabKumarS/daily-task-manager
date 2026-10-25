@@ -33,6 +33,11 @@ export default function FinancesPage() {
 		totalExpense: number;
 		netBalance: number;
 		savingsRate: number;
+		todayCashflow?: {
+			net: number;
+			income: number;
+			expense: number;
+		};
 		timeline: Array<{
 			label: string;
 			income: number;
