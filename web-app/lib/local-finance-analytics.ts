@@ -6,6 +6,11 @@ export interface LocalAnalyticsResult {
 	totalExpense: number;
 	netBalance: number;
 	savingsRate: number;
+	todayCashflow: {
+		net: number;
+		income: number;
+		expense: number;
+	};
 	timeline: Array<{
 		label: string;
 		income: number;
@@ -193,6 +198,40 @@ export function calculateLocalFinanceAnalytics(
 		}))
 		.sort((a, b) => b.amount - a.amount);
 
+	const today = new Date();
+	const todayStart = new Date(
+		today.getFullYear(),
+		today.getMonth(),
+		today.getDate(),
+		0,
+		0,
+		0,
+		0,
+	).getTime();
+	const todayEnd = new Date(
+		today.getFullYear(),
+		today.getMonth(),
+		today.getDate(),
+		23,
+		59,
+		59,
+		999,
+	).getTime();
+
+	let todayIncome = 0;
+	let todayExpense = 0;
+	for (const t of finances) {
+		const txTime = new Date(String(t.date)).getTime();
+		if (txTime >= todayStart && txTime <= todayEnd) {
+			const amt = Number(t.amount) || 0;
+			if (String(t.type).toUpperCase() === "INCOME") {
+				todayIncome += amt;
+			} else {
+				todayExpense += amt;
+			}
+		}
+	}
+
 	return {
 		period,
 		startDate: startDate.toISOString(),
@@ -201,6 +240,11 @@ export function calculateLocalFinanceAnalytics(
 		totalExpense,
 		netBalance,
 		savingsRate,
+		todayCashflow: {
+			net: todayIncome - todayExpense,
+			income: todayIncome,
+			expense: todayExpense,
+		},
 		timeline,
 		expenseCategories: expenseCategoryList,
 		incomeCategories: incomeCategoryList,

@@ -8,6 +8,11 @@ export interface AnalyticsResult {
 	totalExpense: number;
 	netBalance: number;
 	savingsRate: number;
+	todayCashflow: {
+		net: number;
+		income: number;
+		expense: number;
+	};
 	timeline: Array<{
 		label: string;
 		income: number;
@@ -225,6 +230,36 @@ export async function calculateFinanceAnalytics(
 		}))
 		.sort((a, b) => b.amount - a.amount);
 
+	const today = new Date();
+	const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0);
+	const todayEnd = new Date(
+		today.getFullYear(),
+		today.getMonth(),
+		today.getDate(),
+		23,
+		59,
+		59,
+		999,
+	);
+
+	const todayTransactions = await prisma.transaction.findMany({
+		where: {
+			userId,
+			date: { gte: todayStart, lte: todayEnd },
+		},
+		select: { type: true, amount: true },
+	});
+
+	let todayIncome = 0;
+	let todayExpense = 0;
+	for (const t of todayTransactions) {
+		if (t.type.toUpperCase() === "INCOME") {
+			todayIncome += t.amount;
+		} else {
+			todayExpense += t.amount;
+		}
+	}
+
 	return {
 		period,
 		startDate: startDate.toISOString(),
@@ -233,6 +268,11 @@ export async function calculateFinanceAnalytics(
 		totalExpense,
 		netBalance,
 		savingsRate,
+		todayCashflow: {
+			net: todayIncome - todayExpense,
+			income: todayIncome,
+			expense: todayExpense,
+		},
 		timeline,
 		expenseCategories: expenseCategoryList,
 		incomeCategories: incomeCategoryList,

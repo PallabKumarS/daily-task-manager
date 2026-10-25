@@ -1,9 +1,9 @@
 "use client";
 
 import {
+	Activity,
 	ArrowDownRight,
 	ArrowUpRight,
-	Percent,
 	TrendingDown,
 	TrendingUp,
 	Wallet,
@@ -14,7 +14,11 @@ interface FinanceSummaryCardsProps {
 	totalIncome: number;
 	totalExpense: number;
 	netBalance: number;
-	savingsRate: number;
+	todayCashflow?: {
+		net: number;
+		income: number;
+		expense: number;
+	};
 	currency: string;
 }
 
@@ -22,7 +26,7 @@ export function FinanceSummaryCards({
 	totalIncome,
 	totalExpense,
 	netBalance,
-	savingsRate,
+	todayCashflow,
 	currency,
 }: FinanceSummaryCardsProps) {
 	return (
@@ -94,23 +98,36 @@ export function FinanceSummaryCards({
 				</div>
 			</div>
 
-			{/* Savings Rate */}
+			{/* Today's Cash Flow */}
 			<div className="rounded-2xl border border-slate-800 bg-slate-900/70 hover:border-slate-700 p-5 backdrop-blur-xl transition-all shadow-sm">
 				<div className="flex items-center justify-between text-slate-400">
-					<span className="text-xs font-bold uppercase tracking-wider">Savings Rate</span>
-					<div className="rounded-xl bg-indigo-500/10 p-2 text-indigo-400 border border-indigo-500/20 shadow-inner">
-						<Percent className="w-4 h-4 stroke-[2.5]" />
+					<span className="text-xs font-bold uppercase tracking-wider">Today's Cash Flow</span>
+					<div
+						className={`rounded-xl p-2 border shadow-inner ${
+							(todayCashflow?.net ?? 0) >= 0
+								? "bg-teal-500/10 text-teal-400 border-teal-500/20"
+								: "bg-rose-500/10 text-rose-400 border-rose-500/20"
+						}`}
+					>
+						<Activity className="w-4 h-4 stroke-[2.5]" />
 					</div>
 				</div>
 				<div className="mt-3.5">
-					<div className="text-2xl sm:text-3xl font-black tracking-tight text-foreground">
-						{savingsRate}%
+					<div
+						className={`text-2xl sm:text-3xl font-black tracking-tight ${
+							(todayCashflow?.net ?? 0) >= 0 ? "text-teal-400" : "text-rose-400"
+						}`}
+					>
+						{(todayCashflow?.net ?? 0) >= 0 ? "+" : ""}
+						{formatCurrency(todayCashflow?.net ?? 0, currency)}
 					</div>
-					<div className="mt-2 h-1.5 w-full rounded-full bg-slate-800 overflow-hidden">
-						<div
-							className="h-full rounded-full bg-gradient-to-r from-teal-500 to-indigo-400 transition-all duration-500"
-							style={{ width: `${Math.min(100, Math.max(0, savingsRate))}%` }}
-						/>
+					<div className="mt-1 flex items-center justify-between text-[11px] font-medium text-slate-400">
+						<span className="text-teal-400 font-semibold">
+							+{formatCurrency(todayCashflow?.income ?? 0, currency)}
+						</span>
+						<span className="text-rose-400 font-semibold">
+							-{formatCurrency(todayCashflow?.expense ?? 0, currency)}
+						</span>
 					</div>
 				</div>
 			</div>

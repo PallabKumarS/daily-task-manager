@@ -55,6 +55,7 @@ export default function FinancesPage() {
 		totalExpense: 0,
 		netBalance: 0,
 		savingsRate: 0,
+		todayCashflow: { net: 0, income: 0, expense: 0 },
 		timeline: [],
 		expenseCategories: [],
 		incomeCategories: [],
@@ -454,7 +455,7 @@ export default function FinancesPage() {
 						totalIncome={analytics.totalIncome}
 						totalExpense={analytics.totalExpense}
 						netBalance={analytics.netBalance}
-						savingsRate={analytics.savingsRate}
+						todayCashflow={analytics.todayCashflow}
 						currency={user?.currency || "USD"}
 					/>
 
