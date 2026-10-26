@@ -50,7 +50,8 @@ function generatePulseChime() {
 			if (t >= p.start && t <= p.end) {
 				const localT = t - p.start;
 				const pulseDuration = p.end - p.start;
-				let env = localT < 0.015 ? localT / 0.015 : Math.exp((-4 * (localT - 0.015)) / pulseDuration);
+				const env =
+					localT < 0.015 ? localT / 0.015 : Math.exp((-4 * (localT - 0.015)) / pulseDuration);
 				const w1 = 2 * Math.PI * p.freq1 * localT;
 				const w2 = 2 * Math.PI * p.freq2 * localT;
 				let tone = 0.65 * Math.sin(w1) + 0.35 * Math.sin(w2);
@@ -89,7 +90,8 @@ function generateRadarBeeps() {
 				const localT = t - b.start;
 				const len = b.end - b.start;
 				const env = Math.sin((Math.PI * localT) / len);
-				const tone = Math.sin(2 * Math.PI * b.freq * localT) + 0.25 * Math.sin(4 * Math.PI * b.freq * localT);
+				const tone =
+					Math.sin(2 * Math.PI * b.freq * localT) + 0.25 * Math.sin(4 * Math.PI * b.freq * localT);
 				sampleValue += tone * env;
 			}
 		}
@@ -143,16 +145,16 @@ function generateDigitalWatch() {
 
 	const beeps = [
 		{ start: 0.0, end: 0.08, freq: 2048 },
-		{ start: 0.12, end: 0.20, freq: 2048 },
+		{ start: 0.12, end: 0.2, freq: 2048 },
 		{ start: 0.24, end: 0.32, freq: 2048 },
 		{ start: 0.36, end: 0.44, freq: 2048 },
 		{ start: 0.9, end: 0.98, freq: 2048 },
-		{ start: 1.02, end: 1.10, freq: 2048 },
+		{ start: 1.02, end: 1.1, freq: 2048 },
 		{ start: 1.14, end: 1.22, freq: 2048 },
 		{ start: 1.26, end: 1.34, freq: 2048 },
 		{ start: 1.8, end: 1.88, freq: 2400 },
-		{ start: 1.92, end: 2.00, freq: 2400 },
-		{ start: 2.04, end: 2.30, freq: 2400 },
+		{ start: 1.92, end: 2.0, freq: 2400 },
+		{ start: 2.04, end: 2.3, freq: 2400 },
 	];
 
 	for (let i = 0; i < totalSamples; i++) {

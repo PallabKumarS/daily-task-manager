@@ -71,7 +71,7 @@ export function FloatingQuickAction({ onQuickAdd }: FloatingQuickActionProps) {
 	}, [isOpen]);
 
 	return (
-		<div ref={containerRef} className="fixed bottom-[136px] md:bottom-6 right-4 sm:right-6 z-40">
+		<div ref={containerRef} className="fixed bottom-34 md:bottom-6 right-4 sm:right-6 z-40">
 			<AnimatePresence>
 				{isOpen && (
 					<motion.div
@@ -79,7 +79,7 @@ export function FloatingQuickAction({ onQuickAdd }: FloatingQuickActionProps) {
 						animate={{ opacity: 1, scale: 1, y: 0 }}
 						exit={{ opacity: 0, scale: 0.9, y: 10 }}
 						transition={SPRING_GENTLE}
-						className="absolute bottom-full right-0 mb-3 flex flex-col w-52 rounded-2xl border border-border bg-surface p-1.5 shadow-[var(--shadow-pop)] backdrop-blur-xl"
+						className="absolute bottom-full right-0 mb-3 flex flex-col w-52 rounded-2xl border border-border bg-surface p-1.5 shadow-(--shadow-pop) backdrop-blur-xl"
 					>
 						{QUICK_ACTIONS.map((item) => {
 							const Icon = item.icon;

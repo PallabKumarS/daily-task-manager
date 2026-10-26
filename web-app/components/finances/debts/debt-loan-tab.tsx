@@ -203,8 +203,9 @@ export function DebtLoanTab({
 
 	return (
 		<div className="space-y-6">
+			{/* Cards */}
 			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-				<div className="p-4 rounded-2xl border border-amber-500/30 bg-alarm-soft shadow-[var(--shadow-card)] flex flex-col justify-between">
+				<div className="p-4 rounded-2xl border border-amber-500/30 bg-alarm-soft shadow-(--shadow-card) flex flex-col justify-between">
 					<div className="flex items-center justify-between text-alarm-fg">
 						<span className="text-xs font-bold uppercase tracking-wider">I Owe (Debts)</span>
 						<div className="w-8 h-8 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-alarm-fg">
@@ -222,7 +223,7 @@ export function DebtLoanTab({
 					</div>
 				</div>
 
-				<div className="p-4 rounded-2xl border border-emerald-500/30 bg-income-soft shadow-[var(--shadow-card)] flex flex-col justify-between">
+				<div className="p-4 rounded-2xl border border-emerald-500/30 bg-income-soft shadow-(--shadow-card) flex flex-col justify-between">
 					<div className="flex items-center justify-between text-income-fg">
 						<span className="text-xs font-bold uppercase tracking-wider">Owed to Me (Loans)</span>
 						<div className="w-8 h-8 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-income-fg">
@@ -240,7 +241,7 @@ export function DebtLoanTab({
 					</div>
 				</div>
 
-				<div className="p-4 rounded-2xl border border-border bg-surface shadow-[var(--shadow-card)] flex flex-col justify-between">
+				<div className="p-4 rounded-2xl border border-border bg-surface shadow-(--shadow-card) flex flex-col justify-between">
 					<div className="flex items-center justify-between text-muted-foreground">
 						<span className="text-xs font-bold uppercase tracking-wider">Net Position</span>
 						<div className="w-8 h-8 rounded-lg bg-surface-2 border border-border flex items-center justify-center text-foreground">
@@ -261,7 +262,7 @@ export function DebtLoanTab({
 					</div>
 				</div>
 
-				<div className="p-4 rounded-2xl border border-border bg-surface shadow-[var(--shadow-card)] flex flex-col justify-between">
+				<div className="p-4 rounded-2xl border border-border bg-surface shadow-(--shadow-card) flex flex-col justify-between">
 					<div className="flex items-center justify-between text-muted-foreground">
 						<span className="text-xs font-bold uppercase tracking-wider">Settled in Full</span>
 						<div className="w-8 h-8 rounded-lg bg-income-soft border border-emerald-500/20 flex items-center justify-center text-income-fg">
@@ -279,7 +280,8 @@ export function DebtLoanTab({
 				</div>
 			</div>
 
-			<div className="flex flex-col md:flex-row md:items-center justify-between gap-3 p-3.5 rounded-2xl border border-border bg-surface shadow-[var(--shadow-card)]">
+			{/* Filter Buttons */}
+			<div className="flex flex-col md:flex-row md:items-center justify-between gap-3 p-3.5 rounded-2xl border border-border bg-surface shadow-(--shadow-card)">
 				<div className="flex items-center rounded-xl bg-surface-2 p-1 border border-border overflow-x-auto">
 					<button
 						type="button"
@@ -331,7 +333,7 @@ export function DebtLoanTab({
 				</div>
 
 				<div className="flex items-center gap-2">
-					<div className="relative min-w-[180px] sm:min-w-[220px]">
+					<div className="relative w-full">
 						<Search className="w-3.5 h-3.5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
 						<Input
 							placeholder="Search person or notes..."
@@ -345,7 +347,7 @@ export function DebtLoanTab({
 						variant="emerald"
 						size="sm"
 						onClick={() => handleOpenAdd("DEBT")}
-						className="gap-1.5 h-9 shrink-0"
+						className="gap-1.5 h-9 w-full"
 					>
 						<Plus className="w-4 h-4" />
 						<span>Record Debt / Loan</span>

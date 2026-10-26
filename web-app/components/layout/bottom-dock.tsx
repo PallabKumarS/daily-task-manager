@@ -35,7 +35,7 @@ export function BottomDock() {
 							key={item.href}
 							href={item.href}
 							className={cn(
-								"relative flex flex-col items-center justify-center py-1 px-1 rounded-xl transition-colors duration-150 min-h-[48px]",
+								"relative flex flex-col items-center justify-center py-1 px-1 rounded-xl transition-colors duration-150 min-h-12",
 								isActive
 									? "text-routine-fg font-bold"
 									: "text-muted-foreground hover:text-foreground",

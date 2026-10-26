@@ -162,8 +162,8 @@ export function MobileContextDock({ onQuickAdd, onRefresh }: MobileContextDockPr
 
 		if (pathname.startsWith("/finances")) {
 			return (
-				<div className="flex items-center justify-between gap-2 w-full">
-					<span className="text-xs font-semibold text-muted-foreground pl-2 truncate">
+				<div className="flex items-center justify-between gap-1 w-full">
+					<span className="text-xs font-semibold text-muted-foreground truncate">
 						Cashflow & Debts
 					</span>
 					<button
@@ -172,7 +172,7 @@ export function MobileContextDock({ onQuickAdd, onRefresh }: MobileContextDockPr
 						className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-semibold text-white shadow-sm cursor-pointer"
 					>
 						<Plus className="w-3.5 h-3.5" />
-						<span>Log Entry</span>
+						<span>Entry</span>
 					</button>
 				</div>
 			);
@@ -232,7 +232,7 @@ export function MobileContextDock({ onQuickAdd, onRefresh }: MobileContextDockPr
 					animate={{ opacity: 1, y: 0, scale: 1 }}
 					exit={{ opacity: 0, y: 28, scale: 0.96 }}
 					transition={SPRING_SNAPPY}
-					className="md:hidden fixed left-3 right-3 bottom-[calc(var(--bottom-nav-h,64px)+10px)] z-30 flex items-center rounded-2xl border border-border-strong bg-surface/95 px-2.5 py-2 shadow-[var(--shadow-pop)] backdrop-blur-xl"
+					className="md:hidden fixed left-3 right-3 bottom-[calc(var(--bottom-nav-h,64px)+10px)] z-30 flex items-center rounded-2xl border border-border-strong bg-surface/95 px-2.5 py-2 shadow-(--shadow-pop) backdrop-blur-xl"
 				>
 					{customSlot || renderDefaultActions()}
 				</motion.div>
