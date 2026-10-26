@@ -66,8 +66,18 @@ export function DashboardView({
 	const [viewMode, setViewMode] = React.useState<"OVERVIEW" | "STREAM">("STREAM");
 	const [isRestoreModalOpen, setIsRestoreModalOpen] = React.useState(false);
 	const [isGoogleModalOpen, setIsGoogleModalOpen] = React.useState(false);
+	const isFetchingRef = React.useRef(false);
+	const pendingFetchRef = React.useRef(false);
 
 	const fetchData = React.useCallback(async () => {
+		if (isFetchingRef.current) {
+			pendingFetchRef.current = true;
+			return;
+		}
+
+		isFetchingRef.current = true;
+		pendingFetchRef.current = false;
+
 		try {
 			const [rRes, tRes, trRes, trkRes] = await Promise.allSettled([
 				api.get<RoutineItem[]>("/routines"),
@@ -90,6 +100,12 @@ export function DashboardView({
 			}
 		} catch {
 			// ignore
+		} finally {
+			isFetchingRef.current = false;
+			if (pendingFetchRef.current) {
+				pendingFetchRef.current = false;
+				fetchData();
+			}
 		}
 	}, []);
 
@@ -111,7 +127,6 @@ export function DashboardView({
 		if (!tracker) return;
 		const currentVal = tracker.todayLog ? tracker.todayLog.value : 0;
 		const newVal = Math.max(0, currentVal + delta);
-		const todayStr = new Date().toISOString().slice(0, 10);
 
 		setTrackers((prev) =>
 			prev.map((t) =>
@@ -153,7 +168,6 @@ export function DashboardView({
 		const newVal = isCurrentlyCancelled ? tracker.defaultTarget : 0;
 		const newStatus = isCurrentlyCancelled ? "LOGGED" : "CANCELLED";
 		const note = isCurrentlyCancelled ? "" : "Cancelled with provider";
-		const todayStr = new Date().toISOString().slice(0, 10);
 
 		try {
 			await api.post(`/trackers/${trackerId}/log`, {
@@ -249,8 +263,6 @@ export function DashboardView({
 
 	// Task handlers
 	const handleToggleTask = async (task: TaskItem) => {
-		const todayStr = new Date().toLocaleDateString("en-CA");
-
 		try {
 			confetti({
 				particleCount: 35,

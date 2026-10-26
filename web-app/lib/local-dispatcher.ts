@@ -13,6 +13,7 @@ import {
 	saveClientGoogleCredentials,
 	uploadBackupToGoogleDrive,
 } from "./client-google-sync";
+import { getTodayDateString } from "./date-helpers";
 import { exportLocalArchive } from "./export-local-archive";
 import { calculateLocalFinanceAnalytics } from "./local-finance-analytics";
 import { buildLocalTrackerMonthDetail, formatTrackerWithMonthStats } from "./local-tracker-stats";
@@ -1071,7 +1072,7 @@ export async function handleLocalClientDispatch<T = unknown>(
 				(t) => !t.isArchived,
 			);
 			const allLogs = getList<Record<string, unknown>>(STORAGE_KEYS.TRACKER_LOGS);
-			const targetDate = query.date || new Date().toISOString().slice(0, 10);
+			const targetDate = query.date || getTodayDateString();
 
 			const formatted = trackers.map((t) => formatTrackerWithMonthStats(t, allLogs, targetDate));
 			return { statusCode: 200, success: true, data: formatted as T };

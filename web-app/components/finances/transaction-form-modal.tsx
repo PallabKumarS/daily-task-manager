@@ -20,6 +20,7 @@ import {
 	getCurrencySymbol,
 	INCOME_CATEGORIES,
 } from "@/lib/currency-symbols";
+import { formatDateString, getTodayDateString } from "@/lib/date-helpers";
 import { recordRecentAddition } from "@/lib/recent-activity-store";
 import { DAY_NAMES_SHORT, useWorkweekPreferences } from "@/lib/workweek-preferences";
 
@@ -96,7 +97,7 @@ export function TransactionFormModal({
 			category: defaultType === "EXPENSE" ? EXPENSE_CATEGORIES[0] : INCOME_CATEGORIES[0],
 			description: "",
 			paymentMethod: "Cash",
-			date: new Date().toISOString().slice(0, 10),
+			date: getTodayDateString(),
 		},
 	});
 
@@ -125,9 +126,7 @@ export function TransactionFormModal({
 	React.useEffect(() => {
 		if (initialData) {
 			const d = new Date(initialData.date);
-			const dateStr = !Number.isNaN(d.getTime())
-				? d.toISOString().slice(0, 10)
-				: new Date().toISOString().slice(0, 10);
+			const dateStr = !Number.isNaN(d.getTime()) ? formatDateString(d) : getTodayDateString();
 
 			let baseDesc = initialData.description || "";
 			const recMatch = baseDesc.match(/\[Recurring:\s*([^\]]+)\]/i);
@@ -166,7 +165,7 @@ export function TransactionFormModal({
 				category: defaultType === "EXPENSE" ? EXPENSE_CATEGORIES[0] : INCOME_CATEGORIES[0],
 				description: "",
 				paymentMethod: "Cash",
-				date: defaultDate || new Date().toISOString().slice(0, 10),
+				date: defaultDate || getTodayDateString(),
 			});
 		}
 	}, [initialData, defaultType, defaultDate, reset, isOpen, weekdays]);

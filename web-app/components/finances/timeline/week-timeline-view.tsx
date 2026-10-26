@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, Edit2, Plus, Trash2 } from "lucide-react";
 import * as React from "react";
 import type { TransactionItem } from "@/components/finances/transaction-list";
 import { formatCurrency } from "@/lib/currency-symbols";
+import { useTodayDate } from "@/lib/date-helpers";
 import { useRecentAdditions } from "@/lib/recent-activity-store";
 import {
 	DAY_NAMES_SHORT,
@@ -49,7 +50,7 @@ export function WeekTimelineView({
 		[currentDate, startOfWeek],
 	);
 
-	const todayStr = React.useMemo(() => new Date().toLocaleDateString("en-CA"), []);
+	const { todayDateString: todayStr } = useTodayDate();
 
 	// Generate 7 days in order
 	const weekDays = React.useMemo(() => {

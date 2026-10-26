@@ -86,6 +86,15 @@ export function calculateNewStreak(
 	return 1;
 }
 
+export function formatDateTimeLocalString(date: Date = new Date()): string {
+	const y = date.getFullYear();
+	const m = String(date.getMonth() + 1).padStart(2, "0");
+	const d = String(date.getDate()).padStart(2, "0");
+	const hh = String(date.getHours()).padStart(2, "0");
+	const mm = String(date.getMinutes()).padStart(2, "0");
+	return `${y}-${m}-${d}T${hh}:${mm}`;
+}
+
 // Reactive zero-cost midnight rollover subscription
 let cachedTodayStr = getTodayDateString();
 let cachedReadable = formatReadableDate(new Date());
@@ -93,7 +102,7 @@ let cachedDate = new Date();
 
 const dateSubscribers = new Set<() => void>();
 
-function notifyDateSubscribers(): void {
+export function notifyDateSubscribers(): void {
 	cachedTodayStr = getTodayDateString();
 	cachedReadable = formatReadableDate(new Date());
 	cachedDate = new Date();
@@ -102,7 +111,7 @@ function notifyDateSubscribers(): void {
 	}
 }
 
-function checkDateRollover(): void {
+export function checkDateRollover(): boolean {
 	const currentStr = getTodayDateString();
 	if (currentStr !== cachedTodayStr) {
 		notifyDateSubscribers();
@@ -112,26 +121,33 @@ function checkDateRollover(): void {
 			);
 			window.dispatchEvent(new CustomEvent("daypulse:refresh"));
 		}
+		return true;
 	}
+	return false;
 }
 
-let rolloverTimer: ReturnType<typeof setTimeout> | null = null;
+let midnightTimer: ReturnType<typeof setTimeout> | null = null;
+let heartbeatInterval: ReturnType<typeof setInterval> | null = null;
 
-function scheduleNextMinuteCheck(): void {
+function scheduleMidnightTimer(): void {
 	if (typeof window === "undefined") return;
-	if (rolloverTimer) clearTimeout(rolloverTimer);
+	if (midnightTimer) clearTimeout(midnightTimer);
 
 	const now = new Date();
-	const msUntilNextMinute = (60 - now.getSeconds()) * 1000 - now.getMilliseconds() + 50;
+	const nextMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 50);
+	const msUntilMidnight = Math.max(100, nextMidnight.getTime() - now.getTime());
 
-	rolloverTimer = setTimeout(() => {
+	midnightTimer = setTimeout(() => {
 		checkDateRollover();
-		scheduleNextMinuteCheck();
-	}, msUntilNextMinute);
+		scheduleMidnightTimer();
+	}, msUntilMidnight);
 }
 
 if (typeof window !== "undefined") {
-	scheduleNextMinuteCheck();
+	scheduleMidnightTimer();
+	if (!heartbeatInterval) {
+		heartbeatInterval = setInterval(checkDateRollover, 10_000);
+	}
 	document.addEventListener("visibilitychange", () => {
 		if (document.visibilityState === "visible") {
 			checkDateRollover();

@@ -6,6 +6,7 @@ import { TransactionCard } from "@/components/finances/transaction-card";
 import type { TransactionItem } from "@/components/finances/transaction-list";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/currency-symbols";
+import { useTodayDate } from "@/lib/date-helpers";
 import { useRecentAdditions } from "@/lib/recent-activity-store";
 import { DAY_NAMES_SHORT } from "@/lib/workweek-preferences";
 
@@ -29,7 +30,7 @@ export function MonthTimelineView({
 	const { activeAdditionId } = useRecentAdditions();
 	const scrollRef = React.useRef<HTMLDivElement>(null);
 
-	const todayStr = React.useMemo(() => new Date().toLocaleDateString("en-CA"), []);
+	const { todayDateString: todayStr } = useTodayDate();
 
 	// Total days in current month
 	const daysInMonth = React.useMemo(() => {

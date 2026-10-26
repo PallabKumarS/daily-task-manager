@@ -22,6 +22,11 @@ import {
 import { api } from "@/lib/api-client";
 import { playNotificationChime } from "@/lib/audio-chime";
 import { TASK_CATEGORIES } from "@/lib/currency-symbols";
+import {
+	formatDateString,
+	formatDateTimeLocalString,
+	getTodayDateString,
+} from "@/lib/date-helpers";
 import { syncNativeAndroidAlarms } from "@/lib/native-alarm-scheduler";
 import { recordRecentAddition } from "@/lib/recent-activity-store";
 
@@ -158,7 +163,7 @@ export function TaskFormModal({
 			type: defaultType,
 			category: "General",
 			priority: "MEDIUM",
-			startDate: new Date().toISOString().slice(0, 10),
+			startDate: getTodayDateString(),
 			dueDate: "",
 			remindBeforeMinutes: 0,
 			isRecurring: false,
@@ -220,17 +225,17 @@ export function TaskFormModal({
 			if (initialData.startDate) {
 				const s = new Date(initialData.startDate);
 				if (!Number.isNaN(s.getTime())) {
-					formattedStart = s.toISOString().slice(0, 10);
+					formattedStart = formatDateString(s);
 				}
 			} else {
-				formattedStart = new Date().toISOString().slice(0, 10);
+				formattedStart = getTodayDateString();
 			}
 
 			let formattedUntil = "";
 			if (initialData.repeatUntil) {
 				const u = new Date(initialData.repeatUntil);
 				if (!Number.isNaN(u.getTime())) {
-					formattedUntil = u.toISOString().slice(0, 10);
+					formattedUntil = formatDateString(u);
 				}
 			}
 
@@ -272,9 +277,9 @@ export function TaskFormModal({
 			setSelectedTone("alarm");
 
 			const now = new Date();
-			const todayStr = now.toISOString().slice(0, 10);
+			const todayStr = getTodayDateString();
 			now.setHours(now.getHours() + 1, 0, 0, 0);
-			const defaultDueStr = now.toISOString().slice(0, 16);
+			const defaultDueStr = formatDateTimeLocalString(now);
 
 			setExtraTimes([]);
 			reset({

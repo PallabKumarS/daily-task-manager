@@ -14,25 +14,28 @@ import { usePathname } from "next/navigation";
 import * as React from "react";
 import { SPRING_SNAPPY } from "@/lib/motion-tokens";
 
-interface ContextDockContextValue {
-	customSlot: React.ReactNode | null;
-	setCustomSlot: (node: React.ReactNode | null) => void;
-}
-
-const ContextDockContext = React.createContext<ContextDockContextValue>({
-	customSlot: null,
-	setCustomSlot: () => {},
-});
+const ContextDockValueContext = React.createContext<React.ReactNode | null>(null);
+const ContextDockDispatchContext = React.createContext<(node: React.ReactNode | null) => void>(
+	() => {},
+);
 
 export function ContextDockProvider({ children }: { children: React.ReactNode }) {
 	const [customSlot, setCustomSlot] = React.useState<React.ReactNode | null>(null);
-	const value = React.useMemo(() => ({ customSlot, setCustomSlot }), [customSlot]);
-	return <ContextDockContext.Provider value={value}>{children}</ContextDockContext.Provider>;
+	return (
+		<ContextDockDispatchContext.Provider value={setCustomSlot}>
+			<ContextDockValueContext.Provider value={customSlot}>
+				{children}
+			</ContextDockValueContext.Provider>
+		</ContextDockDispatchContext.Provider>
+	);
+}
+
+export function useContextDockSlot(): React.ReactNode | null {
+	return React.useContext(ContextDockValueContext);
 }
 
 export function useContextDock(node?: React.ReactNode) {
-	const ctx = React.useContext(ContextDockContext);
-	const { setCustomSlot } = ctx;
+	const setCustomSlot = React.useContext(ContextDockDispatchContext);
 
 	React.useEffect(() => {
 		if (node === undefined) return;
@@ -40,7 +43,7 @@ export function useContextDock(node?: React.ReactNode) {
 		return () => setCustomSlot(null);
 	}, [node, setCustomSlot]);
 
-	return ctx;
+	return React.useMemo(() => ({ setCustomSlot }), [setCustomSlot]);
 }
 
 interface MobileContextDockProps {
@@ -50,28 +53,36 @@ interface MobileContextDockProps {
 
 export function MobileContextDock({ onQuickAdd, onRefresh }: MobileContextDockProps) {
 	const pathname = usePathname();
-	const { customSlot } = useContextDock();
+	const customSlot = useContextDockSlot();
 	const [isVisible, setIsVisible] = React.useState(true);
 	const [isModalOpen, setIsModalOpen] = React.useState(false);
 	const [isKeyboardOpen, setIsKeyboardOpen] = React.useState(false);
 	const lastScrollY = React.useRef(0);
 
 	React.useEffect(() => {
+		let rafId: number | null = null;
 		const handleScroll = () => {
-			const currentY = window.scrollY;
-			const delta = currentY - lastScrollY.current;
-			if (currentY < 32) {
-				setIsVisible(true);
-			} else if (delta > 14) {
-				setIsVisible(false);
-			} else if (delta < -10) {
-				setIsVisible(true);
-			}
-			lastScrollY.current = currentY;
+			if (rafId !== null) return;
+			rafId = window.requestAnimationFrame(() => {
+				const currentY = window.scrollY;
+				const delta = currentY - lastScrollY.current;
+				if (currentY < 32) {
+					setIsVisible(true);
+				} else if (delta > 14) {
+					setIsVisible(false);
+				} else if (delta < -10) {
+					setIsVisible(true);
+				}
+				lastScrollY.current = currentY;
+				rafId = null;
+			});
 		};
 
 		window.addEventListener("scroll", handleScroll, { passive: true });
-		return () => window.removeEventListener("scroll", handleScroll);
+		return () => {
+			if (rafId !== null) window.cancelAnimationFrame(rafId);
+			window.removeEventListener("scroll", handleScroll);
+		};
 	}, []);
 
 	React.useEffect(() => {

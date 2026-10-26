@@ -64,8 +64,17 @@ export function DebtLoanTab({
 
 	const isCreateOpen =
 		externalCreateModalOpen !== undefined ? externalCreateModalOpen : internalCreateModalOpen;
+	const isFetchingRef = React.useRef(false);
+	const pendingFetchRef = React.useRef(false);
 
 	const fetchData = React.useCallback(async () => {
+		if (isFetchingRef.current) {
+			pendingFetchRef.current = true;
+			return;
+		}
+		isFetchingRef.current = true;
+		pendingFetchRef.current = false;
+
 		try {
 			const res = await api.get<{
 				debtsLoans: DebtLoanItem[];
@@ -90,6 +99,11 @@ export function DebtLoanTab({
 			// Ignore network error
 		} finally {
 			setLoading(false);
+			isFetchingRef.current = false;
+			if (pendingFetchRef.current) {
+				pendingFetchRef.current = false;
+				fetchData();
+			}
 		}
 	}, []);
 

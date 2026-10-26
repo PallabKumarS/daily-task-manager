@@ -60,6 +60,14 @@ export type ServerApiResponse<T = unknown> = IpcApiResponse<T>;
 
 export const handleApiDispatch = handleIpcApiDispatch;
 
+function getTodayDateString(): string {
+	const now = new Date();
+	const year = now.getFullYear();
+	const month = String(now.getMonth() + 1).padStart(2, "0");
+	const day = String(now.getDate()).padStart(2, "0");
+	return `${year}-${month}-${day}`;
+}
+
 export async function handleIpcApiDispatch(req: IpcApiRequest): Promise<IpcApiResponse> {
 	const prisma = getPrismaClient();
 	let userId = getCurrentUserId() || "";
@@ -690,7 +698,7 @@ export async function handleIpcApiDispatch(req: IpcApiRequest): Promise<IpcApiRe
 
 		// ================= ROUTINE ROUTES =================
 		if (pathname === "/routines" && method === "GET") {
-			const todayStr = new Date().toISOString().slice(0, 10);
+			const todayStr = getTodayDateString();
 			const routines = await prisma.routine.findMany({
 				where: { userId },
 				include: {
@@ -737,8 +745,7 @@ export async function handleIpcApiDispatch(req: IpcApiRequest): Promise<IpcApiRe
 		const routineToggleMatch = pathname.match(/^\/routines\/([^/]+)\/toggle$/);
 		if (routineToggleMatch && method === "POST") {
 			const routineId = routineToggleMatch[1];
-			const todayStr =
-				typeof body.date === "string" ? body.date : new Date().toISOString().slice(0, 10);
+			const todayStr = typeof body.date === "string" ? body.date : getTodayDateString();
 
 			const existingLog = await prisma.routineLog.findUnique({
 				where: {
@@ -816,7 +823,7 @@ export async function handleIpcApiDispatch(req: IpcApiRequest): Promise<IpcApiRe
 			if (!routine) {
 				return notFound("Routine not found");
 			}
-			const todayStr = new Date().toISOString().slice(0, 10);
+			const todayStr = getTodayDateString();
 			const isCompletedToday = routine.logs.some((l) => l.date === todayStr && l.completed);
 			return {
 				statusCode: 200,
@@ -1100,7 +1107,7 @@ export async function handleIpcApiDispatch(req: IpcApiRequest): Promise<IpcApiRe
 
 		// ================= TRACKERS ROUTES =================
 		if (pathname === "/trackers" && method === "GET") {
-			const targetDate = query.date || new Date().toISOString().slice(0, 10);
+			const targetDate = query.date || getTodayDateString();
 			const [yearStr, monthStr] = targetDate.split("-");
 			const year = Number(yearStr) || new Date().getFullYear();
 			const month = Number(monthStr) || new Date().getMonth() + 1;
@@ -1220,8 +1227,7 @@ export async function handleIpcApiDispatch(req: IpcApiRequest): Promise<IpcApiRe
 
 		if (trackerLogMatch && method === "POST") {
 			const trackerId = trackerLogMatch[1];
-			const dateStr =
-				typeof body.date === "string" ? body.date : new Date().toISOString().slice(0, 10);
+			const dateStr = typeof body.date === "string" ? body.date : getTodayDateString();
 
 			const log = await prisma.dailyTrackerLog.upsert({
 				where: {

@@ -61,6 +61,14 @@ export function GoogleRestoreModal({
 	const [submittingCode, setSubmittingCode] = React.useState(false);
 
 	const pollTimerRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
+	const redirectTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+	const clearRedirectTimer = React.useCallback(() => {
+		if (redirectTimerRef.current) {
+			clearTimeout(redirectTimerRef.current);
+			redirectTimerRef.current = null;
+		}
+	}, []);
 
 	const stopPolling = React.useCallback(() => {
 		if (pollTimerRef.current) {
@@ -71,17 +79,27 @@ export function GoogleRestoreModal({
 
 	const resetState = React.useCallback(() => {
 		stopPolling();
+		clearRedirectTimer();
 		setStatus("idle");
 		setStatusText("");
 		setErrorMessage(null);
 		setAuthCodeInput("");
 		setSubmittingCode(false);
-	}, [stopPolling]);
+	}, [stopPolling, clearRedirectTimer]);
 
 	const handleModalClose = React.useCallback(() => {
 		resetState();
 		onClose();
 	}, [resetState, onClose]);
+
+	const scheduleRedirect = React.useCallback(() => {
+		clearRedirectTimer();
+		redirectTimerRef.current = setTimeout(() => {
+			handleModalClose();
+			router.push("/dashboard");
+			redirectTimerRef.current = null;
+		}, 1200);
+	}, [clearRedirectTimer, handleModalClose, router]);
 
 	React.useEffect(() => {
 		const handleMessage = (event: MessageEvent) => {
@@ -91,10 +109,7 @@ export function GoogleRestoreModal({
 				setStatusText("Restored successfully. Finalizing session...");
 				refreshUser().then(() => {
 					toast.success("Workspace restored from Google Drive successfully");
-					setTimeout(() => {
-						handleModalClose();
-						router.push("/dashboard");
-					}, 1200);
+					scheduleRedirect();
 				});
 			}
 		};
@@ -102,8 +117,9 @@ export function GoogleRestoreModal({
 		return () => {
 			window.removeEventListener("message", handleMessage);
 			stopPolling();
+			clearRedirectTimer();
 		};
-	}, [stopPolling, refreshUser, router, handleModalClose]);
+	}, [stopPolling, refreshUser, scheduleRedirect, clearRedirectTimer]);
 
 	React.useEffect(() => {
 		if (isOpen) {
@@ -173,10 +189,7 @@ export function GoogleRestoreModal({
 				setAuthToken(res.data.token);
 				await refreshUser();
 				toast.success(res.data.summary || "Workspace restored from Google Drive successfully");
-				setTimeout(() => {
-					handleModalClose();
-					router.push("/dashboard");
-				}, 1200);
+				scheduleRedirect();
 			} else {
 				const err = res.message || "Failed to restore using provided code";
 				setErrorMessage(err);
@@ -225,10 +238,7 @@ export function GoogleRestoreModal({
 
 				toast.success(restoreRes.message || "Workspace restored from Google Drive successfully");
 
-				setTimeout(() => {
-					handleModalClose();
-					router.push("/dashboard");
-				}, 1200);
+				scheduleRedirect();
 				return;
 			} catch (err: unknown) {
 				const msg = err instanceof Error ? err.message : "Google Play Services sign-in failed";
@@ -299,10 +309,7 @@ export function GoogleRestoreModal({
 							statusRes.data.summary || "Workspace restored from Google Drive successfully",
 						);
 
-						setTimeout(() => {
-							handleModalClose();
-							router.push("/dashboard");
-						}, 1200);
+						scheduleRedirect();
 					}
 				} catch {
 					// Network retry during polling

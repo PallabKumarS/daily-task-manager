@@ -4,6 +4,7 @@ import type {
 	TrackerDetailResponse,
 	TrackerTodayLog,
 } from "@/components/trackers/tracker-types";
+import { getTodayDateString } from "./date-helpers";
 
 export function formatTrackerWithMonthStats(
 	tracker: Record<string, unknown>,
@@ -186,11 +187,7 @@ export function buildLocalTrackerMonthDetail(
 		}
 	}
 
-	const formattedTracker = formatTrackerWithMonthStats(
-		tracker,
-		allLogs,
-		new Date().toISOString().slice(0, 10),
-	);
+	const formattedTracker = formatTrackerWithMonthStats(tracker, allLogs, getTodayDateString());
 
 	return {
 		tracker: formattedTracker,

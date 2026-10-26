@@ -17,8 +17,17 @@ export function TasksClient() {
 	const [modalOpen, setModalOpen] = React.useState(false);
 	const [editingTask, setEditingTask] = React.useState<TaskItem | null>(null);
 	const [modalDefaultType, setModalDefaultType] = React.useState<"TASK" | "EVENT">("EVENT");
+	const isFetchingRef = React.useRef(false);
+	const pendingFetchRef = React.useRef(false);
 
 	const fetchTasks = React.useCallback(async () => {
+		if (isFetchingRef.current) {
+			pendingFetchRef.current = true;
+			return;
+		}
+		isFetchingRef.current = true;
+		pendingFetchRef.current = false;
+
 		try {
 			const res = await api.get<TaskItem[]>("/tasks");
 			if (res.success && res.data) {
@@ -28,6 +37,11 @@ export function TasksClient() {
 			// ignore
 		} finally {
 			setLoading(false);
+			isFetchingRef.current = false;
+			if (pendingFetchRef.current) {
+				pendingFetchRef.current = false;
+				fetchTasks();
+			}
 		}
 	}, []);
 

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { api } from "@/lib/api-client";
 import { formatCurrency } from "@/lib/currency-symbols";
+import { useTodayDate } from "@/lib/date-helpers";
 import { useRecentAdditions } from "@/lib/recent-activity-store";
 
 export interface TransactionItem {
@@ -71,9 +72,23 @@ export function TransactionList({
 }: TransactionListProps) {
 	const confirm = useConfirm();
 	const { activeAdditionId } = useRecentAdditions();
+	const { todayDateString: todayKey } = useTodayDate();
+	const prevTodayRef = React.useRef(todayKey);
 	const [duplicatingId, setDuplicatingId] = React.useState<string | null>(null);
 	const [selectedDate, setSelectedDate] = React.useState<Date>(() => new Date(currentDate));
 	const [isMonthView, setIsMonthView] = React.useState(false);
+
+	React.useEffect(() => {
+		if (prevTodayRef.current !== todayKey) {
+			const prevToday = prevTodayRef.current;
+			prevTodayRef.current = todayKey;
+			if (getLocalDateKey(selectedDate) === prevToday) {
+				const nextDate = new Date();
+				setSelectedDate(nextDate);
+				onSelectDate?.(nextDate);
+			}
+		}
+	}, [todayKey, selectedDate, onSelectDate]);
 
 	React.useEffect(() => {
 		setSelectedDate((prev) => {
@@ -143,7 +158,6 @@ export function TransactionList({
 	}, [transactions, filterType]);
 
 	const selectedDateKey = getLocalDateKey(selectedDate);
-	const todayKey = getLocalDateKey(new Date());
 
 	const dayTransactions = React.useMemo(() => {
 		return filteredTransactions.filter((t) => getLocalDateKey(t.date) === selectedDateKey);

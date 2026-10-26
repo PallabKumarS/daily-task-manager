@@ -66,6 +66,7 @@ export function recordRecentAddition(
 export function useRecentAdditions() {
 	const [recentList, setRecentList] = React.useState<RecentAdditionItem[]>([]);
 	const [activeAdditionId, setActiveAdditionId] = React.useState<string | null>(null);
+	const activeTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	React.useEffect(() => {
 		setRecentList(getStoredAdditions());
@@ -79,8 +80,12 @@ export function useRecentAdditions() {
 				);
 				setActiveAdditionId(newItem.id);
 
-				setTimeout(() => {
+				if (activeTimeoutRef.current) {
+					clearTimeout(activeTimeoutRef.current);
+				}
+				activeTimeoutRef.current = setTimeout(() => {
 					setActiveAdditionId((curr) => (curr === newItem.id ? null : curr));
+					activeTimeoutRef.current = null;
 				}, 10000);
 			}
 		};
@@ -93,6 +98,10 @@ export function useRecentAdditions() {
 		window.addEventListener("daypulse:refresh", handleRefresh);
 
 		return () => {
+			if (activeTimeoutRef.current) {
+				clearTimeout(activeTimeoutRef.current);
+				activeTimeoutRef.current = null;
+			}
 			window.removeEventListener("daypulse:item-created", handleItemCreated);
 			window.removeEventListener("daypulse:refresh", handleRefresh);
 		};

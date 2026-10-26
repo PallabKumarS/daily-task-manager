@@ -12,8 +12,17 @@ export function RoutinesClient() {
 	const [loading, setLoading] = React.useState(true);
 	const [modalOpen, setModalOpen] = React.useState(false);
 	const [editingRoutine, setEditingRoutine] = React.useState<RoutineItem | null>(null);
+	const isFetchingRef = React.useRef(false);
+	const pendingFetchRef = React.useRef(false);
 
 	const fetchRoutines = React.useCallback(async () => {
+		if (isFetchingRef.current) {
+			pendingFetchRef.current = true;
+			return;
+		}
+		isFetchingRef.current = true;
+		pendingFetchRef.current = false;
+
 		try {
 			const res = await api.get<RoutineItem[]>("/routines");
 			if (res.success && res.data) {
@@ -23,6 +32,11 @@ export function RoutinesClient() {
 			// ignore
 		} finally {
 			setLoading(false);
+			isFetchingRef.current = false;
+			if (pendingFetchRef.current) {
+				pendingFetchRef.current = false;
+				fetchRoutines();
+			}
 		}
 	}, []);
 

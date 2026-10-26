@@ -26,22 +26,27 @@ import { CardDeck } from "@/components/ui/card-deck";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { api } from "@/lib/api-client";
 import { formatCurrency } from "@/lib/currency-symbols";
-
-const getTodayDateString = (): string => {
-	const now = new Date();
-	const year = now.getFullYear();
-	const month = String(now.getMonth() + 1).padStart(2, "0");
-	const day = String(now.getDate()).padStart(2, "0");
-	return `${year}-${month}-${day}`;
-};
+import { getTodayDateString, useTodayDate } from "@/lib/date-helpers";
 
 export function TrackersClient() {
 	const { user } = useAuth();
 	const confirm = useConfirm();
 	const { setCustomSlot } = useContextDock();
+	const { todayDateString: todayStr } = useTodayDate();
 	const [trackers, setTrackers] = React.useState<DailyTrackerItem[]>([]);
 	const [loading, setLoading] = React.useState(true);
 	const [selectedDate, setSelectedDate] = React.useState<string>(getTodayDateString());
+	const prevTodayRef = React.useRef(todayStr);
+
+	React.useEffect(() => {
+		if (prevTodayRef.current !== todayStr) {
+			const prevToday = prevTodayRef.current;
+			prevTodayRef.current = todayStr;
+			if (selectedDate === prevToday) {
+				setSelectedDate(todayStr);
+			}
+		}
+	}, [todayStr, selectedDate]);
 
 	const [formModalOpen, setFormModalOpen] = React.useState(false);
 	const [editingTracker, setEditingTracker] = React.useState<DailyTrackerItem | null>(null);
@@ -55,8 +60,17 @@ export function TrackersClient() {
 	const [activeSettleTracker, setActiveSettleTracker] = React.useState<DailyTrackerItem | null>(
 		null,
 	);
+	const isFetchingRef = React.useRef(false);
+	const pendingFetchRef = React.useRef(false);
 
 	const fetchTrackers = React.useCallback(async () => {
+		if (isFetchingRef.current) {
+			pendingFetchRef.current = true;
+			return;
+		}
+		isFetchingRef.current = true;
+		pendingFetchRef.current = false;
+
 		try {
 			const res = await api.get<DailyTrackerItem[]>(`/trackers?date=${selectedDate}`);
 			if (res.success && res.data) {
@@ -66,6 +80,11 @@ export function TrackersClient() {
 			// ignore
 		} finally {
 			setLoading(false);
+			isFetchingRef.current = false;
+			if (pendingFetchRef.current) {
+				pendingFetchRef.current = false;
+				fetchTrackers();
+			}
 		}
 	}, [selectedDate]);
 
@@ -154,7 +173,7 @@ export function TrackersClient() {
 		}
 	};
 
-	const isToday = selectedDate === getTodayDateString();
+	const isToday = selectedDate === todayStr;
 
 	const formattedDateLabel = React.useMemo(() => {
 		const d = new Date(`${selectedDate}T00:00:00`);

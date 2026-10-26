@@ -154,6 +154,17 @@ function playSynthesizedTone(toneId = "alarm"): void {
 	}
 }
 
+const audioCache = new Map<string, HTMLAudioElement>();
+
+function getCachedAudio(soundFile: string): HTMLAudioElement {
+	let audio = audioCache.get(soundFile);
+	if (!audio) {
+		audio = new Audio(`/sounds/${soundFile}`);
+		audioCache.set(soundFile, audio);
+	}
+	return audio;
+}
+
 export function playNotificationChime(toneId = "alarm"): void {
 	if (typeof window === "undefined") return;
 
@@ -167,7 +178,8 @@ export function playNotificationChime(toneId = "alarm"): void {
 					: "daypulse_alarm.wav";
 
 	try {
-		const audio = new Audio(`/sounds/${soundFile}`);
+		const audio = getCachedAudio(soundFile);
+		audio.currentTime = 0;
 		audio.volume = 1.0;
 		activeAudioElement = audio;
 		const playPromise = audio.play();

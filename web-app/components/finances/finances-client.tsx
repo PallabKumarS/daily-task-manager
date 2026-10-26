@@ -71,12 +71,22 @@ export function FinancesClient() {
 	const [editingTransaction, setEditingTransaction] = React.useState<TransactionItem | null>(null);
 	const [defaultFormDate, setDefaultFormDate] = React.useState<string | undefined>(undefined);
 	const [categoryManagerOpen, setCategoryManagerOpen] = React.useState(false);
+	const isFetchingRef = React.useRef(false);
+	const pendingFetchRef = React.useRef(false);
 
 	const dateRange = React.useMemo(() => {
 		return getPeriodDateRange(currentDate, period, startOfWeek);
 	}, [currentDate, period, startOfWeek]);
 
 	const fetchData = React.useCallback(async () => {
+		if (isFetchingRef.current) {
+			pendingFetchRef.current = true;
+			return;
+		}
+
+		isFetchingRef.current = true;
+		pendingFetchRef.current = false;
+
 		try {
 			const startIso = dateRange.startDate.toISOString();
 			const endIso = dateRange.endDate.toISOString();
@@ -105,6 +115,11 @@ export function FinancesClient() {
 			// Ignore network errors
 		} finally {
 			setLoading(false);
+			isFetchingRef.current = false;
+			if (pendingFetchRef.current) {
+				pendingFetchRef.current = false;
+				fetchData();
+			}
 		}
 	}, [period, currentDate, dateRange]);
 

@@ -24,19 +24,9 @@ export function DashboardClient() {
 	const [trackerModalOpen, setTrackerModalOpen] = React.useState(false);
 	const [editingTracker, setEditingTracker] = React.useState<DailyTrackerItem | null>(null);
 
-	const [refreshKey, setRefreshKey] = React.useState(0);
-
 	const handleRefresh = React.useCallback(() => {
-		setRefreshKey((k) => k + 1);
+		window.dispatchEvent(new CustomEvent("daypulse:refresh"));
 	}, []);
-
-	React.useEffect(() => {
-		const onGlobalRefresh = () => handleRefresh();
-		window.addEventListener("daypulse:refresh", onGlobalRefresh);
-		return () => {
-			window.removeEventListener("daypulse:refresh", onGlobalRefresh);
-		};
-	}, [handleRefresh]);
 
 	const handleOpenRoutineModal = (item?: RoutineItem | null) => {
 		setEditingRoutine(item || null);
@@ -61,7 +51,6 @@ export function DashboardClient() {
 	return (
 		<>
 			<DashboardView
-				key={refreshKey}
 				onOpenRoutineModal={handleOpenRoutineModal}
 				onOpenTaskModal={handleOpenTaskModal}
 				onOpenTransactionModal={handleOpenTransactionModal}
