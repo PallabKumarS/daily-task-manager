@@ -1,11 +1,10 @@
 "use client";
 
-import { Calendar, ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import * as React from "react";
 import { TransactionCard } from "@/components/finances/transaction-card";
 import type { TransactionItem } from "@/components/finances/transaction-list";
 import { Button } from "@/components/ui/button";
-import { CardDeck } from "@/components/ui/card-deck";
 import { formatCurrency } from "@/lib/currency-symbols";
 import { useRecentAdditions } from "@/lib/recent-activity-store";
 import { DAY_NAMES_SHORT } from "@/lib/workweek-preferences";
@@ -95,18 +94,6 @@ export function MonthTimelineView({
 		return map;
 	}, [days, transactions]);
 
-	const handleScrollLeft = () => {
-		if (scrollRef.current) {
-			scrollRef.current.scrollBy({ left: -320, behavior: "smooth" });
-		}
-	};
-
-	const handleScrollRight = () => {
-		if (scrollRef.current) {
-			scrollRef.current.scrollBy({ left: 320, behavior: "smooth" });
-		}
-	};
-
 	const selectedDayData = days.find((d) => d.dateStr === selectedDateStr);
 	const selectedTransactions = selectedDateStr ? transactionsByDate[selectedDateStr] || [] : [];
 
@@ -122,43 +109,10 @@ export function MonthTimelineView({
 
 	return (
 		<div className="space-y-4">
-			{/* Timeline Header & Scroll Controls */}
-			<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl border border-border bg-surface backdrop-blur-xl">
-				<div>
-					<h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-						<Calendar className="w-4 h-4 text-emerald-400" />
-						<span>30-Day Daily Financial Timeline</span>
-					</h3>
-					<p className="text-xs text-muted-foreground mt-0.5">
-						Scroll horizontally to inspect daily totals or click any day to view itemized
-						transactions
-					</p>
-				</div>
-
-				<div className="flex items-center gap-2">
-					<button
-						type="button"
-						onClick={handleScrollLeft}
-						className="flex h-8 w-8 items-center justify-center rounded-xl border border-border bg-surface-sunken text-muted-foreground hover:text-foreground hover:bg-surface-2 transition cursor-pointer"
-						title="Scroll Left"
-					>
-						<ChevronLeft className="w-4 h-4" />
-					</button>
-					<button
-						type="button"
-						onClick={handleScrollRight}
-						className="flex h-8 w-8 items-center justify-center rounded-xl border border-border bg-surface-sunken text-muted-foreground hover:text-foreground hover:bg-surface-2 transition cursor-pointer"
-						title="Scroll Right"
-					>
-						<ChevronRight className="w-4 h-4" />
-					</button>
-				</div>
-			</div>
-
-			{/* Horizontally Scrollable 30-Day Track */}
+			{/* Horizontally Scrollable 30-Day Track with native scrollbar */}
 			<div
 				ref={scrollRef}
-				className="flex items-stretch gap-3 overflow-x-auto pb-3 pt-1 scroll-smooth snap-x select-none"
+				className="flex items-stretch gap-2.5 overflow-x-auto pb-2 pt-0.5 scroll-smooth snap-x select-none"
 				style={{ scrollbarWidth: "thin" }}
 			>
 				{days.map((day) => {
@@ -179,9 +133,10 @@ export function MonthTimelineView({
 							key={day.dateStr}
 							data-date={day.dateStr}
 							onClick={() => setSelectedDateStr(day.dateStr)}
-							className={`shrink-0 w-44 rounded-2xl border p-3 cursor-pointer transition-all snap-start flex flex-col justify-between text-left ${
+							title={`Select day ${day.dayNumber} (${day.dayName})`}
+							className={`shrink-0 w-36 sm:w-40 rounded-xl border p-2.5 cursor-pointer transition-all snap-start flex flex-col justify-between text-left ${
 								isSelected
-									? "ring-2 ring-emerald-500 border-emerald-500/80 bg-gradient-to-b from-emerald-500/10 via-surface to-surface shadow-lg shadow-emerald-500/10"
+									? "ring-2 ring-emerald-500 border-emerald-500/80 bg-gradient-to-b from-emerald-500/10 via-surface to-surface shadow-md"
 									: day.isToday
 										? "border-emerald-500/40 bg-surface hover:border-emerald-500/60"
 										: "border-border bg-surface hover:border-border-strong hover:bg-surface"
@@ -191,42 +146,42 @@ export function MonthTimelineView({
 								{/* Day Header */}
 								<div className="flex items-start justify-between">
 									<div>
-										<span className="text-2xl font-black tracking-tight text-foreground block">
+										<span className="text-xl font-black tracking-tight text-foreground block">
 											{day.dayNumber}
 										</span>
-										<span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+										<span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
 											{day.dayName}
 										</span>
 									</div>
 
 									<div className="flex flex-col items-end gap-1">
 										{day.isToday && (
-											<span className="rounded-md bg-emerald-500/20 px-1.5 py-0.5 text-[9px] font-extrabold text-emerald-400 border border-emerald-500/30">
+											<span className="rounded bg-emerald-500/20 px-1 py-0.2 text-[9px] font-extrabold text-emerald-400 border border-emerald-500/30">
 												Today
 											</span>
 										)}
 										{hasActivity && (
-											<span className="rounded-full bg-surface-2 px-2 py-0.5 text-[9px] font-semibold text-foreground">
-												{dayTx.length} items
+											<span className="rounded-full bg-surface-2 px-1.5 py-0.2 text-[9px] font-semibold text-foreground">
+												{dayTx.length}
 											</span>
 										)}
 									</div>
 								</div>
 
 								{/* Daily Totals */}
-								<div className="mt-3 space-y-1.5 rounded-xl bg-surface-sunken p-2.5 text-[11px] border border-border">
+								<div className="mt-2 space-y-1 rounded-lg bg-surface-sunken p-2 text-[10px] border border-border">
 									<div className="flex items-center justify-between">
-										<span className="text-subtle">Inflow:</span>
+										<span className="text-muted-foreground">In:</span>
 										<span
-											className={`font-bold ${dayIncome > 0 ? "text-emerald-400" : "text-subtle"}`}
+											className={`font-bold tabular-nums ${dayIncome > 0 ? "text-emerald-400" : "text-muted-foreground"}`}
 										>
 											+{formatCurrency(dayIncome, currency)}
 										</span>
 									</div>
 									<div className="flex items-center justify-between">
-										<span className="text-subtle">Outflow:</span>
+										<span className="text-muted-foreground">Out:</span>
 										<span
-											className={`font-bold ${dayExpense > 0 ? "text-rose-400" : "text-subtle"}`}
+											className={`font-bold tabular-nums ${dayExpense > 0 ? "text-rose-400" : "text-muted-foreground"}`}
 										>
 											-{formatCurrency(dayExpense, currency)}
 										</span>
@@ -235,10 +190,10 @@ export function MonthTimelineView({
 							</div>
 
 							{/* Day Net Card Footer */}
-							<div className="mt-3 pt-2 border-t border-border flex items-center justify-between text-xs">
-								<span className="text-[10px] text-subtle uppercase font-bold">Net</span>
+							<div className="mt-2 pt-1.5 border-t border-border flex items-center justify-between text-[11px]">
+								<span className="text-[9px] text-muted-foreground uppercase font-bold">Net</span>
 								<span
-									className={`font-black ${
+									className={`font-black tabular-nums ${
 										dayNet > 0
 											? "text-emerald-400"
 											: dayNet < 0
@@ -256,13 +211,14 @@ export function MonthTimelineView({
 			</div>
 
 			{/* Selected Day Itemized Details Panel */}
-			<div className="rounded-2xl border border-border bg-surface p-5 backdrop-blur-xl">
-				<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border">
+			<div className="rounded-xl border border-border bg-surface-2/30 p-3 sm:p-4 space-y-3">
+				<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2.5 border-b border-border">
 					<div>
 						<div className="flex items-center gap-2">
-							<h4 className="text-sm font-extrabold text-foreground">
-								Transactions for Day {selectedDayData?.dayNumber} (
+							<h4 className="text-xs sm:text-sm font-bold text-foreground">
+								Day {selectedDayData?.dayNumber} (
 								{selectedDayData?.date.toLocaleDateString("en-US", {
+									weekday: "short",
 									month: "short",
 									day: "numeric",
 									year: "numeric",
@@ -270,29 +226,29 @@ export function MonthTimelineView({
 								)
 							</h4>
 							{selectedDayData?.isToday && (
-								<span className="rounded-md bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-bold text-emerald-400 border border-emerald-500/30">
+								<span className="rounded bg-emerald-500/20 px-1.5 py-0.5 text-[9px] font-bold text-emerald-400 border border-emerald-500/30">
 									Today
 								</span>
 							)}
 						</div>
-						<p className="text-xs text-muted-foreground mt-0.5">
+						<p className="text-[11px] text-muted-foreground mt-0.5">
 							{selectedTransactions.length} transaction
-							{selectedTransactions.length === 1 ? "" : "s"} logged on this date
+							{selectedTransactions.length === 1 ? "" : "s"} logged
 						</p>
 					</div>
 
-					<div className="flex flex-wrap items-center justify-between gap-3">
-						<div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs">
-							<span className="text-emerald-400 font-bold">
+					<div className="flex flex-wrap items-center justify-between gap-2.5">
+						<div className="flex items-center gap-2 text-xs">
+							<span className="text-emerald-400 font-bold tabular-nums">
 								+{formatCurrency(selectedDayIncome, currency)}
 							</span>
-							<span className="text-subtle">/</span>
-							<span className="text-rose-400 font-bold">
+							<span className="text-muted-foreground">/</span>
+							<span className="text-rose-400 font-bold tabular-nums">
 								-{formatCurrency(selectedDayExpense, currency)}
 							</span>
-							<span className="text-subtle">•</span>
+							<span className="text-muted-foreground">•</span>
 							<span
-								className={`font-black ${
+								className={`font-bold tabular-nums ${
 									selectedDayNet >= 0 ? "text-emerald-400" : "text-rose-400"
 								}`}
 							>
@@ -303,52 +259,47 @@ export function MonthTimelineView({
 
 						{selectedDateStr && (
 							<Button
-								variant="emerald"
+								variant="default"
 								size="sm"
 								onClick={() => onAddNew(selectedDateStr)}
-								className="gap-1.5 text-xs h-8 shrink-0"
+								title="Add a transaction to this selected date"
+								className="gap-1.5 text-xs h-7 shrink-0"
 							>
 								<Plus className="w-3.5 h-3.5" />
-								<span>Add to this Day</span>
+								<span>Add Transaction</span>
 							</Button>
 						)}
 					</div>
 				</div>
 
-				{/* Transactions List / Card Deck */}
-				<div className="mt-4">
+				{/* Transactions Grid */}
+				<div>
 					{selectedTransactions.length === 0 ? (
-						<div className="py-12 text-center text-xs text-subtle border border-dashed border-border rounded-2xl">
+						<div className="py-8 text-center text-xs text-muted-foreground border border-dashed border-border rounded-xl">
 							<p>No transactions logged for this day.</p>
 							{selectedDateStr && (
 								<button
 									type="button"
 									onClick={() => onAddNew(selectedDateStr)}
-									className="mt-2 text-xs text-emerald-400 hover:underline font-semibold cursor-pointer"
+									className="mt-1.5 text-xs text-teal-400 hover:underline font-semibold cursor-pointer"
 								>
 									+ Record an expense or income for this day
 								</button>
 							)}
 						</div>
 					) : (
-						<CardDeck
-							items={selectedTransactions}
-							keyExtractor={(item) => item.id}
-							storageKey="month_day_transactions"
-							defaultMode="deck"
-							desktopColumns={2}
-							title={`Day ${selectedDayData?.dayNumber} Transactions`}
-							subtitle={`${selectedTransactions.length} transaction${selectedTransactions.length === 1 ? "" : "s"} on ${selectedDateStr}`}
-							renderCard={(item) => (
+						<div className="grid grid-cols-[repeat(auto-fill,minmax(min(175px,100%),1fr))] gap-2">
+							{selectedTransactions.map((item) => (
 								<TransactionCard
+									key={item.id}
 									item={item}
 									currency={currency}
 									onEdit={onEdit}
 									onDelete={(tx) => onDelete(tx.id, tx.description || `${tx.category} transaction`)}
 									isJustAdded={activeAdditionId === item.id}
 								/>
-							)}
-						/>
+							))}
+						</div>
 					)}
 				</div>
 			</div>

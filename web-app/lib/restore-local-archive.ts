@@ -9,6 +9,7 @@ export interface LocalRestoreResult {
 		name: string;
 		email: string;
 		currency: string;
+		enabledTabs?: string;
 	} | null;
 	token: string | null;
 	counts: {
@@ -139,11 +140,18 @@ export async function restoreLocalArchive(
 	legacyBackup?: Record<string, unknown>,
 	customPassword?: string,
 ): Promise<LocalRestoreResult> {
-	let targetUser = {
+	let targetUser: {
+		id: string;
+		name: string;
+		email: string;
+		currency: string;
+		enabledTabs?: string;
+	} = {
 		id: `usr_${Date.now()}`,
 		name: "DayPulse User",
 		email: "user@daypulse.app",
 		currency: "USD",
+		enabledTabs: "dashboard,routines,tasks,trackers,finances",
 	};
 
 	let tasks: Array<Record<string, unknown>> = [];
@@ -172,6 +180,7 @@ export async function restoreLocalArchive(
 							name: manifest.user.name || targetUser.name,
 							email: manifest.user.email || targetUser.email,
 							currency: manifest.user.currency || targetUser.currency,
+							enabledTabs: manifest.user.enabledTabs || targetUser.enabledTabs,
 						};
 					}
 				} catch {}
@@ -187,6 +196,7 @@ export async function restoreLocalArchive(
 						name: u.name || targetUser.name,
 						email: u.email || targetUser.email,
 						currency: u.currency || targetUser.currency,
+						enabledTabs: u.enabledTabs || targetUser.enabledTabs,
 					};
 				} catch {}
 			}
@@ -350,6 +360,9 @@ export async function restoreLocalArchive(
 		updatedAt: new Date().toISOString(),
 	};
 	localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(finalUser));
+	if (finalUser.enabledTabs) {
+		localStorage.setItem("daypulse_nav_tabs", finalUser.enabledTabs);
+	}
 	if (customPassword) {
 		localStorage.setItem(
 			STORAGE_KEYS.CREDENTIALS,

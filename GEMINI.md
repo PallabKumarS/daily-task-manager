@@ -33,6 +33,7 @@ Always keep the codebase clean, readable, and highly maintainable:
 5. **Utils in Kebab-Case:** Name utility/helper files strictly in **kebab-case** (e.g., `image-compression.ts`, `pdf-utils.ts`, `video-processor.ts`, `verify-token.ts`, `date-helpers.ts`).
 6. **Dedicated File for Large Functions:** NEVER dump large, complex, or heavy functions into a generic utility file. Always create a **separate, dedicated file** for each distinct large function/utility (e.g., `frame-worker.ts`, `image-compression.ts`, `pdf-generator.ts`).
 7. **Single File for Small Helpers:** Consolidate small, generic utility/helper functions together in a single shared file (e.g., `utils.ts`, `helpers.ts`).
+8. **Fluid Auto-Fill Grid Over Rigid Breakpoints:** Unless an asymmetric layout or complex multi-span box is specifically required, ALWAYS use fluid auto-filling grids: `<div className="grid grid-cols-[repeat(auto-fill,minmax(min(175px,100%),1fr))] gap-2">` (adjusting the minimum size, e.g. `175px`, to fit the component). Avoid chaining rigid breakpoint ladders (`grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6`).
 
 ---
 
@@ -111,6 +112,16 @@ export function ExampleForm() {
     </form>
   );
 }
+```
+
+### Responsive Fluid Grid Pattern (Auto-Fill Standard)
+```tsx
+// Best-practice fluid responsive grid for card collections
+<div className="grid grid-cols-[repeat(auto-fill,minmax(min(175px,100%),1fr))] gap-2">
+  {items.map((item) => (
+    <ItemCard key={item.id} item={item} className="w-full" />
+  ))}
+</div>
 ```
 
 ### Backend Error & Response Pattern

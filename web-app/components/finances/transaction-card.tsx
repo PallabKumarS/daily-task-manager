@@ -3,7 +3,6 @@
 import {
 	ArrowDownRight,
 	ArrowUpRight,
-	CalendarDays,
 	CalendarPlus,
 	CreditCard,
 	Edit2,
@@ -55,134 +54,147 @@ export function TransactionCard({
 }: TransactionCardProps) {
 	const isIncome = item.type === "INCOME";
 	const recurringMatch = item.description?.match(RECURRING_TAG);
-	const dateLabel = new Date(item.date).toLocaleDateString("en-US", {
+	const dateObj = new Date(item.date);
+	const dateLabel = dateObj.toLocaleDateString("en-US", {
 		weekday: "short",
 		month: "short",
 		day: "numeric",
+	});
+	const fullDateLabel = dateObj.toLocaleDateString("en-US", {
+		weekday: "long",
+		month: "long",
+		day: "numeric",
 		year: "numeric",
 	});
+	const title = getTransactionTitle(item);
+	const formattedAmount = `${isIncome ? "+" : "-"}${formatCurrency(item.amount, currency)}`;
 
 	return (
 		<article
 			className={cn(
-				"group relative flex h-full flex-col overflow-hidden rounded-2xl border bg-surface shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:shadow-pop",
-				isJustAdded
-					? "ring-2 ring-emerald-500/70 border-emerald-500/40"
-					: "border-border hover:border-border-strong",
+				"group relative flex items-stretch overflow-hidden rounded-xl border bg-surface transition-all duration-200 hover:border-border-strong w-full gap-1",
+				isJustAdded ? "ring-1 ring-emerald-500/70 border-emerald-500/40" : "border-border",
 			)}
+			title={`${title} • ${formattedAmount} • ${fullDateLabel}`}
 		>
+			{/* Left accent border */}
 			<div
-				className={cn("h-1 w-full", isIncome ? "bg-emerald-500" : "bg-rose-500")}
+				className={cn("w-1 shrink-0", isIncome ? "bg-emerald-500" : "bg-rose-500")}
 				aria-hidden="true"
 			/>
 
-			<div className="flex flex-1 flex-col gap-4 p-4">
-				<div className="flex items-start justify-between gap-3">
-					<div className="flex items-center gap-2.5 min-w-0">
-						<div
-							className={cn(
-								"flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border",
-								isIncome
-									? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-									: "bg-rose-500/10 text-rose-400 border-rose-500/20",
-							)}
-						>
-							{isIncome ? (
-								<ArrowUpRight className="h-5 w-5" />
-							) : (
-								<ArrowDownRight className="h-5 w-5" />
-							)}
-						</div>
-						<div className="min-w-0">
-							<p
-								className={cn(
-									"text-xs font-bold uppercase tracking-wider",
-									isIncome ? "text-emerald-400" : "text-rose-400",
-								)}
-							>
-								{isIncome ? "Income" : "Expense"}
-							</p>
-							<p className="flex items-center gap-1 text-xs text-muted-foreground">
-								<CalendarDays className="h-3 w-3 shrink-0" />
-								<span className="truncate">{dateLabel}</span>
-							</p>
-						</div>
+			{/* Main Content Area */}
+			<div className="flex-1 p-2 flex flex-col justify-between gap-1">
+				{/* Header: Icon, Type, and Date directly below */}
+				<div className="flex items-center gap-1.5 min-w-0">
+					<div
+						className={cn(
+							"flex h-5 w-5 shrink-0 items-center justify-center rounded border",
+							isIncome
+								? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+								: "bg-rose-500/10 text-rose-400 border-rose-500/20",
+						)}
+						title={isIncome ? "Income" : "Expense"}
+					>
+						{isIncome ? (
+							<ArrowUpRight className="h-3 w-3 stroke-[2.5]" />
+						) : (
+							<ArrowDownRight className="h-3 w-3 stroke-[2.5]" />
+						)}
 					</div>
 
-					{isJustAdded && (
-						<span className="shrink-0 rounded-md border border-emerald-500/40 bg-emerald-500/20 px-1.5 py-0.5 text-xs font-bold text-emerald-400 animate-pulse">
-							Just Added
+					<div className="min-w-0 flex flex-col">
+						<span
+							className={cn(
+								"text-[9px] font-bold uppercase tracking-wider leading-none",
+								isIncome ? "text-emerald-400" : "text-rose-400",
+							)}
+						>
+							{isIncome ? "Income" : "Expense"}
 						</span>
-					)}
+						<span
+							className="text-[9px] text-muted-foreground truncate leading-tight mt-0.5"
+							title={fullDateLabel}
+						>
+							{dateLabel}
+						</span>
+					</div>
 				</div>
 
+				{/* Title & Amount */}
 				<div className="min-w-0">
-					<h4 className="line-clamp-2 text-sm font-bold text-foreground">
-						{getTransactionTitle(item)}
+					<h4 className="text-xs font-bold text-foreground truncate" title={title}>
+						{title}
 					</h4>
 					<p
 						className={cn(
-							"mt-1 text-2xl font-black tracking-tight tabular-nums",
+							"text-sm font-extrabold tracking-tight tabular-nums mt-0.5",
 							isIncome ? "text-emerald-400" : "text-rose-400",
 						)}
+						title={`Amount: ${formattedAmount}`}
 					>
-						{isIncome ? "+" : "-"}
-						{formatCurrency(item.amount, currency)}
+						{formattedAmount}
 					</p>
 				</div>
 
-				<div className="flex flex-wrap items-center gap-1.5">
+				{/* Metadata Badges */}
+				<div className="flex items-center gap-0.5 pt-0.5 overflow-hidden">
 					<span
 						className={cn(
-							"rounded-md border px-2 py-0.5 text-xs font-medium",
+							"rounded px-1 py-0.2 text-[8.5px] font-medium border truncate max-w-17.5",
 							getCategoryTone(item.category),
 						)}
+						title={`Category: ${item.category}`}
 					>
 						{item.category}
 					</span>
-					<span className="inline-flex items-center gap-1 rounded-md border border-border bg-surface-2 px-2 py-0.5 text-xs text-muted-foreground">
-						<CreditCard className="h-3 w-3" />
-						<span>{item.paymentMethod}</span>
+					<span
+						className="inline-flex items-center gap-0.5 rounded border border-border bg-surface-2 px-1 py-0.2 text-[8.5px] text-muted-foreground truncate max-w-13.75"
+						title={`Payment method: ${item.paymentMethod}`}
+					>
+						<CreditCard className="h-2.5 w-2.5 shrink-0" />
+						<span className="truncate">{item.paymentMethod}</span>
 					</span>
 					{recurringMatch && (
-						<span className="inline-flex items-center gap-1 rounded-md border border-emerald-500/25 bg-emerald-500/10 px-2 py-0.5 text-xs text-emerald-400">
-							<Repeat className="h-3 w-3" />
+						<span
+							className="inline-flex items-center gap-0.5 rounded border border-emerald-500/25 bg-emerald-500/10 px-1 py-0.2 text-[8.5px] text-emerald-400"
+							title={`Recurring: ${recurringMatch[1]}`}
+						>
+							<Repeat className="h-2 w-2" />
 							<span>{recurringMatch[1]}</span>
 						</span>
 					)}
 				</div>
 			</div>
 
-			<div className="flex items-center gap-1.5 border-t border-border bg-surface-sunken/60 px-3 py-2">
+			{/* Right Column: Actions in a single vertical column */}
+			<div className="flex flex-col justify-around items-center border-l border-border bg-surface-2/40 px-0.5 py-1 shrink-0 w-8 self-stretch">
 				{onDuplicate && (
 					<button
 						type="button"
 						onClick={() => onDuplicate(item)}
 						disabled={isDuplicating}
-						className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold text-muted-foreground transition hover:bg-emerald-500/10 hover:text-emerald-400 disabled:opacity-40 cursor-pointer"
+						className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:bg-emerald-500/15 hover:text-emerald-400 disabled:opacity-40 cursor-pointer transition"
 						title="Repeat this transaction today"
 					>
-						<CalendarPlus className="h-3.5 w-3.5" />
-						<span>{isDuplicating ? "Adding..." : "Today"}</span>
+						<CalendarPlus className="h-3 w-3" />
 					</button>
 				)}
 				<button
 					type="button"
 					onClick={() => onEdit(item)}
-					className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold text-muted-foreground transition hover:bg-surface-2 hover:text-foreground cursor-pointer"
-					title="Edit transaction"
+					className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:bg-surface-2 hover:text-foreground cursor-pointer transition"
+					title="Edit transaction details"
 				>
-					<Edit2 className="h-3.5 w-3.5" />
-					<span>Edit</span>
+					<Edit2 className="h-3 w-3" />
 				</button>
 				<button
 					type="button"
 					onClick={() => onDelete(item)}
-					className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-semibold text-muted-foreground transition hover:bg-rose-500/10 hover:text-rose-400 cursor-pointer"
+					className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:bg-rose-500/15 hover:text-rose-400 cursor-pointer transition"
 					title="Delete transaction"
 				>
-					<Trash2 className="h-3.5 w-3.5" />
-					<span>Delete</span>
+					<Trash2 className="h-3 w-3" />
 				</button>
 			</div>
 		</article>

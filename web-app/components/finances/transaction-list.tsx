@@ -1,11 +1,10 @@
 "use client";
 
-import { Trash2 } from "lucide-react";
+import { Calendar, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
-import { getTransactionTitle, TransactionCard } from "@/components/finances/transaction-card";
+import { TransactionCard } from "@/components/finances/transaction-card";
 import { Button } from "@/components/ui/button";
-import { CardDeck } from "@/components/ui/card-deck";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { api } from "@/lib/api-client";
 import { formatCurrency } from "@/lib/currency-symbols";
@@ -24,20 +23,69 @@ export interface TransactionItem {
 interface TransactionListProps {
 	transactions: TransactionItem[];
 	currency: string;
+	currentDate: Date;
+	filterType: "ALL" | "EXPENSE" | "INCOME";
 	onEdit: (transaction: TransactionItem) => void;
 	onRefresh: () => void;
+	onPrevPeriod?: () => void;
+	onNextPeriod?: () => void;
+	onSelectDate?: (date: Date) => void;
+}
+
+function getLocalDateKey(dateInput: string | Date): string {
+	const d = new Date(dateInput);
+	const y = d.getFullYear();
+	const m = String(d.getMonth() + 1).padStart(2, "0");
+	const day = String(d.getDate()).padStart(2, "0");
+	return `${y}-${m}-${day}`;
+}
+
+function formatDaySeparator(dateKey: string): string {
+	const [y, m, day] = dateKey.split("-").map(Number);
+	const d = new Date(y, m - 1, day);
+	return d.toLocaleDateString("en-US", {
+		weekday: "long",
+		month: "short",
+		day: "numeric",
+		year: "numeric",
+	});
+}
+
+function formatDayNet(items: TransactionItem[], currency: string): string {
+	const income = items.filter((t) => t.type === "INCOME").reduce((sum, t) => sum + t.amount, 0);
+	const expense = items.filter((t) => t.type === "EXPENSE").reduce((sum, t) => sum + t.amount, 0);
+	const net = income - expense;
+	return `${net >= 0 ? "+" : ""}${formatCurrency(net, currency)}`;
 }
 
 export function TransactionList({
 	transactions,
 	currency,
+	currentDate,
+	filterType,
 	onEdit,
 	onRefresh,
+	onPrevPeriod,
+	onNextPeriod,
+	onSelectDate,
 }: TransactionListProps) {
 	const confirm = useConfirm();
 	const { activeAdditionId } = useRecentAdditions();
-	const [filterType, setFilterType] = React.useState<"ALL" | "EXPENSE" | "INCOME">("ALL");
 	const [duplicatingId, setDuplicatingId] = React.useState<string | null>(null);
+	const [selectedDate, setSelectedDate] = React.useState<Date>(() => new Date(currentDate));
+	const [isMonthView, setIsMonthView] = React.useState(false);
+
+	React.useEffect(() => {
+		setSelectedDate((prev) => {
+			if (
+				prev.getMonth() === currentDate.getMonth() &&
+				prev.getFullYear() === currentDate.getFullYear()
+			) {
+				return prev;
+			}
+			return new Date(currentDate);
+		});
+	}, [currentDate]);
 
 	const handleDelete = async (id: string) => {
 		const ok = await confirm({
@@ -56,29 +104,6 @@ export function TransactionList({
 				onRefresh();
 			} else {
 				toast.error(res.message || "Failed to delete");
-			}
-		} catch {
-			toast.error("Network error while deleting");
-		}
-	};
-
-	const handleClearAll = async () => {
-		const ok = await confirm({
-			title: "Delete All Transactions",
-			description:
-				"Are you sure you want to delete all transaction records? This action cannot be undone.",
-			confirmText: "Delete All",
-			variant: "destructive",
-		});
-		if (!ok) return;
-
-		try {
-			const res = await api.delete("/finances");
-			if (res.success) {
-				toast.success("All transactions deleted");
-				onRefresh();
-			} else {
-				toast.error(res.message || "Failed to delete transactions");
 			}
 		} catch {
 			toast.error("Network error while deleting");
@@ -110,98 +135,279 @@ export function TransactionList({
 		}
 	};
 
-	const filtered = transactions.filter((t) => {
-		if (filterType === "ALL") return true;
-		return t.type === filterType;
+	const filteredTransactions = React.useMemo(() => {
+		return transactions.filter((t) => {
+			if (filterType === "ALL") return true;
+			return t.type === filterType;
+		});
+	}, [transactions, filterType]);
+
+	const selectedDateKey = getLocalDateKey(selectedDate);
+	const todayKey = getLocalDateKey(new Date());
+
+	const dayTransactions = React.useMemo(() => {
+		return filteredTransactions.filter((t) => getLocalDateKey(t.date) === selectedDateKey);
+	}, [filteredTransactions, selectedDateKey]);
+
+	const monthLabel = currentDate.toLocaleDateString("en-US", {
+		month: "long",
+		year: "numeric",
 	});
 
-	return (
-		<div className="rounded-2xl border border-border bg-surface p-5 shadow-card space-y-4">
-			<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-border">
-				<div>
-					<h4 className="text-sm font-bold text-foreground">Transaction History</h4>
-					<p className="text-xs text-foreground-muted">
-						Itemized entries for this period ({filtered.length} total)
-					</p>
-				</div>
+	const groupedMonthDays = React.useMemo(() => {
+		const map: Record<string, TransactionItem[]> = {};
+		for (const t of filteredTransactions) {
+			const k = getLocalDateKey(t.date);
+			if (!map[k]) map[k] = [];
+			map[k].push(t);
+		}
+		return Object.keys(map)
+			.sort()
+			.reverse()
+			.map((dateKey) => ({
+				dateKey,
+				items: map[dateKey],
+			}));
+	}, [filteredTransactions]);
 
-				<div className="flex items-center gap-2 self-start sm:self-center flex-wrap">
-					{transactions.length > 0 && (
+	const handlePrevDay = () => {
+		const next = new Date(selectedDate);
+		next.setDate(next.getDate() - 1);
+		setSelectedDate(next);
+		if (
+			next.getMonth() !== currentDate.getMonth() ||
+			next.getFullYear() !== currentDate.getFullYear()
+		) {
+			onSelectDate?.(next);
+		}
+	};
+
+	const handleNextDay = () => {
+		const next = new Date(selectedDate);
+		next.setDate(next.getDate() + 1);
+		setSelectedDate(next);
+		if (
+			next.getMonth() !== currentDate.getMonth() ||
+			next.getFullYear() !== currentDate.getFullYear()
+		) {
+			onSelectDate?.(next);
+		}
+	};
+
+	const handleResetToday = () => {
+		const today = new Date();
+		setSelectedDate(today);
+		if (
+			today.getMonth() !== currentDate.getMonth() ||
+			today.getFullYear() !== currentDate.getFullYear()
+		) {
+			onSelectDate?.(today);
+		}
+	};
+
+	return (
+		<div className="space-y-4">
+			{!isMonthView ? (
+				<div className="space-y-3.5">
+					{/* Day Header Info */}
+					<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-xl border border-border bg-surface-2/40">
+						<div className="flex items-center gap-2">
+							<CalendarDays className="w-4 h-4 text-teal-400 shrink-0" />
+							<span className="text-xs sm:text-sm font-bold text-foreground">
+								{formatDaySeparator(selectedDateKey)}
+							</span>
+							{selectedDateKey === todayKey && (
+								<span className="rounded bg-teal-500/20 px-1.5 py-0.2 text-[9px] font-bold text-teal-400 border border-teal-500/30">
+									Today
+								</span>
+							)}
+						</div>
+
+						<div className="flex items-center gap-2 text-xs">
+							<span className="text-[11px] text-muted-foreground">
+								{dayTransactions.length} {dayTransactions.length === 1 ? "entry" : "entries"}
+							</span>
+							{dayTransactions.length > 0 && (
+								<>
+									<span className="text-muted-foreground">•</span>
+									<span className="font-semibold tabular-nums text-foreground">
+										Net: {formatDayNet(dayTransactions, currency)}
+									</span>
+								</>
+							)}
+						</div>
+					</div>
+
+					{/* Day's Transactions Cards */}
+					{dayTransactions.length === 0 ? (
+						<div className="py-10 text-center text-xs text-muted-foreground border border-dashed border-border rounded-xl">
+							No transactions logged for this day.
+						</div>
+					) : (
+						<div className="grid grid-cols-[repeat(auto-fill,minmax(min(175px,100%),1fr))] gap-2">
+							{dayTransactions.map((item) => (
+								<TransactionCard
+									key={item.id}
+									item={item}
+									currency={currency}
+									isJustAdded={activeAdditionId === item.id}
+									isDuplicating={duplicatingId === item.id}
+									onEdit={onEdit}
+									onDelete={(tx) => handleDelete(tx.id)}
+									onDuplicate={handleDuplicateToToday}
+								/>
+							))}
+						</div>
+					)}
+
+					{/* Button to load all this month's events */}
+					<div className="flex justify-center pt-1">
 						<Button
 							variant="outline"
 							size="sm"
-							onClick={handleClearAll}
-							className="h-8 gap-1.5 border-rose-500/30 text-rose-400 hover:bg-rose-500/10 text-xs px-2.5"
+							onClick={() => setIsMonthView(true)}
+							title={`Load and show all events for ${monthLabel}`}
+							className="gap-2 text-xs h-8"
 						>
-							<Trash2 className="w-3.5 h-3.5" />
-							<span>Clear All</span>
+							<Calendar className="w-3.5 h-3.5 text-teal-400" />
+							<span>
+								Load All Events for {monthLabel} ({filteredTransactions.length})
+							</span>
 						</Button>
-					)}
-					<div className="flex items-center gap-1 rounded-xl bg-surface-sunken p-1 border border-border">
+					</div>
+
+					{/* Day Progress Navigation Bar */}
+					<div className="flex items-center justify-between border-t border-border pt-3">
+						<Button
+							variant="ghost"
+							size="sm"
+							onClick={handlePrevDay}
+							title="View previous day's events"
+							className="gap-1.5 text-xs h-8"
+						>
+							<ChevronLeft className="w-4 h-4" />
+							<span>Previous Day</span>
+						</Button>
+
 						<button
 							type="button"
-							onClick={() => setFilterType("ALL")}
-							className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
-								filterType === "ALL"
-									? "bg-surface text-foreground shadow-sm border border-border"
-									: "text-foreground-muted hover:text-foreground"
-							}`}
+							onClick={handleResetToday}
+							title="Jump to today's date"
+							className="text-xs font-semibold text-routine-fg hover:underline cursor-pointer"
 						>
-							All
+							Today
 						</button>
-						<button
-							type="button"
-							onClick={() => setFilterType("EXPENSE")}
-							className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
-								filterType === "EXPENSE"
-									? "bg-rose-500/20 text-rose-400"
-									: "text-foreground-muted hover:text-foreground"
-							}`}
+
+						<Button
+							variant="ghost"
+							size="sm"
+							onClick={handleNextDay}
+							title="View next day's events"
+							className="gap-1.5 text-xs h-8"
 						>
-							Expenses
-						</button>
-						<button
-							type="button"
-							onClick={() => setFilterType("INCOME")}
-							className={`px-3 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
-								filterType === "INCOME"
-									? "bg-emerald-500/20 text-emerald-400"
-									: "text-foreground-muted hover:text-foreground"
-							}`}
-						>
-							Income
-						</button>
+							<span>Next Day</span>
+							<ChevronRight className="w-4 h-4" />
+						</Button>
 					</div>
 				</div>
-			</div>
+			) : (
+				<div className="space-y-4">
+					{/* Month View Subheader */}
+					<div className="flex items-center justify-between pb-1">
+						<div className="flex items-center gap-2">
+							<span className="text-xs sm:text-sm font-bold text-foreground">
+								All Events for {monthLabel}
+							</span>
+							<span className="text-[11px] text-muted-foreground">
+								({filteredTransactions.length} entries across {groupedMonthDays.length} days)
+							</span>
+						</div>
 
-			<CardDeck
-				items={filtered}
-				getKey={(item) => item.id}
-				getTitle={(item) =>
-					`${getTransactionTitle(item)} (${formatCurrency(item.amount, currency)})`
-				}
-				storageKey="finance_tx_cards"
-				defaultMode="deck"
-				desktopColumns={3}
-				sectionLabel="Transaction Cards"
-				emptyState={
-					<div className="py-12 text-center text-xs text-foreground-muted">
-						No transactions found for this period. Log an expense or earning to track data.
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => setIsMonthView(false)}
+							title="Return to single day view"
+							className="gap-1.5 text-xs h-7"
+						>
+							<CalendarDays className="w-3.5 h-3.5 text-teal-400" />
+							<span>Back to Day View</span>
+						</Button>
 					</div>
-				}
-				renderCard={(item) => (
-					<TransactionCard
-						item={item}
-						currency={currency}
-						isJustAdded={activeAdditionId === item.id}
-						isDuplicating={duplicatingId === item.id}
-						onEdit={onEdit}
-						onDelete={(tx) => handleDelete(tx.id)}
-						onDuplicate={handleDuplicateToToday}
-					/>
-				)}
-			/>
+
+					{/* Grouped Month Events with Date Separators */}
+					{groupedMonthDays.length === 0 ? (
+						<div className="py-12 text-center text-xs text-muted-foreground border border-dashed border-border rounded-xl">
+							No transactions found for {monthLabel}.
+						</div>
+					) : (
+						<div className="space-y-4">
+							{groupedMonthDays.map((group) => (
+								<div key={group.dateKey} className="space-y-2.5">
+									{/* Date Separator */}
+									<div className="flex items-center gap-2.5 py-1 border-b border-border/80">
+										<div className="flex items-center gap-2">
+											<span className="text-xs font-bold text-foreground">
+												{formatDaySeparator(group.dateKey)}
+											</span>
+											<span className="text-[10px] text-muted-foreground px-2 py-0.2 rounded-full bg-surface-2 border border-border">
+												{group.items.length} {group.items.length === 1 ? "entry" : "entries"}
+											</span>
+										</div>
+										<div className="h-px flex-1 bg-border/60" />
+										<span className="text-xs font-semibold tabular-nums text-muted-foreground">
+											{formatDayNet(group.items, currency)}
+										</span>
+									</div>
+
+									{/* Day's cards */}
+									<div className="grid grid-cols-[repeat(auto-fill,minmax(min(175px,100%),1fr))] gap-2">
+										{group.items.map((item) => (
+											<TransactionCard
+												key={item.id}
+												item={item}
+												currency={currency}
+												isJustAdded={activeAdditionId === item.id}
+												isDuplicating={duplicatingId === item.id}
+												onEdit={onEdit}
+												onDelete={(tx) => handleDelete(tx.id)}
+												onDuplicate={handleDuplicateToToday}
+											/>
+										))}
+									</div>
+								</div>
+							))}
+						</div>
+					)}
+
+					{/* Month Navigation Bar */}
+					<div className="flex items-center justify-between border-t border-border pt-3">
+						<Button
+							variant="ghost"
+							size="sm"
+							onClick={onPrevPeriod}
+							title="Load previous month's transactions"
+							className="gap-1.5 text-xs h-8"
+						>
+							<ChevronLeft className="w-4 h-4" />
+							<span>Previous Month</span>
+						</Button>
+
+						<span className="text-xs font-bold text-foreground">{monthLabel}</span>
+
+						<Button
+							variant="ghost"
+							size="sm"
+							onClick={onNextPeriod}
+							title="Load next month's transactions"
+							className="gap-1.5 text-xs h-8"
+						>
+							<span>Next Month</span>
+							<ChevronRight className="w-4 h-4" />
+						</Button>
+					</div>
+				</div>
+			)}
 		</div>
 	);
 }

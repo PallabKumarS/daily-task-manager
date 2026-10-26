@@ -15,4 +15,5 @@ export const loginValidationSchema = z.object({
 export const updateProfileValidationSchema = z.object({
 	name: z.string().min(2).optional(),
 	currency: z.string().min(1).max(5).optional(),
+	enabledTabs: z.string().optional(),
 });

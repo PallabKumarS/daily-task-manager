@@ -18,8 +18,6 @@ import { useAuth } from "@/components/providers/auth-provider";
 import type { RoutineItem } from "@/components/routines/routine-list";
 import type { TaskItem } from "@/components/tasks/task-list";
 import type { DailyTrackerItem } from "@/components/trackers/tracker-types";
-import { Button } from "@/components/ui/button";
-import { CardDeck } from "@/components/ui/card-deck";
 import { formatCurrency } from "@/lib/currency-symbols";
 import { useTodayDate } from "@/lib/date-helpers";
 import { useRecentAdditions } from "@/lib/recent-activity-store";
@@ -29,9 +27,9 @@ interface DailyStreamViewProps {
 	tasks: TaskItem[];
 	transactions: TransactionItem[];
 	trackers: DailyTrackerItem[];
-	onOpenRoutineModal: (routine?: RoutineItem | null) => void;
-	onOpenTaskModal: (task?: TaskItem | null) => void;
-	onOpenTransactionModal: (tx?: TransactionItem | null) => void;
+	onOpenRoutineModal?: (routine?: RoutineItem | null) => void;
+	onOpenTaskModal?: (task?: TaskItem | null) => void;
+	onOpenTransactionModal?: (tx?: TransactionItem | null) => void;
 	onOpenTrackerModal?: (tracker?: DailyTrackerItem | null) => void;
 	onToggleRoutine: (id: string, currentlyCompleted: boolean) => Promise<void>;
 	onToggleTask: (task: TaskItem) => Promise<void>;
@@ -186,9 +184,9 @@ export function DailyStreamView({
 		.reduce((sum, t) => sum + t.amount, 0);
 
 	return (
-		<div className="space-y-4">
-			{/* Stream Control Bar */}
-			<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-border bg-surface shadow-card">
+		<div className="rounded-2xl border border-border bg-surface shadow-card overflow-hidden">
+			{/* Stream Filter Bar */}
+			<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 border-b border-border bg-surface">
 				<div className="flex items-center gap-1.5 rounded-xl bg-surface-sunken p-1 border border-border overflow-x-auto">
 					<button
 						type="button"
@@ -236,50 +234,23 @@ export function DailyStreamView({
 					</button>
 				</div>
 
-				<div className="flex items-center gap-2 flex-wrap">
-					{(totalIncome > 0 || totalExpense > 0) && (
-						<div className="hidden lg:flex items-center gap-1.5 mr-2 text-xs font-semibold text-foreground-muted bg-surface-2 px-2.5 py-1 rounded-xl border border-border">
-							<span className="text-emerald-400 tabular-nums">
-								+{formatCurrency(totalIncome, user?.currency || "USD")}
-							</span>
-							<span className="text-foreground-subtle">/</span>
-							<span className="text-rose-400 tabular-nums">
-								-{formatCurrency(totalExpense, user?.currency || "USD")}
-							</span>
-						</div>
-					)}
-					<Button
-						variant="outline"
-						size="sm"
-						onClick={() => onOpenTransactionModal()}
-						className="gap-1.5 text-xs"
-					>
-						<Plus className="w-3.5 h-3.5 text-emerald-400" />
-						<span>Record Transaction</span>
-					</Button>
-					<Button
-						variant="outline"
-						size="sm"
-						onClick={() => onOpenTaskModal()}
-						className="gap-1.5 text-xs"
-					>
-						<Plus className="w-3.5 h-3.5 text-indigo-400" />
-						<span>Log Event/Task</span>
-					</Button>
-				</div>
+				{(totalIncome > 0 || totalExpense > 0) && (
+					<div className="flex items-center gap-1.5 text-xs font-semibold text-foreground-muted bg-surface-2 px-2.5 py-1 rounded-xl border border-border shrink-0 self-start sm:self-auto">
+						<span className="text-emerald-400 tabular-nums">
+							+{formatCurrency(totalIncome, user?.currency || "USD")}
+						</span>
+						<span className="text-foreground-subtle">/</span>
+						<span className="text-rose-400 tabular-nums">
+							-{formatCurrency(totalExpense, user?.currency || "USD")}
+						</span>
+					</div>
+				)}
 			</div>
 
-			{/* Stream Items List with CardDeck */}
-			<CardDeck
-				items={filteredItems}
-				getKey={(item) => `${item.streamType}-${item.id}`}
-				getTitle={(item) => item.title}
-				storageKey="dashboard_stream"
-				defaultMode="all"
-				desktopColumns={1}
-				sectionLabel="Activity Stream"
-				emptyState={
-					<div className="rounded-2xl border border-border bg-surface p-12 text-center shadow-card">
+			{/* Stream Items List */}
+			<div className="p-4 space-y-2.5">
+				{filteredItems.length === 0 ? (
+					<div className="py-12 text-center">
 						<Sparkles className="w-10 h-10 text-foreground-subtle mx-auto mb-3" />
 						<h4 className="text-sm font-bold text-foreground">No items recorded in this stream</h4>
 						<p className="text-xs text-foreground-muted mt-1 max-w-sm mx-auto">
@@ -287,150 +258,154 @@ export function DailyStreamView({
 							unified pulse.
 						</p>
 					</div>
-				}
-				renderCard={(item) => {
-					const isJustAdded = activeAdditionId === item.id;
+				) : (
+					filteredItems.map((item) => {
+						const isJustAdded = activeAdditionId === item.id;
 
-					return (
-						<div
-							className={`flex items-center justify-between p-4 rounded-2xl border transition-all duration-300 ${
-								isJustAdded
-									? "ring-2 ring-teal-500/70 border-teal-500/40 bg-teal-500/10 shadow-lg shadow-teal-500/10"
-									: "border-border bg-surface hover:border-border-strong shadow-card"
-							}`}
-						>
-							{/* Left: Icon & Details */}
-							<div className="flex items-center gap-3.5 min-w-0 flex-1">
-								{/* Item Type Icon */}
-								<div className="shrink-0">
-									{item.streamType === "TRANSACTION" ? (
-										<div
-											className={`flex h-10 w-10 items-center justify-center rounded-xl ${
-												item.isIncome
-													? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-													: "bg-rose-500/10 text-rose-400 border border-rose-500/20"
-											}`}
-										>
-											{item.isIncome ? (
-												<ArrowUpRight className="w-5 h-5" />
-											) : (
-												<ArrowDownRight className="w-5 h-5" />
+						return (
+							<div
+								key={`${item.streamType}-${item.id}`}
+								className={`flex items-center justify-between p-3.5 sm:p-4 rounded-xl border transition-all duration-300 ${
+									isJustAdded
+										? "ring-2 ring-teal-500/70 border-teal-500/40 bg-teal-500/10 shadow-lg shadow-teal-500/10"
+										: "border-border bg-surface-2/40 hover:border-border-strong hover:bg-surface-2/70 shadow-sm"
+								}`}
+							>
+								{/* Left: Icon & Details */}
+								<div className="flex items-center gap-3.5 min-w-0 flex-1">
+									{/* Item Type Icon */}
+									<div className="shrink-0">
+										{item.streamType === "TRANSACTION" ? (
+											<div
+												className={`flex h-10 w-10 items-center justify-center rounded-xl ${
+													item.isIncome
+														? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+														: "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+												}`}
+											>
+												{item.isIncome ? (
+													<ArrowUpRight className="w-5 h-5" />
+												) : (
+													<ArrowDownRight className="w-5 h-5" />
+												)}
+											</div>
+										) : item.streamType === "TASK" ? (
+											<button
+												type="button"
+												onClick={() => onToggleTask(item.original as TaskItem)}
+												className={`flex h-10 w-10 items-center justify-center rounded-xl border transition cursor-pointer ${
+													item.isCompleted
+														? "bg-teal-500 border-teal-400 text-white"
+														: "border-border-strong bg-surface-2 hover:border-indigo-500 text-transparent"
+												}`}
+											>
+												<Check className="w-5 h-5 stroke-[3]" />
+											</button>
+										) : item.streamType === "ROUTINE" ? (
+											<button
+												type="button"
+												onClick={() =>
+													onToggleRoutine(item.id, (item.original as RoutineItem).isCompletedToday)
+												}
+												className={`flex h-10 w-10 items-center justify-center rounded-xl border transition cursor-pointer ${
+													item.isCompleted
+														? "bg-teal-500 border-teal-400 text-white"
+														: "border-border-strong bg-surface-2 hover:border-amber-500 text-amber-400"
+												}`}
+											>
+												<CalendarCheck className="w-5 h-5" />
+											</button>
+										) : (
+											<div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20">
+												<Calculator className="w-5 h-5" />
+											</div>
+										)}
+									</div>
+
+									{/* Item Titles */}
+									<div className="min-w-0 flex-1">
+										<div className="flex items-center gap-2 flex-wrap">
+											{isJustAdded && (
+												<span className="rounded-md bg-teal-500/20 px-2 py-0.5 text-xs font-bold text-teal-400 border border-teal-500/40 animate-pulse">
+													Just Added
+												</span>
+											)}
+											<h4
+												className={`text-sm font-bold truncate ${
+													item.isCompleted
+														? "text-foreground-muted line-through"
+														: "text-foreground"
+												}`}
+											>
+												{item.title}
+											</h4>
+											{item.category && (
+												<span className="rounded-md bg-surface-2 px-2 py-0.5 text-xs text-foreground-muted border border-border font-medium">
+													{item.category}
+												</span>
+											)}
+											{item.priority && (
+												<span className="rounded-md bg-surface-2 px-2 py-0.5 text-xs text-foreground-muted border border-border font-medium uppercase">
+													{item.priority}
+												</span>
+											)}
+											{item.isRecurring && (
+												<span className="inline-flex items-center gap-1 rounded-md bg-teal-500/10 px-1.5 py-0.5 text-xs text-teal-400 border border-teal-500/25">
+													<Repeat className="w-2.5 h-2.5" />
+													<span>Recurring</span>
+												</span>
 											)}
 										</div>
-									) : item.streamType === "TASK" ? (
-										<button
-											type="button"
-											onClick={() => onToggleTask(item.original as TaskItem)}
-											className={`flex h-10 w-10 items-center justify-center rounded-xl border transition cursor-pointer ${
-												item.isCompleted
-													? "bg-teal-500 border-teal-400 text-white"
-													: "border-border-strong bg-surface-2 hover:border-indigo-500 text-transparent"
+										<p className="text-xs text-foreground-muted mt-0.5 truncate">{item.subtitle}</p>
+									</div>
+								</div>
+
+								{/* Right: Amounts & Quick Adjusters */}
+								<div className="flex items-center gap-3 shrink-0 pl-3">
+									{typeof item.amount === "number" && (
+										<span
+											className={`text-sm font-extrabold tabular-nums ${
+												item.isIncome ? "text-emerald-400" : "text-rose-400"
 											}`}
 										>
-											<Check className="w-5 h-5 stroke-[3]" />
-										</button>
-									) : item.streamType === "ROUTINE" ? (
-										<button
-											type="button"
-											onClick={() =>
-												onToggleRoutine(item.id, (item.original as RoutineItem).isCompletedToday)
-											}
-											className={`flex h-10 w-10 items-center justify-center rounded-xl border transition cursor-pointer ${
-												item.isCompleted
-													? "bg-teal-500 border-teal-400 text-white"
-													: "border-border-strong bg-surface-2 hover:border-amber-500 text-amber-400"
-											}`}
-										>
-											<CalendarCheck className="w-5 h-5" />
-										</button>
-									) : (
-										<div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20">
-											<Calculator className="w-5 h-5" />
+											{item.isIncome ? "+" : "-"}
+											{formatCurrency(item.amount, user?.currency || "USD")}
+										</span>
+									)}
+
+									{/* Tracker Quick +/- buttons */}
+									{item.streamType === "TRACKER" && (
+										<div className="flex items-center gap-1">
+											<button
+												type="button"
+												onClick={() => onAdjustTracker(item.id, -1)}
+												className="flex h-7 w-7 items-center justify-center rounded-lg border border-border bg-surface-2 text-foreground-muted hover:text-foreground hover:border-border-strong transition cursor-pointer"
+											>
+												<Minus className="w-3 h-3" />
+											</button>
+											<button
+												type="button"
+												onClick={() => onAdjustTracker(item.id, 1)}
+												className="flex h-7 w-7 items-center justify-center rounded-lg border border-border bg-surface-2 text-foreground-muted hover:text-foreground hover:border-border-strong transition cursor-pointer"
+											>
+												<Plus className="w-3 h-3" />
+											</button>
+										</div>
+									)}
+
+									{/* Time Label */}
+									{item.timeLabel && (
+										<div className="hidden sm:flex items-center gap-1 text-xs text-foreground-muted border-l border-border pl-3">
+											<Clock className="w-3 h-3 text-foreground-subtle" />
+											<span>{item.timeLabel}</span>
 										</div>
 									)}
 								</div>
-
-								{/* Item Titles */}
-								<div className="min-w-0 flex-1">
-									<div className="flex items-center gap-2 flex-wrap">
-										{isJustAdded && (
-											<span className="rounded-md bg-teal-500/20 px-2 py-0.5 text-xs font-bold text-teal-400 border border-teal-500/40 animate-pulse">
-												Just Added
-											</span>
-										)}
-										<h4
-											className={`text-sm font-bold truncate ${
-												item.isCompleted ? "text-foreground-muted line-through" : "text-foreground"
-											}`}
-										>
-											{item.title}
-										</h4>
-										{item.category && (
-											<span className="rounded-md bg-surface-2 px-2 py-0.5 text-xs text-foreground-muted border border-border font-medium">
-												{item.category}
-											</span>
-										)}
-										{item.priority && (
-											<span className="rounded-md bg-surface-2 px-2 py-0.5 text-xs text-foreground-muted border border-border font-medium uppercase">
-												{item.priority}
-											</span>
-										)}
-										{item.isRecurring && (
-											<span className="inline-flex items-center gap-1 rounded-md bg-teal-500/10 px-1.5 py-0.5 text-xs text-teal-400 border border-teal-500/25">
-												<Repeat className="w-2.5 h-2.5" />
-												<span>Recurring</span>
-											</span>
-										)}
-									</div>
-									<p className="text-xs text-foreground-muted mt-0.5 truncate">{item.subtitle}</p>
-								</div>
 							</div>
-
-							{/* Right: Amounts & Quick Adjusters */}
-							<div className="flex items-center gap-3 shrink-0 pl-3">
-								{typeof item.amount === "number" && (
-									<span
-										className={`text-sm font-extrabold tabular-nums ${
-											item.isIncome ? "text-emerald-400" : "text-rose-400"
-										}`}
-									>
-										{item.isIncome ? "+" : "-"}
-										{formatCurrency(item.amount, user?.currency || "USD")}
-									</span>
-								)}
-
-								{/* Tracker Quick +/- buttons */}
-								{item.streamType === "TRACKER" && (
-									<div className="flex items-center gap-1">
-										<button
-											type="button"
-											onClick={() => onAdjustTracker(item.id, -1)}
-											className="flex h-7 w-7 items-center justify-center rounded-lg border border-border bg-surface-2 text-foreground-muted hover:text-foreground hover:border-border-strong transition cursor-pointer"
-										>
-											<Minus className="w-3 h-3" />
-										</button>
-										<button
-											type="button"
-											onClick={() => onAdjustTracker(item.id, 1)}
-											className="flex h-7 w-7 items-center justify-center rounded-lg border border-border bg-surface-2 text-foreground-muted hover:text-foreground hover:border-border-strong transition cursor-pointer"
-										>
-											<Plus className="w-3 h-3" />
-										</button>
-									</div>
-								)}
-
-								{/* Time Label */}
-								{item.timeLabel && (
-									<div className="hidden sm:flex items-center gap-1 text-xs text-foreground-muted border-l border-border pl-3">
-										<Clock className="w-3 h-3 text-foreground-subtle" />
-										<span>{item.timeLabel}</span>
-									</div>
-								)}
-							</div>
-						</div>
-					);
-				}}
-			/>
+						);
+					})
+				)}
+			</div>
 		</div>
 	);
 }

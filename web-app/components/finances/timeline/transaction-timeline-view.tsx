@@ -1,15 +1,15 @@
 "use client";
 
-import { CreditCard, Kanban, Trash2 } from "lucide-react";
+import { CalendarDays, Kanban } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
 import { MonthTimelineView } from "@/components/finances/timeline/month-timeline-view";
 import { WeekTimelineView } from "@/components/finances/timeline/week-timeline-view";
 import { YearTimelineView } from "@/components/finances/timeline/year-timeline-view";
 import { type TransactionItem, TransactionList } from "@/components/finances/transaction-list";
-import { Button } from "@/components/ui/button";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { api } from "@/lib/api-client";
+import { cn } from "@/lib/utils";
 import type { StartOfWeekDay } from "@/lib/workweek-preferences";
 
 interface TransactionTimelineViewProps {
@@ -25,6 +25,7 @@ interface TransactionTimelineViewProps {
 	onResetToday: () => void;
 	onSelectMonth: (monthIndex: number) => void;
 	onRefresh: () => void;
+	onSelectDate?: (date: Date) => void;
 }
 
 export function TransactionTimelineView({
@@ -40,9 +41,11 @@ export function TransactionTimelineView({
 	onResetToday,
 	onSelectMonth,
 	onRefresh,
+	onSelectDate,
 }: TransactionTimelineViewProps) {
 	const confirm = useConfirm();
-	const [viewMode, setViewMode] = React.useState<"TIMELINE" | "LIST">("LIST");
+	const [viewMode, setViewMode] = React.useState<"TIMELINE" | "DAY">("DAY");
+	const [filterType, setFilterType] = React.useState<"ALL" | "EXPENSE" | "INCOME">("ALL");
 
 	const handleDelete = async (id: string, desc: string) => {
 		const ok = await confirm({
@@ -66,99 +69,111 @@ export function TransactionTimelineView({
 		}
 	};
 
-	const handleClearAll = async () => {
-		const ok = await confirm({
-			title: "Delete All Transactions",
-			description:
-				"Are you sure you want to delete all transaction records for this period? This action cannot be undone.",
-			confirmText: "Delete All",
-			variant: "destructive",
-		});
-		if (!ok) return;
-
-		try {
-			const res = await api.delete("/finances");
-			if (res.success) {
-				toast.success("All transactions deleted");
-				onRefresh();
-			} else {
-				toast.error(res.message || "Failed to delete transactions");
-			}
-		} catch {
-			toast.error("Network error while deleting transactions");
-		}
-	};
-
 	return (
-		<div className="space-y-4">
-			{/* View Toggle Bar (Timeline vs Itemized List) */}
-			<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl border border-border bg-surface backdrop-blur-xl">
+		<div className="rounded-2xl border border-border bg-surface p-4 sm:p-5 shadow-[var(--shadow-card)] space-y-4">
+			{/* Combined Unified Header */}
+			<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border">
 				<div>
-					<h3 className="text-sm font-bold text-foreground">
+					<h3 className="text-sm sm:text-base font-bold text-foreground">Transaction History</h3>
+					<p className="text-[11px] text-muted-foreground mt-0.5">
 						{viewMode === "TIMELINE"
-							? period === "week"
-								? "Weekly Column Timeline (Day by Day)"
-								: period === "month"
-									? "Monthly 30-Day Horizontal Flow"
-									: "Annual 12-Month Performance"
-							: "Itemized Transaction Ledger"}
-					</h3>
-					<p className="text-xs text-muted-foreground mt-0.5">
-						{viewMode === "TIMELINE"
-							? "Structured temporal flow with daily and monthly totals"
-							: `Flat itemized ledger entries (${transactions.length} total)`}
+							? "Temporal flow and daily financial totals"
+							: `Itemized ledger entries (${transactions.length} total)`}
 					</p>
 				</div>
 
-				<div className="flex items-center gap-2 self-start sm:self-auto">
-					{transactions.length > 0 && (
-						<Button
-							variant="outline"
-							size="sm"
-							onClick={handleClearAll}
-							className="h-8 gap-1.5 border-rose-500/30 text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 hover:border-rose-800 text-xs px-2.5"
-						>
-							<Trash2 className="w-3.5 h-3.5" />
-							<span>Clear All</span>
-						</Button>
-					)}
-
+				<div className="flex flex-wrap items-center gap-2 self-start sm:self-center">
+					{/* View Switcher: Timeline Board vs Day View */}
 					<div className="flex items-center rounded-xl bg-surface-sunken p-1 border border-border">
 						<button
 							type="button"
 							onClick={() => setViewMode("TIMELINE")}
-							className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+							title="Switch to timeline board view"
+							className={cn(
+								"flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer",
 								viewMode === "TIMELINE"
 									? "bg-surface-2 text-foreground shadow-sm"
-									: "text-muted-foreground hover:text-foreground"
-							}`}
+									: "text-muted-foreground hover:text-foreground",
+							)}
 						>
-							<Kanban className="w-3.5 h-3.5 text-emerald-400" />
+							<Kanban className="w-3.5 h-3.5 text-teal-400" />
 							<span>Timeline Board</span>
 						</button>
 						<button
 							type="button"
-							onClick={() => setViewMode("LIST")}
-							className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
-								viewMode === "LIST"
+							onClick={() => setViewMode("DAY")}
+							title="Switch to day view"
+							className={cn(
+								"flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer",
+								viewMode === "DAY"
 									? "bg-surface-2 text-foreground shadow-sm"
-									: "text-muted-foreground hover:text-foreground"
-							}`}
+									: "text-muted-foreground hover:text-foreground",
+							)}
 						>
-							<CreditCard className="w-3.5 h-3.5 text-emerald-400" />
-							<span>Card History</span>
+							<CalendarDays className="w-3.5 h-3.5 text-teal-400" />
+							<span>Day View</span>
 						</button>
 					</div>
+
+					{/* Filter Tabs (when in Day View) */}
+					{viewMode === "DAY" && (
+						<div className="flex items-center gap-1 rounded-xl bg-surface-sunken p-1 border border-border">
+							<button
+								type="button"
+								onClick={() => setFilterType("ALL")}
+								title="Show all transactions"
+								className={cn(
+									"px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer",
+									filterType === "ALL"
+										? "bg-surface text-foreground shadow-sm border border-border"
+										: "text-muted-foreground hover:text-foreground",
+								)}
+							>
+								All
+							</button>
+							<button
+								type="button"
+								onClick={() => setFilterType("EXPENSE")}
+								title="Show expenses only"
+								className={cn(
+									"px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer",
+									filterType === "EXPENSE"
+										? "bg-rose-500/20 text-rose-400"
+										: "text-muted-foreground hover:text-foreground",
+								)}
+							>
+								Expenses
+							</button>
+							<button
+								type="button"
+								onClick={() => setFilterType("INCOME")}
+								title="Show income only"
+								className={cn(
+									"px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer",
+									filterType === "INCOME"
+										? "bg-emerald-500/20 text-emerald-400"
+										: "text-muted-foreground hover:text-foreground",
+								)}
+							>
+								Income
+							</button>
+						</div>
+					)}
 				</div>
 			</div>
 
 			{/* Render active view */}
-			{viewMode === "LIST" ? (
+			{viewMode === "DAY" ? (
 				<TransactionList
 					transactions={transactions}
 					currency={currency}
+					currentDate={currentDate}
+					filterType={filterType}
 					onEdit={onEdit}
 					onRefresh={onRefresh}
+					onPrevPeriod={onPrev}
+					onNextPeriod={onNext}
+					onSelectDate={onSelectDate}
 				/>
 			) : period === "week" ? (
 				<WeekTimelineView

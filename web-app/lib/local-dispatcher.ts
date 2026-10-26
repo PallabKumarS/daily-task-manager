@@ -72,6 +72,7 @@ const STORAGE_KEYS = {
 	REPAYMENTS: "daypulse_local_debt_repayments",
 	USER: "daypulse_user_account",
 	CREDENTIALS: "daypulse_user_credentials",
+	NAV_TABS: "daypulse_nav_tabs",
 };
 
 const DEFAULT_CATEGORIES = [
@@ -117,6 +118,7 @@ function getLocalUser(): {
 	name: string;
 	email: string;
 	currency: string;
+	enabledTabs?: string;
 	createdAt: string;
 	updatedAt: string;
 } | null {
@@ -176,6 +178,10 @@ export async function handleLocalClientDispatch<T = unknown>(
 		if (method === "PATCH") {
 			if (body.name) user.name = String(body.name).trim();
 			if (body.currency) user.currency = String(body.currency).trim();
+			if (body.enabledTabs !== undefined) {
+				user.enabledTabs = String(body.enabledTabs).trim();
+				localStorage.setItem(STORAGE_KEYS.NAV_TABS, user.enabledTabs);
+			}
 			user.updatedAt = new Date().toISOString();
 			localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
 			return { statusCode: 200, success: true, data: user as T };
@@ -190,16 +196,19 @@ export async function handleLocalClientDispatch<T = unknown>(
 			.toLowerCase();
 		const password = String(body.password || "");
 		const currency = String(body.currency || "USD");
+		const enabledTabs = String(body.enabledTabs || "dashboard,routines,tasks,trackers,finances");
 
 		const user = {
 			id: generateId("usr"),
 			name,
 			email,
 			currency,
+			enabledTabs,
 			createdAt: new Date().toISOString(),
 			updatedAt: new Date().toISOString(),
 		};
 		localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
+		localStorage.setItem(STORAGE_KEYS.NAV_TABS, enabledTabs);
 		localStorage.setItem(STORAGE_KEYS.CREDENTIALS, JSON.stringify({ email, password }));
 		const token = `daypulse_token_${user.id}`;
 		return {

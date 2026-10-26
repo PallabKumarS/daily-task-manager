@@ -102,19 +102,21 @@ export const getMeFromDB = async (userId: string) => {
 
 export const updateProfileInDB = async (
 	userId: string,
-	payload: { name?: string; currency?: string },
+	payload: { name?: string; currency?: string; enabledTabs?: string },
 ) => {
 	const updatedUser = await prisma.user.update({
 		where: { id: userId },
 		data: {
 			...(payload.name && { name: payload.name }),
 			...(payload.currency && { currency: payload.currency.toUpperCase() }),
+			...(payload.enabledTabs && { enabledTabs: payload.enabledTabs }),
 		},
 		select: {
 			id: true,
 			name: true,
 			email: true,
 			currency: true,
+			enabledTabs: true,
 			createdAt: true,
 		},
 	});

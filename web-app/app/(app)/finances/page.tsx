@@ -14,7 +14,6 @@ import type { TransactionItem } from "@/components/finances/transaction-list";
 import { useContextDock } from "@/components/layout/context-dock";
 import { useAuth } from "@/components/providers/auth-provider";
 import { Button } from "@/components/ui/button";
-import { CardDeck } from "@/components/ui/card-deck";
 import { api } from "@/lib/api-client";
 import { getPeriodDateRange, useWorkweekPreferences } from "@/lib/workweek-preferences";
 
@@ -273,26 +272,6 @@ export default function FinancesPage() {
 		return () => setCustomSlot(null);
 	}, [setCustomSlot, mainTab, handlePrev, handleNext, formatPeriodLabel, handleAddNew]);
 
-	const insightCards = React.useMemo(
-		() => [
-			{
-				id: "cumulative",
-				node: <CumulativeChart timeline={analytics.timeline} currency={user?.currency || "USD"} />,
-			},
-			{
-				id: "breakdown",
-				node: (
-					<CategoryBreakdown
-						expenseCategories={analytics.expenseCategories}
-						incomeCategories={analytics.incomeCategories}
-						currency={user?.currency || "USD"}
-					/>
-				),
-			},
-		],
-		[analytics, user?.currency],
-	);
-
 	if (loading && transactions.length === 0) {
 		return (
 			<div className="py-20 text-center text-muted-foreground text-xs">
@@ -477,36 +456,31 @@ export default function FinancesPage() {
 						onResetToday={handleResetToday}
 						onSelectMonth={handleSelectMonth}
 						onRefresh={fetchData}
+						onSelectDate={(date) => setCurrentDate(date)}
 					/>
 
-					<div className="pt-2">
-						<CardDeck
-							items={insightCards}
-							keyExtractor={(item) => item.id}
-							storageKey="finance_insights"
-							defaultMode="deck"
-							desktopColumns={1}
-							title="Cashflow Analytics & Breakdown"
-							subtitle={`Visual trajectory and category proportions for ${formatPeriodLabel()}`}
-							renderCard={(item) => item.node}
-							renderGrid={() => (
-								<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-									<div className="lg:col-span-2">
-										<CumulativeChart
-											timeline={analytics.timeline}
-											currency={user?.currency || "USD"}
-										/>
-									</div>
-									<div className="lg:col-span-1">
-										<CategoryBreakdown
-											expenseCategories={analytics.expenseCategories}
-											incomeCategories={analytics.incomeCategories}
-											currency={user?.currency || "USD"}
-										/>
-									</div>
-								</div>
-							)}
-						/>
+					<div className="rounded-2xl border border-border bg-surface p-4 sm:p-5 shadow-[var(--shadow-card)] space-y-4">
+						<div>
+							<h3 className="text-sm sm:text-base font-bold text-foreground">
+								Cashflow Analytics & Breakdown
+							</h3>
+							<p className="text-[11px] text-muted-foreground mt-0.5">
+								Visual trajectory and category proportions for {formatPeriodLabel()}
+							</p>
+						</div>
+
+						<div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+							<div className="lg:col-span-2">
+								<CumulativeChart timeline={analytics.timeline} currency={user?.currency || "USD"} />
+							</div>
+							<div className="lg:col-span-1">
+								<CategoryBreakdown
+									expenseCategories={analytics.expenseCategories}
+									incomeCategories={analytics.incomeCategories}
+									currency={user?.currency || "USD"}
+								/>
+							</div>
+						</div>
 					</div>
 				</>
 			)}

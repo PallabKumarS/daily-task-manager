@@ -17,6 +17,7 @@ export interface AuthUser {
 	name: string;
 	email: string;
 	currency: string;
+	enabledTabs?: string;
 	createdAt: string;
 }
 
@@ -27,7 +28,11 @@ interface AuthContextType {
 	login: (email: string, password: string) => Promise<boolean>;
 	register: (name: string, email: string, password: string, currency?: string) => Promise<boolean>;
 	logout: () => Promise<void>;
-	updateProfile: (data: { name?: string; currency?: string }) => Promise<boolean>;
+	updateProfile: (data: {
+		name?: string;
+		currency?: string;
+		enabledTabs?: string;
+	}) => Promise<boolean>;
 }
 
 const AuthContext = React.createContext<AuthContextType | undefined>(undefined);

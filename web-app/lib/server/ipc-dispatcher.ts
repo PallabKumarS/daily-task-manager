@@ -147,6 +147,7 @@ export async function handleIpcApiDispatch(req: IpcApiRequest): Promise<IpcApiRe
 				data: {
 					name: typeof body.name === "string" ? body.name : undefined,
 					currency: typeof body.currency === "string" ? body.currency : undefined,
+					enabledTabs: typeof body.enabledTabs === "string" ? body.enabledTabs : undefined,
 				},
 			});
 			return { statusCode: 200, success: true, data: updated };

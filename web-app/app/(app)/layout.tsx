@@ -8,10 +8,18 @@ import { AppNavbar } from "@/components/layout/app-navbar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { BottomDock } from "@/components/layout/bottom-dock";
 import { ContextDockProvider, MobileContextDock } from "@/components/layout/context-dock";
+import { CustomizeNavModal } from "@/components/layout/customize-nav-modal";
+import { FloatingQuickAction } from "@/components/layout/floating-quick-action";
 import { useAuth } from "@/components/providers/auth-provider";
+import { NavTabsProvider, useNavTabs } from "@/components/providers/nav-tabs-provider";
 import { RoutineFormModal } from "@/components/routines/routine-form-modal";
 import { TaskFormModal } from "@/components/tasks/task-form-modal";
 import { TrackerFormModal } from "@/components/trackers/tracker-form-modal";
+
+function GlobalCustomizeNavModal() {
+	const { isCustomizeOpen, setCustomizeOpen } = useNavTabs();
+	return <CustomizeNavModal isOpen={isCustomizeOpen} onClose={() => setCustomizeOpen(false)} />;
+}
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
 	const { user, loading } = useAuth();
@@ -62,49 +70,53 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 	}
 
 	return (
-		<ContextDockProvider>
-			<div className="min-h-[calc(100vh-var(--titlebar-height,0px))] flex flex-row bg-background text-foreground">
-				<AppSidebar />
+		<NavTabsProvider>
+			<ContextDockProvider>
+				<div className="min-h-[calc(100vh-var(--titlebar-height,0px))] flex flex-row bg-background text-foreground">
+					<AppSidebar />
 
-				<div className="flex-1 flex flex-col min-w-0">
-					<AppNavbar onQuickAdd={handleQuickAdd} />
+					<div className="flex-1 flex flex-col min-w-0">
+						<AppNavbar />
 
-					<motion.main
-						key={pathname}
-						initial={{ opacity: 0, y: 8 }}
-						animate={{ opacity: 1, y: 0 }}
-						transition={{ duration: 0.22, ease: [0.2, 0, 0, 1] }}
-						className="flex-1 p-4 sm:p-6 lg:p-8 w-full max-w-7xl mx-auto pb-36 md:pb-12"
-					>
-						{children}
-					</motion.main>
+						<motion.main
+							key={pathname}
+							initial={{ opacity: 0, y: 8 }}
+							animate={{ opacity: 1, y: 0 }}
+							transition={{ duration: 0.22, ease: [0.2, 0, 0, 1] }}
+							className="flex-1 p-4 sm:p-6 lg:p-8 w-full max-w-7xl mx-auto pb-36 md:pb-12"
+						>
+							{children}
+						</motion.main>
 
-					<MobileContextDock onQuickAdd={handleQuickAdd} onRefresh={handleRefresh} />
-					<BottomDock />
+						<MobileContextDock onQuickAdd={handleQuickAdd} onRefresh={handleRefresh} />
+						<BottomDock />
+						<FloatingQuickAction onQuickAdd={handleQuickAdd} />
+					</div>
+
+					<RoutineFormModal
+						isOpen={routineModalOpen}
+						onClose={() => setRoutineModalOpen(false)}
+						onSuccess={handleRefresh}
+					/>
+					<TaskFormModal
+						isOpen={taskModalOpen}
+						onClose={() => setTaskModalOpen(false)}
+						onSuccess={handleRefresh}
+						defaultType={taskModalType}
+					/>
+					<TransactionFormModal
+						isOpen={transactionModalOpen}
+						onClose={() => setTransactionModalOpen(false)}
+						onSuccess={handleRefresh}
+					/>
+					<TrackerFormModal
+						isOpen={trackerModalOpen}
+						onClose={() => setTrackerModalOpen(false)}
+						onSuccess={handleRefresh}
+					/>
+					<GlobalCustomizeNavModal />
 				</div>
-
-				<RoutineFormModal
-					isOpen={routineModalOpen}
-					onClose={() => setRoutineModalOpen(false)}
-					onSuccess={handleRefresh}
-				/>
-				<TaskFormModal
-					isOpen={taskModalOpen}
-					onClose={() => setTaskModalOpen(false)}
-					onSuccess={handleRefresh}
-					defaultType={taskModalType}
-				/>
-				<TransactionFormModal
-					isOpen={transactionModalOpen}
-					onClose={() => setTransactionModalOpen(false)}
-					onSuccess={handleRefresh}
-				/>
-				<TrackerFormModal
-					isOpen={trackerModalOpen}
-					onClose={() => setTrackerModalOpen(false)}
-					onSuccess={handleRefresh}
-				/>
-			</div>
-		</ContextDockProvider>
+			</ContextDockProvider>
+		</NavTabsProvider>
 	);
 }

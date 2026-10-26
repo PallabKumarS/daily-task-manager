@@ -3,6 +3,7 @@ export interface IRegisterUser {
 	email: string;
 	password: string;
 	currency?: string;
+	enabledTabs?: string;
 }
 
 export interface ILoginUser {
@@ -16,6 +17,7 @@ export interface IAuthResponse {
 		name: string;
 		email: string;
 		currency: string;
+		enabledTabs?: string;
 		createdAt: Date;
 	};
 	token: string;

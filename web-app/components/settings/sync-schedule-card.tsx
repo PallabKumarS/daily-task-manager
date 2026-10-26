@@ -1,15 +1,6 @@
 "use client";
 
-import {
-	AlertCircle,
-	CheckCircle2,
-	Clock,
-	Cpu,
-	Power,
-	RefreshCw,
-	ShieldCheck,
-	Smartphone,
-} from "lucide-react";
+import { AlertCircle, CheckCircle2, Clock, Power, RefreshCw } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -24,6 +15,7 @@ import {
 	type SyncScheduleConfig,
 	saveSyncScheduleConfig,
 } from "@/lib/sync-scheduler";
+import { cn } from "@/lib/utils";
 
 const INTERVAL_OPTIONS: SelectOption[] = [
 	{ label: "Every 2 Hours", value: "2" },
@@ -31,7 +23,7 @@ const INTERVAL_OPTIONS: SelectOption[] = [
 	{ label: "Every 6 Hours", value: "6" },
 	{ label: "Every 8 Hours", value: "8" },
 	{ label: "Every 12 Hours", value: "12" },
-	{ label: "Every 24 Hours (Once daily)", value: "24" },
+	{ label: "Every 24 Hours", value: "24" },
 ];
 
 export function SyncScheduleCard() {
@@ -45,7 +37,7 @@ export function SyncScheduleCard() {
 
 		const updateNextSyncDisplay = (cfg: SyncScheduleConfig) => {
 			if (!cfg.enabled) {
-				setNextSyncText("Automatic sync disabled");
+				setNextSyncText("Sync disabled");
 				return;
 			}
 			const nextDate = calculateNextSyncTime(cfg);
@@ -124,30 +116,31 @@ export function SyncScheduleCard() {
 	};
 
 	return (
-		<div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-xl space-y-5">
-			<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+		<div className="rounded-2xl border border-border bg-surface p-4 sm:p-5 shadow-[var(--shadow-card)] space-y-4">
+			<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border">
 				<div className="flex items-center gap-2.5">
-					<div className="p-2 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20">
-						<Clock className="w-5 h-5" />
+					<div className="h-8 w-8 rounded-lg bg-blue-500/10 text-blue-500 border border-blue-500/20 flex items-center justify-center shrink-0">
+						<Clock className="w-4 h-4" />
 					</div>
 					<div>
-						<h2 className="text-sm font-bold text-foreground">Automated Sync Schedule</h2>
-						<p className="text-xs text-slate-400 mt-0.5">
-							Automated background cloud &amp; snapshot sync engine
+						<h2 className="text-sm font-bold text-foreground">Sync Schedule & Automation</h2>
+						<p className="text-[11px] text-muted-foreground">
+							Automated background cloud synchronization timer
 						</p>
 					</div>
 				</div>
 
-				<div className="flex items-center gap-3">
+				<div className="flex items-center gap-2 self-start sm:self-center">
 					<Button
 						type="button"
 						variant={config.enabled ? "default" : "secondary"}
 						size="sm"
 						onClick={handleToggleEnabled}
-						className="gap-2 text-xs"
+						title={config.enabled ? "Click to disable auto-sync" : "Click to enable auto-sync"}
+						className="gap-1.5 text-xs h-8"
 					>
 						<Power className="w-3.5 h-3.5" />
-						<span>{config.enabled ? "Active" : "Disabled"}</span>
+						<span>{config.enabled ? "Auto: Active" : "Auto: Off"}</span>
 					</Button>
 
 					<Button
@@ -156,140 +149,116 @@ export function SyncScheduleCard() {
 						size="sm"
 						onClick={handleTriggerManualSync}
 						disabled={isSyncing}
-						className="gap-1.5 text-xs text-slate-300"
+						title="Execute cloud sync immediately"
+						className="gap-1.5 text-xs h-8"
 					>
-						<RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? "animate-spin text-teal-400" : ""}`} />
+						<RefreshCw className={cn("w-3.5 h-3.5", isSyncing && "animate-spin text-teal-400")} />
 						<span>{isSyncing ? "Syncing..." : "Sync Now"}</span>
 					</Button>
 				</div>
 			</div>
 
-			{/* Schedule Controls */}
-			<div className="space-y-4">
-				<div className="space-y-2">
-					<Label className="text-xs text-slate-300">Schedule Trigger Mode</Label>
-					<div className="grid grid-cols-2 gap-2 max-w-sm">
+			<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+				<div className="space-y-1.5">
+					<Label className="text-xs font-semibold text-foreground">Trigger Mode</Label>
+					<div className="grid grid-cols-2 gap-1.5">
 						<button
 							type="button"
 							onClick={() => handleModeChange("daily")}
-							className={`px-3 py-2 text-xs font-semibold rounded-xl border transition cursor-pointer text-left ${
+							title="Run automatic sync once daily at a specified time"
+							className={cn(
+								"px-2.5 py-1.5 text-xs font-semibold rounded-lg border transition text-left cursor-pointer",
 								config.scheduleMode === "daily"
-									? "border-teal-500/40 bg-teal-500/10 text-teal-300"
-									: "border-slate-800 bg-slate-900 text-slate-400 hover:text-foreground"
-							}`}
+									? "border-teal-500 bg-primary-soft text-routine-fg"
+									: "border-border bg-surface-2/40 text-muted-foreground hover:text-foreground",
+							)}
 						>
-							Daily Fixed Time
-							<span className="block text-[10px] text-slate-400 font-normal mt-0.5">
-								Triggers at 12:00 AM (default)
+							Daily Fixed
+							<span className="block text-[10px] text-muted-foreground font-normal">
+								At set time
 							</span>
 						</button>
 
 						<button
 							type="button"
 							onClick={() => handleModeChange("interval")}
-							className={`px-3 py-2 text-xs font-semibold rounded-xl border transition cursor-pointer text-left ${
+							title="Run automatic sync repeatedly every N hours"
+							className={cn(
+								"px-2.5 py-1.5 text-xs font-semibold rounded-lg border transition text-left cursor-pointer",
 								config.scheduleMode === "interval"
-									? "border-teal-500/40 bg-teal-500/10 text-teal-300"
-									: "border-slate-800 bg-slate-900 text-slate-400 hover:text-foreground"
-							}`}
+									? "border-teal-500 bg-primary-soft text-routine-fg"
+									: "border-border bg-surface-2/40 text-muted-foreground hover:text-foreground",
+							)}
 						>
-							Periodic Interval
-							<span className="block text-[10px] text-slate-400 font-normal mt-0.5">
-								Repeats every N hours
+							Periodic
+							<span className="block text-[10px] text-muted-foreground font-normal">
+								Every N hours
 							</span>
 						</button>
 					</div>
 				</div>
 
-				{config.scheduleMode === "daily" ? (
-					<div className="space-y-1.5 max-w-xs">
-						<Label htmlFor="sync-daily-time" className="text-xs text-slate-300">
-							Daily Trigger Time (24h)
-						</Label>
-						<Input
-							id="sync-daily-time"
-							type="time"
-							value={config.dailyTime || "00:00"}
-							onChange={handleDailyTimeChange}
-							className="text-xs font-mono"
-						/>
-						<p className="text-[11px] text-slate-400">
-							Default: 00:00 (12:00 AM Midnight). You can adjust to any preferred hour.
-						</p>
-					</div>
-				) : (
-					<div className="space-y-1.5 max-w-xs">
-						<Label className="text-xs text-slate-300">Sync Interval Frequency</Label>
-						<CustomSelect
-							value={String(config.intervalHours || 24)}
-							onChange={handleIntervalChange}
-							options={INTERVAL_OPTIONS}
-						/>
-						<p className="text-[11px] text-slate-400">
-							Calculates the next sync relative to your last synchronization timestamp.
-						</p>
-					</div>
-				)}
+				<div className="space-y-1.5">
+					{config.scheduleMode === "daily" ? (
+						<>
+							<Label htmlFor="sync-daily-time" className="text-xs font-semibold text-foreground">
+								Daily Trigger Time (24h)
+							</Label>
+							<Input
+								id="sync-daily-time"
+								type="time"
+								value={config.dailyTime || "00:00"}
+								onChange={handleDailyTimeChange}
+								title="Time of day to run sync (24h format)"
+								className="text-xs font-mono h-9"
+							/>
+						</>
+					) : (
+						<>
+							<Label className="text-xs font-semibold text-foreground">Sync Frequency</Label>
+							<CustomSelect
+								value={String(config.intervalHours || 24)}
+								onChange={handleIntervalChange}
+								options={INTERVAL_OPTIONS}
+							/>
+						</>
+					)}
+				</div>
 			</div>
 
-			{/* Status Badges */}
-			<div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-				<div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-3.5 space-y-1">
-					<div className="flex items-center gap-1.5 text-xs text-slate-400">
+			<div className="grid grid-cols-2 gap-2.5 pt-1">
+				<div
+					className="rounded-xl border border-border bg-surface-2/40 p-2.5"
+					title="Next scheduled synchronization time"
+				>
+					<div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
 						<Clock className="w-3.5 h-3.5 text-blue-400" />
-						<span className="font-semibold uppercase text-[10px] tracking-wider">Next Trigger</span>
+						<span className="font-semibold uppercase text-[10px] tracking-wider">Next Sync</span>
 					</div>
-					<div className="text-xs font-bold text-foreground">{nextSyncText}</div>
+					<div className="text-xs font-bold text-foreground mt-0.5 truncate">{nextSyncText}</div>
 				</div>
 
-				<div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-3.5 space-y-1">
-					<div className="flex items-center gap-1.5 text-xs text-slate-400">
+				<div
+					className="rounded-xl border border-border bg-surface-2/40 p-2.5"
+					title="Most recent synchronization attempt"
+				>
+					<div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
 						{config.lastSyncStatus === "error" ? (
 							<AlertCircle className="w-3.5 h-3.5 text-rose-400" />
 						) : (
 							<CheckCircle2 className="w-3.5 h-3.5 text-teal-400" />
 						)}
-						<span className="font-semibold uppercase text-[10px] tracking-wider">
-							Last Synchronized
-						</span>
+						<span className="font-semibold uppercase text-[10px] tracking-wider">Last Run</span>
 					</div>
-					<div className="text-xs font-semibold text-slate-200 truncate">
+					<div className="text-xs font-semibold text-foreground mt-0.5 truncate">
 						{config.lastSyncAt
 							? `${new Date(config.lastSyncAt).toLocaleString([], {
 									month: "short",
 									day: "numeric",
 									hour: "2-digit",
 									minute: "2-digit",
-								})} — ${config.lastSyncMessage || "Success"}`
-							: "No sync executed yet"}
-					</div>
-				</div>
-			</div>
-
-			{/* Hardware & Energy Efficiency Overview */}
-			<div className="rounded-2xl border border-slate-800/80 bg-slate-950/50 p-4 space-y-2">
-				<div className="flex items-center gap-2 text-xs font-semibold text-teal-400">
-					<ShieldCheck className="w-4 h-4" />
-					<span>Hardware-Optimized Background Execution</span>
-				</div>
-				<div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-slate-400 leading-relaxed pt-1">
-					<div className="flex items-start gap-2">
-						<Smartphone className="w-4 h-4 text-teal-400 shrink-0 mt-0.5" />
-						<div>
-							<strong className="text-slate-200 block">Mobile Wake-and-Sleep Engine</strong>
-							On Android, the OS wakes the app briefly at the exact scheduled time to perform sync
-							and immediately returns to sleep, preventing device overheating and preserving
-							battery.
-						</div>
-					</div>
-
-					<div className="flex items-start gap-2">
-						<Cpu className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
-						<div>
-							<strong className="text-slate-200 block">Zero-CPU Desktop Background</strong>
-							When minimized to the system tray, timers are paused to maintain 0.0% CPU usage,
-							activating processing only during the brief sync operation.
-						</div>
+								})}`
+							: "No sync yet"}
 					</div>
 				</div>
 			</div>

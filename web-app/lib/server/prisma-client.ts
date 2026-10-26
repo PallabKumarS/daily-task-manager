@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS "User" (
     "name" TEXT NOT NULL,
     "passwordHash" TEXT NOT NULL,
     "currency" TEXT NOT NULL DEFAULT 'USD',
+    "enabledTabs" TEXT NOT NULL DEFAULT 'dashboard,routines,tasks,trackers,finances',
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -308,6 +309,12 @@ export async function initPrismaDatabase(): Promise<PrismaClient> {
 				await client.$executeRawUnsafe(stmt);
 			} catch {}
 		}
+
+		try {
+			await client.$executeRawUnsafe(
+				'ALTER TABLE "User" ADD COLUMN "enabledTabs" TEXT NOT NULL DEFAULT \'dashboard,routines,tasks,trackers,finances\'',
+			);
+		} catch {}
 
 		try {
 			await removeEmptyPlaceholderUser(client);

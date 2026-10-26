@@ -7,8 +7,8 @@ import { HeroSection } from "@/components/landing/hero-section";
 import { LandingFooter } from "@/components/landing/landing-footer";
 import { LandingNavbar } from "@/components/landing/landing-navbar";
 import { useAuth } from "@/components/providers/auth-provider";
-
 import { isCapacitorNative } from "@/lib/api-client";
+import { NAV_TAB_MAP, parseEnabledTabs } from "@/lib/nav-tabs-config";
 
 export default function HomePage() {
 	const { user, loading } = useAuth();
@@ -17,7 +17,9 @@ export default function HomePage() {
 	React.useEffect(() => {
 		if (!loading) {
 			if (user) {
-				router.replace("/dashboard");
+				const enabled = parseEnabledTabs(user.enabledTabs);
+				const targetTab = (enabled[0] && NAV_TAB_MAP.get(enabled[0])?.href) || "/dashboard";
+				router.replace(targetTab);
 			} else {
 				const isDesktop =
 					typeof window !== "undefined" &&

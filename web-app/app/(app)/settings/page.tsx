@@ -24,10 +24,10 @@ import { CategoryManagerModal } from "@/components/categories/category-manager-m
 import { useAuth } from "@/components/providers/auth-provider";
 import { useNotifications } from "@/components/providers/notification-provider";
 import { AppearanceSettingsCard } from "@/components/settings/appearance-settings-card";
+import { NavigationSettingsCard } from "@/components/settings/navigation-settings-card";
 import { SyncScheduleCard } from "@/components/settings/sync-schedule-card";
 import { WorkweekSettingsCard } from "@/components/settings/workweek-settings-card";
 import { Button } from "@/components/ui/button";
-import { CardDeck } from "@/components/ui/card-deck";
 import { useConfirm } from "@/components/ui/confirm-dialog";
 import { CustomSelect, type SelectOption } from "@/components/ui/custom-select";
 import { Input } from "@/components/ui/input";
@@ -37,6 +37,7 @@ import { extractManifestFromZip, fileToBase64, triggerDownloadArchive } from "@/
 import { saveClientGoogleTokens } from "@/lib/client-google-sync";
 import { CURRENCIES } from "@/lib/currency-symbols";
 import { signInWithNativeGoogle } from "@/lib/native-google-auth";
+import { cn } from "@/lib/utils";
 
 const CURRENCY_SELECT_OPTIONS: SelectOption[] = CURRENCIES.map((c) => ({
 	label: `${c.name} (${c.code})`,
@@ -113,19 +114,19 @@ function SettingsContent() {
 		e.preventDefault();
 		const trimmed = manualCodeInput.trim();
 		if (!trimmed) {
-			toast.error("Please enter or paste the authorization code or redirect URL");
+			toast.error("Please enter authorization code or URL");
 			return;
 		}
 		setConnectingCode(true);
 		try {
 			const res = await api.post("/sync/google/exchange-code", { code: trimmed });
 			if (res.success) {
-				toast.success("Google Account successfully connected");
+				toast.success("Google Account connected");
 				setManualCodeInput("");
 				setShowCodeInput(false);
 				fetchGoogleStatus();
 			} else {
-				toast.error(res.message || "Failed to exchange authorization code");
+				toast.error(res.message || "Failed to exchange code");
 			}
 		} catch (err: unknown) {
 			toast.error(err instanceof Error ? err.message : "Failed to connect Google account");
@@ -169,7 +170,6 @@ function SettingsContent() {
 	React.useEffect(() => {
 		fetchGoogleStatus();
 
-		// Check for callback query params
 		const syncStatus = searchParams.get("sync_status");
 		const syncError = searchParams.get("sync_error");
 		const emailParam = searchParams.get("email");
@@ -187,7 +187,6 @@ function SettingsContent() {
 			}
 			fetchGoogleStatus();
 
-			// Clean query params from the browser address bar so refresh does not re-trigger
 			if (typeof window !== "undefined") {
 				window.history.replaceState({}, "", window.location.pathname);
 			}
@@ -269,7 +268,7 @@ function SettingsContent() {
 				const manifest = await extractManifestFromZip(base64Data);
 
 				const confirmDesc = manifest
-					? `Backup from ${new Date(manifest.exportedAt).toLocaleDateString()} for ${manifest.user?.name || "User"}.\n\nContains: ${manifest.counts.tasks} tasks, ${manifest.counts.routines} routines, ${manifest.counts.transactions} transactions, ${manifest.counts.trackers} trackers.\n\nExisting records will be safely updated and merged.`
+					? `Backup from ${new Date(manifest.exportedAt).toLocaleDateString()} for ${manifest.user?.name || "User"}.\n\nContains: ${manifest.counts.tasks} tasks, ${manifest.counts.routines} routines, ${manifest.counts.transactions} transactions, ${manifest.counts.trackers} trackers.\n\nExisting records will be safely merged.`
 					: "The archive will be safely unpacked and merged with your local database.";
 
 				const ok = await confirm({
@@ -297,7 +296,6 @@ function SettingsContent() {
 					toast.error(res.message || "Failed to restore archive");
 				}
 			} else {
-				// Legacy JSON fallback
 				const clean = base64Data.replace(/^data:.*?;base64,/, "").trim();
 				const jsonText = atob(clean);
 				const parsed = JSON.parse(jsonText);
@@ -434,7 +432,7 @@ function SettingsContent() {
 			}
 
 			if (res.success) {
-				toast.success(res.message || "Google Drive sync completed!");
+				toast.success(res.message || "Google Drive sync completed");
 				window.dispatchEvent(new CustomEvent("daypulse:refresh"));
 				fetchGoogleStatus();
 			} else {
@@ -467,7 +465,7 @@ function SettingsContent() {
 		try {
 			const res = await api.post("/sync/restore", {});
 			if (res.success) {
-				toast.success(res.message || "Data restored from Google Drive!");
+				toast.success(res.message || "Data restored from Google Drive");
 				window.dispatchEvent(new CustomEvent("daypulse:refresh"));
 			} else {
 				toast.error(res.message || "Failed to restore from Google Drive");
@@ -518,527 +516,519 @@ function SettingsContent() {
 	const testAlarm = () => {
 		triggerNotification({
 			title: "DayPulse System Alert & Chime",
-			message:
-				"Proactive alert reminder is active! You will be notified ahead of tasks and routines.",
+			message: "Audio alert reminder is active! You will be notified ahead of tasks and routines.",
 			type: "system",
 		});
 	};
 
 	return (
-		<div className="space-y-6 max-w-4xl">
-			<div>
-				<h1 className="text-2xl font-bold tracking-tight text-foreground">
-					System Settings & Cloud Sync
-				</h1>
-				<p className="text-xs text-foreground-muted mt-1">
-					Configure dual color palettes, Google Drive cloud synchronization, profile preferences,
-					audio alarms, and local backups.
-				</p>
+		<div className="w-full max-w-7xl mx-auto space-y-4 px-1 sm:px-0">
+			{/* Page Header */}
+			<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-1 border-b border-border">
+				<div>
+					<h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+						Settings & System Preferences
+					</h1>
+					<p className="text-xs text-muted-foreground mt-0.5">
+						Customize appearance, active modules, cloud synchronization, and backup archives
+					</p>
+				</div>
 			</div>
 
-			<CardDeck
-				items={[
-					{
-						id: "appearance",
-						title: "Appearance, Theme Palettes & Motion",
-						node: <AppearanceSettingsCard />,
-					},
-					{
-						id: "cloud_sync",
-						title: "Cloud Sync Schedule & Google Drive",
-						node: (
-							<div className="space-y-6">
-								<SyncScheduleCard />
+			{/* Responsive 2-Column Grid */}
+			<div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+				{/* Column 1: Appearance, Navigation, Profile, Categories */}
+				<div className="space-y-4">
+					<AppearanceSettingsCard />
 
-								{/* Google Drive Cloud Sync Hub */}
-								<div className="rounded-3xl border border-border bg-surface p-6 shadow-card space-y-5">
-									<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border">
-										<div className="flex items-center gap-2.5">
-											<div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-blue-600 to-cyan-500 flex items-center justify-center text-white shadow-md shadow-blue-500/20">
-												<Cloud className="w-5 h-5" />
-											</div>
-											<div>
-												<h2 className="text-sm font-bold text-foreground">
-													Google Drive Cloud Sync
-												</h2>
-												<p className="text-xs text-foreground-muted">
-													Automated multi-device cloud backup & restore
-												</p>
-											</div>
-										</div>
+					<NavigationSettingsCard />
 
-										<div className="flex items-center gap-2">
-											<span
-												className={`text-xs px-2.5 py-1 rounded-full font-semibold border ${
-													googleStatus.connected
-														? "bg-teal-500/15 text-teal-400 border-teal-500/30"
-														: "bg-surface-2 text-foreground-muted border-border"
-												}`}
-											>
-												{googleStatus.connected
-													? `Connected: ${googleStatus.googleEmail}`
-													: "Not Connected"}
-											</span>
-										</div>
-									</div>
-
-									{/* Sync Status Banner */}
-									<div className="p-4 rounded-2xl border border-border bg-surface-2/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-										<div>
-											<p className="text-xs font-semibold text-foreground">
-												Cloud Archive File:{" "}
-												<span className="text-teal-400 font-mono">DayPulse_Backup.json</span>
-											</p>
-											<p className="text-xs text-foreground-muted mt-0.5">
-												{googleStatus.lastGoogleSyncAt
-													? `Last synchronized: ${new Date(googleStatus.lastGoogleSyncAt).toLocaleString()}`
-													: "No cloud sync performed yet"}
-											</p>
-										</div>
-
-										<div className="flex flex-wrap items-center gap-2">
-											{!googleStatus.connected ? (
-												<>
-													<Button size="sm" onClick={handleConnectGoogle} className="gap-2 text-xs">
-														<KeyRound className="w-4 h-4" />
-														<span>Connect Google Drive</span>
-													</Button>
-													<Button
-														variant="ghost"
-														size="sm"
-														onClick={() => setShowCodeInput(!showCodeInput)}
-														className="text-xs text-foreground-muted hover:text-foreground"
-													>
-														<span>{showCodeInput ? "Hide Code Input" : "Paste Auth Code"}</span>
-													</Button>
-												</>
-											) : (
-												<>
-													<Button
-														size="sm"
-														onClick={handleUploadGoogle}
-														disabled={syncingGoogle}
-														className="gap-2 text-xs"
-													>
-														<RefreshCw
-															className={`w-3.5 h-3.5 ${syncingGoogle ? "animate-spin" : ""}`}
-														/>
-														<span>{syncingGoogle ? "Syncing..." : "Two-Way Cloud Sync"}</span>
-													</Button>
-													<Button
-														variant="outline"
-														size="sm"
-														onClick={handleRestoreGoogle}
-														disabled={restoringGoogle}
-														className="gap-2 text-xs"
-													>
-														<Download className="w-3.5 h-3.5" />
-														<span>{restoringGoogle ? "Restoring..." : "Restore from Drive"}</span>
-													</Button>
-													<Button
-														variant="ghost"
-														size="sm"
-														onClick={handleDisconnectGoogle}
-														className="text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 text-xs gap-1"
-														title="Disconnect Google Account"
-													>
-														<Unlink className="w-3.5 h-3.5" />
-														<span>Disconnect</span>
-													</Button>
-												</>
-											)}
-										</div>
-									</div>
-
-									{showCodeInput && !googleStatus.connected && (
-										<form
-											onSubmit={handleExchangeCodeSettings}
-											className="rounded-2xl border border-border bg-surface-2/60 p-3.5 space-y-2.5"
-										>
-											<p className="text-xs text-foreground font-medium leading-relaxed">
-												If redirected to localhost in your browser after signing in, copy the
-												address bar URL or code and paste here:
-											</p>
-											<div className="flex flex-col sm:flex-row items-center gap-2">
-												<Input
-													placeholder="Paste redirect URL or authorization code..."
-													value={manualCodeInput}
-													onChange={(e) => setManualCodeInput(e.target.value)}
-													className="text-xs font-mono break-all h-9 w-full"
-												/>
-												<Button
-													type="submit"
-													size="sm"
-													disabled={connectingCode || !manualCodeInput.trim()}
-													className="w-full sm:w-auto shrink-0 h-9 text-xs font-medium"
-												>
-													{connectingCode ? "Connecting..." : "Connect Account"}
-												</Button>
-											</div>
-										</form>
-									)}
-
-									{/* Collapsible Setup Guide */}
-									<div className="pt-1">
-										<button
-											type="button"
-											onClick={() => setShowSetupGuide(!showSetupGuide)}
-											className="flex items-center gap-1.5 text-xs text-foreground-muted hover:text-teal-400 transition cursor-pointer font-medium"
-										>
-											<span>
-												{showSetupGuide ? "Hide" : "Show"} Google Cloud OAuth setup instructions
-												(.env)
-											</span>
-											<ExternalLink className="w-3 h-3" />
-										</button>
-
-										{showSetupGuide && (
-											<div className="mt-3 rounded-2xl border border-border bg-surface-2/60 p-4 text-xs text-foreground-muted space-y-2 leading-relaxed">
-												<p className="font-semibold text-foreground">
-													How to connect your own Google Cloud Client ID & Secret:
-												</p>
-												<ol className="list-decimal list-inside space-y-1.5 text-foreground-muted">
-													<li>
-														Go to <strong className="text-foreground">Google Cloud Console</strong>{" "}
-														&gt; APIs &amp; Services &gt; Credentials.
-													</li>
-													<li>
-														Create an{" "}
-														<strong className="text-foreground">OAuth 2.0 Client ID</strong> (Web
-														Application).
-													</li>
-													<li>
-														Add Authorized Redirect URI:
-														<div className="mt-1 rounded-lg bg-surface p-2 font-mono text-teal-400 select-all border border-border text-xs break-all space-y-1">
-															<div>
-																https://day-pulse-web.vercel.app/api/v1/sync/google/callback
-															</div>
-															<div className="text-foreground-subtle text-xs">
-																Desktop/Dev: http://localhost:5000/api/v1/sync/google/callback
-															</div>
-														</div>
-													</li>
-													<li>
-														Enable the <strong className="text-foreground">Google Drive API</strong>{" "}
-														in your project.
-													</li>
-													<li>
-														Add the following keys to your project{" "}
-														<strong className="text-foreground">.env</strong> or enter them below:
-														<pre className="mt-1 rounded-lg bg-surface p-2 font-mono text-foreground border border-border text-xs overflow-x-auto whitespace-pre-wrap break-all">
-															GOOGLE_CLIENT_ID=&quot;your-client-id.apps.googleusercontent.com&quot;
-															GOOGLE_CLIENT_SECRET=&quot;your-client-secret&quot;
-														</pre>
-													</li>
-												</ol>
-
-												<form
-													onSubmit={handleSaveGoogleCredentials}
-													className="mt-4 pt-3 border-t border-border space-y-3"
-												>
-													<p className="font-semibold text-foreground">
-														Save Credentials Directly in DayPulse:
-													</p>
-													<div className="space-y-1.5">
-														<Label htmlFor="settings-google-client-id">Google Client ID</Label>
-														<Input
-															id="settings-google-client-id"
-															placeholder="e.g. 123456789-xxx.apps.googleusercontent.com"
-															value={customClientId}
-															onChange={(e) => setCustomClientId(e.target.value)}
-															className="text-xs font-mono break-all h-9"
-														/>
-													</div>
-													<div className="space-y-1.5">
-														<Label htmlFor="settings-google-client-secret">
-															Google Client Secret
-														</Label>
-														<Input
-															id="settings-google-client-secret"
-															type="password"
-															placeholder="e.g. GOCSPX-xxxxxx"
-															value={customClientSecret}
-															onChange={(e) => setCustomClientSecret(e.target.value)}
-															className="text-xs font-mono break-all h-9"
-														/>
-													</div>
-													<Button
-														type="submit"
-														size="sm"
-														disabled={savingGoogleCreds}
-														className="gap-2 text-xs"
-													>
-														<span>
-															{savingGoogleCreds ? "Saving..." : "Save Google Credentials"}
-														</span>
-													</Button>
-												</form>
-											</div>
-										)}
-									</div>
-								</div>
+					{/* Profile & Account Settings */}
+					<div className="rounded-2xl border border-border bg-surface p-4 sm:p-5 shadow-[var(--shadow-card)] space-y-4">
+						<div className="flex items-center gap-2.5 pb-3 border-b border-border">
+							<div className="h-8 w-8 rounded-lg bg-teal-500/10 text-teal-500 border border-teal-500/20 flex items-center justify-center shrink-0">
+								<User className="w-4 h-4" />
 							</div>
-						),
-					},
-					{
-						id: "archive_backup",
-						title: "Multi-Collection ZIP Archive & Offline Backup",
-						node: (
-							<div className="rounded-3xl border border-border bg-surface p-6 shadow-card space-y-4">
-								<div className="flex items-center gap-2 pb-3 border-b border-border">
-									<FileText className="w-4 h-4 text-teal-400" />
-									<h2 className="text-sm font-bold text-foreground">
-										Multi-Collection ZIP Archive & Offline Backup
-									</h2>
-								</div>
-
-								<p className="text-xs text-foreground-muted leading-relaxed">
-									Export all database collections (tasks, routines, routine logs, transactions,
-									trackers, tracker logs, categories) as individual JSON files bundled into a
-									compressed ZIP archive (
-									<code className="text-teal-400 font-mono">DayPulse_Backup.zip</code>
-									). Includes a verified manifest with SHA256 checksums and safe merge capability.
+							<div>
+								<h2 className="text-sm font-bold text-foreground">Profile & Currency</h2>
+								<p className="text-[11px] text-muted-foreground">
+									Display name and financial denomination
 								</p>
-
-								<div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-									<div className="rounded-2xl border border-border bg-surface-2/60 p-5 space-y-3">
-										<div className="flex items-center gap-2 text-foreground">
-											<Download className="w-4 h-4 text-teal-400" />
-											<h3 className="text-xs font-bold uppercase tracking-wider">
-												Export ZIP Archive
-											</h3>
-										</div>
-										<p className="text-xs text-foreground-muted">
-											Generates a compressed multi-JSON archive of all your collections with
-											metadata and checksums.
-										</p>
-										<Button
-											size="sm"
-											onClick={handleExportBackup}
-											className="w-full gap-2 cursor-pointer"
-										>
-											<Download className="w-4 h-4" />
-											<span>Export Backup ZIP</span>
-										</Button>
-									</div>
-
-									<div className="rounded-2xl border border-border bg-surface-2/60 p-5 space-y-3">
-										<div className="flex items-center gap-2 text-foreground">
-											<Upload className="w-4 h-4 text-teal-400" />
-											<h3 className="text-xs font-bold uppercase tracking-wider">
-												Restore Archive / Backup
-											</h3>
-										</div>
-										<p className="text-xs text-foreground-muted">
-											Inspects and restores tasks, routines, and wealth logs from a{" "}
-											<code className="text-teal-400">.zip</code>,{" "}
-											<code className="text-teal-400">.daypulse</code>, or legacy{" "}
-											<code className="text-teal-400">.json</code> file.
-										</p>
-										<button
-											type="button"
-											onClick={handlePickBackupFile}
-											disabled={importing}
-											className="flex w-full items-center justify-center gap-2 rounded-xl border border-border-strong bg-surface px-4 py-2 text-xs font-semibold text-foreground hover:bg-surface-2 cursor-pointer transition disabled:opacity-50"
-										>
-											<Upload className="w-4 h-4" />
-											<span>{importing ? "Processing..." : "Select Archive File..."}</span>
-										</button>
-										<input
-											ref={fileInputRef}
-											type="file"
-											accept=".zip,.daypulse,.json,application/zip"
-											onChange={handleImportBackup}
-											disabled={importing}
-											className="hidden"
-										/>
-									</div>
-								</div>
 							</div>
-						),
-					},
-					{
-						id: "notifications",
-						title: "Notification & Alarm Engine",
-						node: (
-							<div className="rounded-3xl border border-border bg-surface p-6 shadow-card space-y-4">
-								<div className="flex items-center gap-2 pb-3 border-b border-border">
-									<Bell className="w-4 h-4 text-amber-400" />
-									<h2 className="text-sm font-bold text-foreground">Notification & Alarm Engine</h2>
-								</div>
+						</div>
 
-								<div className="space-y-4">
-									<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-border bg-surface-2/60">
-										<div>
-											<p className="text-sm font-semibold text-foreground">
-												OS System & Browser Push
-											</p>
-											<p className="text-xs text-foreground-muted mt-0.5">
-												Displays native popups ahead of scheduled routines and task deadlines.
-											</p>
-										</div>
-										<div className="flex items-center gap-2">
-											<span
-												className={`text-xs px-2.5 py-1 rounded-full font-semibold border ${
-													permission === "granted"
-														? "bg-teal-500/15 text-teal-400 border-teal-500/30"
-														: "bg-amber-500/10 text-amber-400 border-amber-500/30"
-												}`}
-											>
-												{permission === "granted" ? "Granted" : "Needs Permission"}
-											</span>
-											{permission !== "granted" && (
-												<Button size="sm" variant="default" onClick={requestPermission}>
-													Enable
-												</Button>
-											)}
-										</div>
-									</div>
-
-									<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-border bg-surface-2/60">
-										<div>
-											<p className="text-sm font-semibold text-foreground">Harmonic Audio Chime</p>
-											<p className="text-xs text-foreground-muted mt-0.5">
-												Plays a synthesized dual-tone harmonic chime on alert triggers.
-											</p>
-										</div>
-										<Button
-											size="sm"
-											variant={soundEnabled ? "default" : "secondary"}
-											onClick={toggleSound}
-											className="gap-2 self-start sm:self-center"
-										>
-											{soundEnabled ? (
-												<Volume2 className="w-4 h-4" />
-											) : (
-												<VolumeX className="w-4 h-4" />
-											)}
-											<span>{soundEnabled ? "Audio On" : "Muted"}</span>
-										</Button>
-									</div>
-
-									<div className="pt-1">
-										<Button variant="outline" size="sm" onClick={testAlarm} className="gap-2">
-											<Bell className="w-4 h-4 text-teal-400" />
-											<span>Test Audio Chime & Notification Now</span>
-										</Button>
-									</div>
-								</div>
+						<form onSubmit={handleSaveProfile} className="space-y-3">
+							<div className="space-y-1">
+								<Label htmlFor="profile-name" className="text-xs font-semibold text-foreground">
+									Display Name
+								</Label>
+								<Input
+									id="profile-name"
+									value={name}
+									onChange={(e) => setName(e.target.value)}
+									placeholder="Your Name"
+									title="Name displayed across the app"
+									className="text-xs h-9"
+								/>
 							</div>
-						),
-					},
-					{
-						id: "workweek_categories",
-						title: "Categories & Workweek Schedule",
-						node: (
-							<div className="space-y-6">
-								<div className="rounded-3xl border border-border bg-surface p-6 shadow-card space-y-4">
-									<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border">
-										<div className="flex items-center gap-2">
-											<Tag className="w-4 h-4 text-teal-400" />
-											<h2 className="text-sm font-bold text-foreground">
-												Categories & Custom Tags
-											</h2>
-										</div>
-										<Button
-											type="button"
-											variant="outline"
-											size="sm"
-											onClick={() => setCategoryModalOpen(true)}
-											className="gap-2 text-xs"
-										>
-											<Tag className="w-3.5 h-3.5 text-teal-400" />
-											<span>Manage All Categories</span>
-										</Button>
-									</div>
-									<p className="text-xs text-foreground-muted leading-relaxed">
-										Customize your expense, income, and payment method categories with custom labels
-										and color accents.
+
+							<div className="space-y-1">
+								<Label className="text-xs font-semibold text-foreground">Default Currency</Label>
+								<CustomSelect
+									value={currency}
+									onChange={(val) => setCurrency(val)}
+									options={CURRENCY_SELECT_OPTIONS}
+									allowManage={false}
+								/>
+							</div>
+
+							<Button
+								type="submit"
+								size="sm"
+								disabled={savingProfile}
+								title="Save profile and currency preferences"
+								className="text-xs h-8"
+							>
+								{savingProfile ? "Saving..." : "Save Preferences"}
+							</Button>
+						</form>
+
+						{/* Account info bar */}
+						<div className="flex items-center justify-between gap-3 pt-3 border-t border-border">
+							<div className="min-w-0">
+								<div className="flex items-center gap-1.5">
+									<ShieldCheck className="w-3.5 h-3.5 text-teal-500 shrink-0" />
+									<span className="text-xs font-semibold text-foreground truncate">
+										{user?.email || "Local Account"}
+									</span>
+								</div>
+								<span className="text-[10px] text-muted-foreground block truncate">
+									Active Currency:{" "}
+									<strong className="text-foreground">{user?.currency || "USD"}</strong>
+								</span>
+							</div>
+
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => logout()}
+								title="Sign out of your DayPulse account"
+								className="gap-1.5 border-rose-500/30 text-rose-400 hover:bg-rose-500/10 text-xs h-8 shrink-0"
+							>
+								<LogOut className="w-3.5 h-3.5" />
+								<span>Sign Out</span>
+							</Button>
+						</div>
+					</div>
+
+					{/* Categories & Custom Tags */}
+					<div className="rounded-2xl border border-border bg-surface p-4 sm:p-5 shadow-[var(--shadow-card)] space-y-3">
+						<div className="flex items-center justify-between gap-3 pb-2 border-b border-border">
+							<div className="flex items-center gap-2.5">
+								<div className="h-8 w-8 rounded-lg bg-teal-500/10 text-teal-500 border border-teal-500/20 flex items-center justify-center shrink-0">
+									<Tag className="w-4 h-4" />
+								</div>
+								<div>
+									<h2 className="text-sm font-bold text-foreground">Categories & Tags</h2>
+									<p className="text-[11px] text-muted-foreground">
+										Expense, income, and payment categories
 									</p>
 								</div>
-
-								<WorkweekSettingsCard />
 							</div>
-						),
-					},
-					{
-						id: "profile_account",
-						title: "User Profile, Currency & Account",
-						node: (
-							<div className="space-y-6">
-								<div className="rounded-3xl border border-border bg-surface p-6 shadow-card space-y-4">
-									<div className="flex items-center gap-2 pb-3 border-b border-border">
-										<User className="w-4 h-4 text-teal-400" />
-										<h2 className="text-sm font-bold text-foreground">User Profile & Currency</h2>
-									</div>
 
-									<form onSubmit={handleSaveProfile} className="space-y-4 max-w-md">
-										<div className="space-y-1.5">
-											<Label htmlFor="name">Display Name</Label>
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								onClick={() => setCategoryModalOpen(true)}
+								title="Open category and tag manager"
+								className="gap-1.5 text-xs h-8"
+							>
+								<Tag className="w-3.5 h-3.5 text-teal-400" />
+								<span>Manage Categories</span>
+							</Button>
+						</div>
+
+						<p className="text-[11px] text-muted-foreground">
+							Customize color badges, icons, and labels for your financial transactions.
+						</p>
+					</div>
+				</div>
+
+				{/* Column 2: Cloud Sync, Google Drive, Backups, Workweek, Notifications */}
+				<div className="space-y-4">
+					<SyncScheduleCard />
+
+					{/* Google Drive Cloud Sync Hub */}
+					<div className="rounded-2xl border border-border bg-surface p-4 sm:p-5 shadow-[var(--shadow-card)] space-y-3.5">
+						<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-border">
+							<div className="flex items-center gap-2.5">
+								<div className="h-8 w-8 rounded-lg bg-gradient-to-tr from-blue-600 to-cyan-500 flex items-center justify-center text-white shadow-sm shrink-0">
+									<Cloud className="w-4 h-4" />
+								</div>
+								<div>
+									<h2 className="text-sm font-bold text-foreground">Google Drive Cloud Sync</h2>
+									<p className="text-[11px] text-muted-foreground">
+										Encrypted cloud backup & multi-device sync
+									</p>
+								</div>
+							</div>
+
+							<span
+								className={cn(
+									"self-start sm:self-center text-[11px] px-2.5 py-0.5 rounded-full font-semibold border",
+									googleStatus.connected
+										? "bg-teal-500/15 text-teal-400 border-teal-500/30"
+										: "bg-surface-2 text-muted-foreground border-border",
+								)}
+							>
+								{googleStatus.connected
+									? `Connected: ${googleStatus.googleEmail}`
+									: "Not Connected"}
+							</span>
+						</div>
+
+						{/* Action Buttons & Status */}
+						<div className="p-3 rounded-xl border border-border bg-surface-2/40 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+							<div className="min-w-0">
+								<p className="text-xs font-semibold text-foreground truncate">
+									File: <span className="text-teal-400 font-mono">DayPulse_Backup.json</span>
+								</p>
+								<p className="text-[10px] text-muted-foreground truncate mt-0.5">
+									{googleStatus.lastGoogleSyncAt
+										? `Last synced: ${new Date(googleStatus.lastGoogleSyncAt).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}`
+										: "No cloud sync executed yet"}
+								</p>
+							</div>
+
+							<div className="flex flex-wrap items-center gap-1.5">
+								{!googleStatus.connected ? (
+									<>
+										<Button
+											size="sm"
+											onClick={handleConnectGoogle}
+											title="Authenticate with Google Drive to enable cloud backup"
+											className="gap-1.5 text-xs h-8"
+										>
+											<KeyRound className="w-3.5 h-3.5" />
+											<span>Connect Drive</span>
+										</Button>
+										<Button
+											variant="ghost"
+											size="sm"
+											onClick={() => setShowCodeInput(!showCodeInput)}
+											title="Paste authorization code or callback URL manually"
+											className="text-xs h-8 text-muted-foreground hover:text-foreground"
+										>
+											<span>{showCodeInput ? "Hide Code" : "Paste Code"}</span>
+										</Button>
+									</>
+								) : (
+									<>
+										<Button
+											size="sm"
+											onClick={handleUploadGoogle}
+											disabled={syncingGoogle}
+											title="Synchronize local changes with Google Drive backup"
+											className="gap-1.5 text-xs h-8"
+										>
+											<RefreshCw className={cn("w-3.5 h-3.5", syncingGoogle && "animate-spin")} />
+											<span>{syncingGoogle ? "Syncing..." : "Sync Now"}</span>
+										</Button>
+										<Button
+											variant="outline"
+											size="sm"
+											onClick={handleRestoreGoogle}
+											disabled={restoringGoogle}
+											title="Restore database from latest Google Drive backup"
+											className="gap-1.5 text-xs h-8"
+										>
+											<Download className="w-3.5 h-3.5" />
+											<span>{restoringGoogle ? "Restoring..." : "Restore"}</span>
+										</Button>
+										<Button
+											variant="ghost"
+											size="sm"
+											onClick={handleDisconnectGoogle}
+											title="Disconnect Google Drive"
+											className="text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 text-xs h-8 px-2"
+										>
+											<Unlink className="w-3.5 h-3.5" />
+										</Button>
+									</>
+								)}
+							</div>
+						</div>
+
+						{/* Manual code paste input */}
+						{showCodeInput && !googleStatus.connected && (
+							<form
+								onSubmit={handleExchangeCodeSettings}
+								className="rounded-xl border border-border bg-surface-2/40 p-2.5 space-y-2"
+							>
+								<p className="text-[11px] text-muted-foreground leading-tight">
+									Paste redirect URL or authorization code from browser:
+								</p>
+								<div className="flex flex-col sm:flex-row items-center gap-1.5">
+									<Input
+										placeholder="Paste code or URL..."
+										value={manualCodeInput}
+										onChange={(e) => setManualCodeInput(e.target.value)}
+										title="Authorization code"
+										className="text-xs font-mono h-8 w-full"
+									/>
+									<Button
+										type="submit"
+										size="sm"
+										disabled={connectingCode || !manualCodeInput.trim()}
+										title="Connect account with authorization code"
+										className="w-full sm:w-auto shrink-0 h-8 text-xs font-medium"
+									>
+										{connectingCode ? "Connecting..." : "Connect"}
+									</Button>
+								</div>
+							</form>
+						)}
+
+						{/* Collapsible OAuth Setup Instructions */}
+						<div className="pt-0.5">
+							<button
+								type="button"
+								onClick={() => setShowSetupGuide(!showSetupGuide)}
+								title="View Google Cloud OAuth configuration instructions"
+								className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-teal-400 transition cursor-pointer font-medium"
+							>
+								<span>
+									{showSetupGuide ? "Hide" : "Show"} Custom Google Cloud OAuth setup (.env)
+								</span>
+								<ExternalLink className="w-3 h-3" />
+							</button>
+
+							{showSetupGuide && (
+								<div className="mt-2.5 rounded-xl border border-border bg-surface-2/40 p-3 text-[11px] text-muted-foreground space-y-2">
+									<p className="font-semibold text-foreground">
+										Custom Google Cloud Client ID & Secret:
+									</p>
+									<ol className="list-decimal list-inside space-y-1 text-muted-foreground">
+										<li>
+											Open <strong className="text-foreground">Google Cloud Console</strong> &gt;
+											APIs &amp; Credentials.
+										</li>
+										<li>
+											Create <strong className="text-foreground">OAuth 2.0 Client ID</strong> (Web
+											App).
+										</li>
+										<li>
+											Authorized Redirect URI:
+											<span className="block mt-0.5 rounded bg-surface p-1.5 font-mono text-teal-400 select-all border border-border text-[10px] break-all">
+												https://day-pulse-web.vercel.app/api/v1/sync/google/callback
+											</span>
+										</li>
+										<li>Enable the Google Drive API in your project.</li>
+									</ol>
+
+									<form
+										onSubmit={handleSaveGoogleCredentials}
+										className="pt-2 border-t border-border space-y-2"
+									>
+										<div className="space-y-1">
+											<Label htmlFor="google-client-id" className="text-[11px]">
+												Client ID
+											</Label>
 											<Input
-												id="name"
-												value={name}
-												onChange={(e) => setName(e.target.value)}
-												placeholder="Your Name"
+												id="google-client-id"
+												placeholder="your-client-id.apps.googleusercontent.com"
+												value={customClientId}
+												onChange={(e) => setCustomClientId(e.target.value)}
+												className="text-[11px] font-mono h-8"
 											/>
 										</div>
-
-										<CustomSelect
-											label="Default Currency"
-											value={currency}
-											onChange={(val) => setCurrency(val)}
-											options={CURRENCY_SELECT_OPTIONS}
-											allowManage={false}
-										/>
-
-										<Button type="submit" size="sm" disabled={savingProfile}>
-											{savingProfile ? "Saving..." : "Save Preferences"}
+										<div className="space-y-1">
+											<Label htmlFor="google-client-secret" className="text-[11px]">
+												Client Secret
+											</Label>
+											<Input
+												id="google-client-secret"
+												type="password"
+												placeholder="GOCSPX-xxxxxx"
+												value={customClientSecret}
+												onChange={(e) => setCustomClientSecret(e.target.value)}
+												className="text-[11px] font-mono h-8"
+											/>
+										</div>
+										<Button
+											type="submit"
+											size="sm"
+											disabled={savingGoogleCreds}
+											title="Save credentials to local environment"
+											className="text-xs h-8"
+										>
+											{savingGoogleCreds ? "Saving..." : "Save Credentials"}
 										</Button>
 									</form>
 								</div>
+							)}
+						</div>
+					</div>
 
-								<div className="rounded-3xl border border-border bg-surface p-6 shadow-card space-y-4">
-									<div className="flex items-center gap-2 pb-3 border-b border-border">
-										<ShieldCheck className="w-4 h-4 text-teal-400" />
-										<h2 className="text-sm font-bold text-foreground">Account & Authentication</h2>
-									</div>
+					{/* Multi-Collection ZIP Archive & Offline Backup */}
+					<div className="rounded-2xl border border-border bg-surface p-4 sm:p-5 shadow-[var(--shadow-card)] space-y-3">
+						<div className="flex items-center gap-2 pb-2 border-b border-border">
+							<div className="h-8 w-8 rounded-lg bg-teal-500/10 text-teal-500 border border-teal-500/20 flex items-center justify-center shrink-0">
+								<FileText className="w-4 h-4" />
+							</div>
+							<div>
+								<h2 className="text-sm font-bold text-foreground">
+									Multi-Collection ZIP Archive & Backup
+								</h2>
+								<p className="text-[11px] text-muted-foreground">
+									Export or restore complete database archive (.zip / .json)
+								</p>
+							</div>
+						</div>
 
-									<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl border border-border bg-surface-2/60">
-										<div className="space-y-0.5">
-											<p className="text-sm font-semibold text-foreground">
-												{user?.name || "DayPulse User"}
-											</p>
-											<p className="text-xs text-foreground-muted">{user?.email}</p>
-											<p className="text-xs text-foreground-subtle pt-0.5">
-												Default currency:{" "}
-												<span className="text-teal-400 font-medium">{user?.currency || "USD"}</span>
-											</p>
-										</div>
-										<div className="flex items-center gap-2">
-											<Button
-												variant="outline"
-												size="sm"
-												onClick={() => logout()}
-												className="gap-2 border-rose-500/30 text-rose-400 hover:bg-rose-500/10 text-xs"
-											>
-												<LogOut className="w-3.5 h-3.5" />
-												<span>Sign Out</span>
-											</Button>
-										</div>
+						<div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+							{/* Export Box */}
+							<div className="rounded-xl border border-border bg-surface-2/40 p-3 space-y-2 flex flex-col justify-between">
+								<div>
+									<div className="flex items-center gap-1.5 text-foreground">
+										<Download className="w-3.5 h-3.5 text-teal-400" />
+										<h3 className="text-xs font-bold uppercase tracking-wider">Export ZIP</h3>
 									</div>
+									<p className="text-[10px] text-muted-foreground mt-1">
+										Download all collections with SHA256 checksums.
+									</p>
+								</div>
+								<Button
+									size="sm"
+									onClick={handleExportBackup}
+									title="Download compressed ZIP backup of all tasks, routines, and wealth data"
+									className="w-full gap-1.5 text-xs h-8 cursor-pointer"
+								>
+									<Download className="w-3.5 h-3.5" />
+									<span>Export Backup ZIP</span>
+								</Button>
+							</div>
+
+							{/* Restore Box */}
+							<div className="rounded-xl border border-border bg-surface-2/40 p-3 space-y-2 flex flex-col justify-between">
+								<div>
+									<div className="flex items-center gap-1.5 text-foreground">
+										<Upload className="w-3.5 h-3.5 text-teal-400" />
+										<h3 className="text-xs font-bold uppercase tracking-wider">Restore Archive</h3>
+									</div>
+									<p className="text-[10px] text-muted-foreground mt-1">
+										Import .zip, .daypulse, or legacy .json file.
+									</p>
+								</div>
+								<button
+									type="button"
+									onClick={handlePickBackupFile}
+									disabled={importing}
+									title="Select a backup file from your device to restore"
+									className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-border-strong bg-surface px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-surface-2 cursor-pointer transition disabled:opacity-50 h-8"
+								>
+									<Upload className="w-3.5 h-3.5" />
+									<span>{importing ? "Processing..." : "Select File..."}</span>
+								</button>
+								<input
+									ref={fileInputRef}
+									type="file"
+									accept=".zip,.daypulse,.json,application/zip"
+									onChange={handleImportBackup}
+									disabled={importing}
+									className="hidden"
+								/>
+							</div>
+						</div>
+					</div>
+
+					<WorkweekSettingsCard />
+
+					{/* Notification & Alarm Engine */}
+					<div className="rounded-2xl border border-border bg-surface p-4 sm:p-5 shadow-[var(--shadow-card)] space-y-3">
+						<div className="flex items-center gap-2 pb-2 border-b border-border">
+							<div className="h-8 w-8 rounded-lg bg-amber-500/10 text-amber-500 border border-amber-500/20 flex items-center justify-center shrink-0">
+								<Bell className="w-4 h-4" />
+							</div>
+							<div>
+								<h2 className="text-sm font-bold text-foreground">Notification & Alerts</h2>
+								<p className="text-[11px] text-muted-foreground">
+									OS push notifications and audio chimes
+								</p>
+							</div>
+						</div>
+
+						<div className="space-y-2">
+							<div className="flex items-center justify-between gap-3 p-2.5 rounded-xl border border-border bg-surface-2/40">
+								<div className="min-w-0">
+									<p className="text-xs font-semibold text-foreground">System Push Notifications</p>
+									<p className="text-[10px] text-muted-foreground truncate">
+										Popups for routine and task reminders
+									</p>
+								</div>
+								<div className="flex items-center gap-1.5 shrink-0">
+									<span
+										className={cn(
+											"text-[10px] px-2 py-0.5 rounded-full font-semibold border",
+											permission === "granted"
+												? "bg-teal-500/15 text-teal-400 border-teal-500/30"
+												: "bg-amber-500/10 text-amber-400 border-amber-500/30",
+										)}
+									>
+										{permission === "granted" ? "Granted" : "Disabled"}
+									</span>
+									{permission !== "granted" && (
+										<Button
+											size="sm"
+											variant="default"
+											onClick={requestPermission}
+											title="Request OS notification permission"
+											className="text-xs h-7 px-2.5"
+										>
+											Enable
+										</Button>
+									)}
 								</div>
 							</div>
-						),
-					},
-				]}
-				getKey={(item) => item.id}
-				getTitle={(item) => item.title}
-				renderCard={(item) => item.node}
-				storageKey="settings_sections"
-				defaultMode="deck"
-				desktopColumns={1}
-				sectionLabel="Settings Cards"
-			/>
+
+							<div className="flex items-center justify-between gap-3 p-2.5 rounded-xl border border-border bg-surface-2/40">
+								<div className="min-w-0">
+									<p className="text-xs font-semibold text-foreground">Harmonic Audio Chime</p>
+									<p className="text-[10px] text-muted-foreground truncate">
+										Dual-tone chime on alert triggers
+									</p>
+								</div>
+								<Button
+									size="sm"
+									variant={soundEnabled ? "default" : "secondary"}
+									onClick={toggleSound}
+									title={soundEnabled ? "Mute audio alarms" : "Enable audio alarms"}
+									className="gap-1.5 text-xs h-7 px-2.5 shrink-0"
+								>
+									{soundEnabled ? (
+										<Volume2 className="w-3.5 h-3.5" />
+									) : (
+										<VolumeX className="w-3.5 h-3.5" />
+									)}
+									<span>{soundEnabled ? "Audio On" : "Muted"}</span>
+								</Button>
+							</div>
+
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={testAlarm}
+								title="Trigger a test audio alert and system popup"
+								className="gap-1.5 text-xs h-8 w-full"
+							>
+								<Bell className="w-3.5 h-3.5 text-teal-400" />
+								<span>Test Notification & Chime</span>
+							</Button>
+						</div>
+					</div>
+				</div>
+			</div>
 
 			<CategoryManagerModal
 				isOpen={categoryModalOpen}
@@ -1052,7 +1042,7 @@ export default function SettingsPage() {
 	return (
 		<React.Suspense
 			fallback={
-				<div className="py-20 text-center text-xs text-slate-400">
+				<div className="py-20 text-center text-xs text-muted-foreground">
 					Loading settings & cloud sync hub...
 				</div>
 			}
